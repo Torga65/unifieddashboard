@@ -10,7 +10,7 @@ function generateSynopsis(customer) {
   const {
     summary, engagement, status, healthScore, mau, ttiv,
   } = customer;
-  const summaryLower = summary.toLowerCase();
+  const summaryLower = summary ? summary.toLowerCase() : '';
 
   // Pattern matching for common scenarios - focus on what IS, not what to DO
   if (summaryLower.includes('deplatform')) {
@@ -62,7 +62,7 @@ function extractKeyObservations(customer) {
   const {
     summary, blockers, blockersStatus, engagement, healthScore, status, mau, ttiv,
   } = customer;
-  const summaryLower = summary.toLowerCase();
+  const summaryLower = summary ? summary.toLowerCase() : '';
 
   // Engagement status observations
   if (engagement === 'Critical') {
@@ -101,11 +101,12 @@ function extractKeyObservations(customer) {
   }
 
   // Blocker analysis
-  if (blockersStatus === 'red' || blockers.toLowerCase().includes('critical')) {
+  const blockersLower = blockers ? blockers.toLowerCase() : '';
+  if (blockersStatus === 'red' || blockersLower.includes('critical')) {
     observations.push('🛑 Blockers Present: Critical obstacles currently impeding progress');
-  } else if (blockersStatus === 'yellow' || blockers.toLowerCase().includes('issues')) {
+  } else if (blockersStatus === 'yellow' || blockersLower.includes('issues')) {
     observations.push('⚠️ Blockers Present: Active issues requiring attention');
-  } else if (blockers.toLowerCase().includes('none')) {
+  } else if (blockersLower.includes('none')) {
     observations.push('✅ No Active Blockers: Path is clear for continued progress');
   }
 
@@ -141,7 +142,7 @@ function identifyTrends(customer) {
   const {
     summary, engagement, healthScore, status, lastUpdated,
   } = customer;
-  const summaryLower = summary.toLowerCase();
+  const summaryLower = summary ? summary.toLowerCase() : '';
 
   // Trend: Positive momentum
   if (engagement === 'Active' && healthScore >= 75) {
@@ -200,7 +201,7 @@ function generateRecommendations(customer) {
   const {
     summary, engagement, healthScore, status, blockersStatus,
   } = customer;
-  const summaryLower = summary.toLowerCase();
+  const summaryLower = summary ? summary.toLowerCase() : '';
 
   // Critical engagement scenarios
   if (summaryLower.includes('deplatform')) {
@@ -427,11 +428,11 @@ export function generateExecutiveSummary(analyses) {
   analyses.forEach(({ customer, analysis }) => {
     if (analysis.riskLevel === 'Critical') {
       summary.criticalCount += 1;
-      if (analysis.urgency === 'high') {
+      if (analysis.urgency === 'high' && analysis.keyObservations && analysis.keyObservations.length > 0) {
         summary.urgentActions.push({
           customer: customer.companyName,
-          issue: analysis.keyIssues[0],
-          action: analysis.recommendations[0],
+          observation: analysis.keyObservations[0],
+          trend: analysis.trends && analysis.trends.length > 0 ? analysis.trends[0] : 'No trend data',
         });
       }
     } else if (analysis.riskLevel === 'At Risk') {
@@ -440,11 +441,13 @@ export function generateExecutiveSummary(analyses) {
       summary.healthyCount += 1;
     }
 
-    // Count top issues
-    analysis.keyIssues.forEach((issue) => {
-      const key = issue.split(' - ')[0]; // Get emoji prefix
-      summary.topIssues[key] = (summary.topIssues[key] || 0) + 1;
-    });
+    // Count top observations
+    if (analysis.keyObservations) {
+      analysis.keyObservations.forEach((observation) => {
+        const key = observation.split(':')[0]; // Get emoji and label prefix
+        summary.topIssues[key] = (summary.topIssues[key] || 0) + 1;
+      });
+    }
   });
 
   return summary;
