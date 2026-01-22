@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Block Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <script type="module">
+    // Inline test to verify data loads
+    console.log('=== SIMPLE TEST STARTING ===');
+    
+    fetch('/data/customers.json')
+      .then(res => {
+        console.log('Fetch response status:', res.status);
+        return res.json();
+      })
+      .then(data => {
+        console.log('✅ Data loaded:', data.data.length, 'records');
+        console.log('First 3 customers:');
+        data.data.slice(0, 3).forEach((c, i) => {
+          console.log(`  ${i+1}. ${c.companyName} - ${c.week}`);
+        });
+        
+        // Filter to week 2026-01-23
+        const thisWeek = data.data.filter(c => c.week === '2026-01-23');
+        console.log(`\n✅ Week 2026-01-23: ${thisWeek.length} customers`);
+        thisWeek.slice(0, 5).forEach((c, i) => {
+          console.log(`  ${i+1}. ${c.companyName} - ${c.engagement} - Health: ${c.healthScore}`);
+        });
+        
+        // Display on page
+        const container = document.getElementById('result');
+        container.innerHTML = `
+          <h2>✅ Data Loaded Successfully!</h2>
+          <p><strong>Total:</strong> ${data.data.length} customers</p>
+          <p><strong>Week 2026-01-23:</strong> ${thisWeek.length} customers</p>
+          <h3>Sample Customers:</h3>
+          <ul>
+            ${thisWeek.slice(0, 10).map(c => 
+              `<li><strong>${c.companyName}</strong> - ${c.engagement} - Health: ${c.healthScore}</li>`
+            ).join('')}
+            ${thisWeek.length > 10 ? `<li><em>...and ${thisWeek.length - 10} more</em></li>` : ''}
+          </ul>
+        `;
+      })
+      .catch(err => {
+        console.error('❌ Error loading data:', err);
+        document.getElementById('result').innerHTML = `
+          <h2>❌ Error Loading Data</h2>
+          <p>${err.message}</p>
+        `;
+      });
+  </script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    #result {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    ul {
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Simple Data Load Test</h1>
+  <p>This page tests if the data file loads correctly (no EDS blocks, just plain JavaScript)</p>
+  <p><strong>Open the browser console (F12) to see detailed logs</strong></p>
+  
+  <div id="result">
+    <p>Loading data...</p>
+  </div>
+</body>
+</html>

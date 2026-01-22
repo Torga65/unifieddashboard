@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AEM Sites Optimizer - Customer Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="description" content="AEM Sites Optimizer customer engagement dashboard showing key metrics and health scores"/>
+  <meta name="week" content="2026-01-23"/>
+  <script src="/scripts/aem.js" type="module"></script>
+  <script src="/scripts/scripts.js" type="module"></script>
+  <link rel="stylesheet" href="/styles/styles.css"/>
+  <style>
+    /* Hero section styling */
+    .hero-section {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 60px 20px;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    
+    .hero-section h1 {
+      font-size: 48px;
+      margin: 0 0 16px;
+      font-weight: bold;
+    }
+    
+    .hero-section p {
+      font-size: 20px;
+      margin: 0;
+      opacity: 0.95;
+    }
+    
+    @media (max-width: 768px) {
+      .hero-section h1 {
+        font-size: 32px;
+      }
+      
+      .hero-section p {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header></header>
+  <main>
+    <div class="hero-section">
+      <h1>🎯 AEM Sites Optimizer</h1>
+      <p>Customer Engagement Dashboard</p>
+    </div>
+    
+    <div>
+      <!-- Customer Overview Block loads data from customers.json -->
+      <div class="customer-overview" data-source="/data/customers.json">
+        Loading customer data...
+      </div>
+    </div>
+    
+    <div>
+      <h2>Quick Links</h2>
+      <div class="cards">
+        <div>
+          <div>
+            <h3>📊 Detailed Table View</h3>
+            <p>View all customers in a detailed table with advanced filtering and search capabilities</p>
+            <p><a href="/engagement-live.html">View Table →</a></p>
+          </div>
+        </div>
+        <div>
+          <div>
+            <h3>📈 Weekly Reports</h3>
+            <p>Access historical weekly engagement reports and track customer progress over time</p>
+            <p><a href="/engagement-weekly.html">View Reports →</a></p>
+          </div>
+        </div>
+        <div>
+          <div>
+            <h3>🔧 Testing Tools</h3>
+            <p>Interactive test suite for week selection utilities and data validation</p>
+            <p><a href="/scripts/week-utils-test.html">Run Tests →</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div>
+      <h2>About the Dashboard</h2>
+      <p>This dashboard provides real-time visibility into AEM Sites Optimizer customer engagement across your portfolio. Key features:</p>
+      <ul>
+        <li><strong>Real-time Data:</strong> Automatically loads the latest customer data from SharePoint</li>
+        <li><strong>Health Scoring:</strong> Calculated from engagement, blockers, feedback, and overall health indicators</li>
+        <li><strong>Quick Reference:</strong> Card-based view shows key metrics at a glance</li>
+        <li><strong>Advanced Filtering:</strong> Search by name, filter by status, engagement level, or health score</li>
+        <li><strong>Week Navigation:</strong> Automatically displays current week or navigate to specific weeks</li>
+        <li><strong>Responsive Design:</strong> Works seamlessly on desktop, tablet, and mobile devices</li>
+      </ul>
+    </div>
+    
+    <div>
+      <h2>Data Sources</h2>
+      <p><strong>Source File:</strong> <code>AEM_Sites_Optimizer-CustomerExperience.xlsx</code> (SharePoint)</p>
+      <p><strong>Current Dataset:</strong> 598 customer records across 16 weeks (Sept 2025 - Jan 2026)</p>
+      <p><strong>Last Updated:</strong> January 22, 2026</p>
+      <p><strong>Update Process:</strong> Download updated Excel from SharePoint, run <code>python3 scripts/convert-customer-data.py</code></p>
+    </div>
+  </main>
+  <footer></footer>
+</body>
+</html>
