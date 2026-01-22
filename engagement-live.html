@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Weekly Engagement Report - Live Data</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="description" content="Weekly customer engagement report from SharePoint data"/>
+  <meta name="week" content="2026-01-23"/>
+</head>
+<body>
+  <header></header>
+  <main>
+    <div>
+      <h1>Weekly Engagement Report</h1>
+      <p>Live customer engagement data from AEM Sites Optimizer tracking</p>
+    </div>
+    <div>
+      <!-- Weekly Engagement Block will load data from /data/customers.json -->
+      <div class="weekly-engagement" data-source="/data/customers.json">
+        <!-- Data loaded dynamically from customers.json -->
+      </div>
+    </div>
+    <div>
+      <h2>About This Data</h2>
+      <p>This dashboard displays real customer engagement data from the AEM Sites Optimizer Customer Experience tracking spreadsheet.</p>
+      <ul>
+        <li><strong>Data Source:</strong> SharePoint Excel file</li>
+        <li><strong>Total Customers:</strong> 598 records across 16 weeks</li>
+        <li><strong>Latest Week:</strong> January 23, 2026</li>
+        <li><strong>Auto-Updated:</strong> Run <code>python3 scripts/convert-customer-data.py</code> after Excel updates</li>
+      </ul>
+    </div>
+  </main>
+  <footer></footer>
+</body>
+</html>
