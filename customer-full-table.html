@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Customer Data - Full Table (All 28 Columns)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="description" content="Complete customer data table with all 28 columns from spreadsheet"/>
+  <meta name="week" content="2026-01-23"/>
+  <script src="/scripts/aem.js" type="module"></script>
+  <script src="/scripts/scripts.js" type="module"></script>
+  <link rel="stylesheet" href="/styles/styles.css"/>
+  <style>
+    /* Full-width table styling */
+    .full-table-container {
+      width: 100%;
+      max-height: calc(100vh - 180px); /* Nearly full screen height */
+      overflow: auto; /* Both horizontal and vertical scroll */
+      margin: 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
+    }
+    
+    .table-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 8px;
+    }
+    
+    .table-controls label {
+      font-weight: 600;
+      margin-right: 4px;
+      font-size: 14px;
+    }
+    
+    .table-controls input[type="text"] {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      width: 300px;
+    }
+    
+    .table-controls select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+    }
+    
+    .table-controls button {
+      padding: 8px 16px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .table-controls button:hover {
+      background: #5568d3;
+    }
+    
+    .table-controls button.export-btn {
+      background: #10b981;
+    }
+    
+    .table-controls button.export-btn:hover {
+      background: #059669;
+    }
+    
+    .results-count {
+      margin-left: auto;
+      font-weight: 600;
+      color: #666;
+    }
+    
+    .full-customer-table {
+      width: 100%;
+      min-width: 3500px; /* Wider for more visible columns */
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    
+    .full-customer-table th,
+    .full-customer-table td {
+      padding: 8px 14px;
+      border: 1px solid #e0e0e0;
+      text-align: left;
+      white-space: nowrap;
+      min-width: 100px;
+    }
+    
+    /* Key columns with specific widths */
+    .full-customer-table th:nth-child(2),
+    .full-customer-table td:nth-child(2) {
+      min-width: 220px; /* Company Name - wider */
+    }
+    
+    .full-customer-table th:nth-child(16),
+    .full-customer-table td:nth-child(16) {
+      min-width: 250px; /* Summary - extra wide */
+    }
+    
+    /* Sticky first two columns (# and Company Name) */
+    .full-customer-table th:nth-child(1),
+    .full-customer-table td:nth-child(1) {
+      position: sticky;
+      left: 0;
+      background: #f8f9fa;
+      z-index: 11;
+      border-right: 2px solid #ddd;
+    }
+    
+    .full-customer-table th:nth-child(2),
+    .full-customer-table td:nth-child(2) {
+      position: sticky;
+      left: 50px; /* Width of # column */
+      background: white;
+      z-index: 11;
+      border-right: 2px solid #ddd;
+      font-weight: 600;
+    }
+    
+    .full-customer-table th:nth-child(2) {
+      background: #f8f9fa;
+    }
+    
+    .full-customer-table tr:hover td:nth-child(1),
+    .full-customer-table tr:hover td:nth-child(2) {
+      background: #f0f7ff;
+    }
+    
+    .full-customer-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 2px -1px rgb(0 0 0 / 10%);
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .full-customer-table th:hover {
+      background: #e9ecef;
+    }
+    
+    .full-customer-table th.sortable::after {
+      content: ' ⇅';
+      opacity: 0.3;
+      font-size: 12px;
+    }
+    
+    .full-customer-table th.sort-asc::after {
+      content: ' ↑';
+      opacity: 1;
+      color: #667eea;
+    }
+    
+    .full-customer-table th.sort-desc::after {
+      content: ' ↓';
+      opacity: 1;
+      color: #667eea;
+    }
+    
+    .full-customer-table tr:hover {
+      background: #f0f7ff;
+    }
+    
+    .full-customer-table td.summary-cell {
+      max-width: 300px;
+      white-space: normal;
+      word-wrap: break-word;
+    }
+    
+    .full-customer-table .status-badge,
+    .full-customer-table .engagement-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    
+    .full-customer-table .status-badge.production { background: #dcfce7; color: #166534; }
+    .full-customer-table .status-badge.pre-production { background: #dbeafe; color: #1e40af; }
+    .full-customer-table .status-badge.planning { background: #f3e8ff; color: #6b21a8; }
+    
+    .full-customer-table .engagement-badge.active { background: #dcfce7; color: #166534; }
+    .full-customer-table .engagement-badge.at-risk { background: #fef3c7; color: #92400e; }
+    .full-customer-table .engagement-badge.critical { background: #fee2e2; color: #991b1b; }
+    
+    .full-customer-table .health-score {
+      font-weight: 600;
+    }
+    
+    .full-customer-table .health-score.healthy { color: #166534; }
+    .full-customer-table .health-score.warning { color: #92400e; }
+    .full-customer-table .health-score.critical { color: #991b1b; }
+    
+    .loading-message {
+      padding: 40px;
+      text-align: center;
+      color: #666;
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+    }
+    
+    main {
+      padding: 12px 12px 12px 12px; /* Equal padding on all sides */
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
+    
+    main > div:first-child {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 14px 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    
+    main > div:first-child h1 {
+      color: white;
+    }
+    
+    main > div:first-child p {
+      color: rgb(255 255 255 / 95%);
+    }
+  </style>
+</head>
+<body>
+  <header></header>
+  <main>
+    <div style="margin-bottom: 12px;">
+      <h1 style="margin-bottom: 8px;">Customer Data - Full Table View</h1>
+      <p style="margin: 0;"><strong>Week:</strong> January 23, 2026 | <strong>Total:</strong> 46 customers | <strong>Columns:</strong> 28 | <strong>💡 Scroll horizontally →</strong></p>
+    </div>
+    
+    <div>
+      <div id="full-table-loading" class="loading-message">
+        Loading customer data...
+      </div>
+      
+      <!-- Search and Filter Controls -->
+      <div class="table-controls" id="table-controls" style="display: none;">
+        <div>
+          <label for="search-input">🔍 Search:</label>
+          <input type="text" id="search-input" placeholder="Type to search all columns...">
+        </div>
+        <div>
+          <label for="status-filter">Status:</label>
+          <select id="status-filter">
+            <option value="">All</option>
+          </select>
+        </div>
+        <div>
+          <label for="engagement-filter">Engagement:</label>
+          <select id="engagement-filter">
+            <option value="">All</option>
+            <option value="Active">Active</option>
+            <option value="At Risk">At Risk</option>
+            <option value="Critical">Critical</option>
+          </select>
+        </div>
+        <button id="clear-filters">Clear All</button>
+        <button id="export-csv" class="export-btn">📥 Export to CSV</button>
+        <span class="results-count" id="results-count"></span>
+      </div>
+      
+      <div class="full-table-container" id="full-table-container" style="display: none;">
+        <table class="full-customer-table" id="full-customer-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Company Name</th>
+              <th>License Type</th>
+              <th>Industry</th>
+              <th>ESE Lead</th>
+              <th>Status</th>
+              <th>Delay Reason</th>
+              <th>Close Date</th>
+              <th>Onboard Date</th>
+              <th>Deployment Type</th>
+              <th>Headless</th>
+              <th>Engagement</th>
+              <th>Blockers</th>
+              <th>Feedback</th>
+              <th>Health Score</th>
+              <th>Summary of Engagement</th>
+              <th>MAU</th>
+              <th>TTIV</th>
+              <th>Oppty Realized</th>
+              <th>Preflight</th>
+              <th>Auto-Optimize Enabled</th>
+              <th>Auto-Optimize Button Pressed</th>
+              <th>Service Principle Deployed</th>
+              <th>Brand Profile</th>
+              <th>AEMY Deployed</th>
+              <th>Code Repo</th>
+              <th>Auth Implementation</th>
+              <th>Workflow Manager</th>
+              <th>Customer Self Serve</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <div style="margin-top: 24px;">
+      <details>
+        <summary style="cursor: pointer; font-weight: 600; font-size: 18px; margin-bottom: 12px;">📋 Column Descriptions (Click to expand)</summary>
+      <div style="margin-top: 12px;">
+      <h3 style="margin-top: 0;">All 28 Columns</h3>
+      <ul>
+        <li><strong>Company Name</strong> - Customer organization name</li>
+        <li><strong>License Type</strong> - Paid or Trial</li>
+        <li><strong>Industry</strong> - Business sector</li>
+        <li><strong>ESE Lead</strong> - Enterprise Solutions Engineer</li>
+        <li><strong>Status</strong> - Production, Pre-Production, Planning, etc.</li>
+        <li><strong>Delay Reason</strong> - Reason for any delays</li>
+        <li><strong>Close Date</strong> - Contract close date</li>
+        <li><strong>Onboard Date</strong> - Onboarding start date</li>
+        <li><strong>Deployment Type</strong> - OnPrem to CS, Cloud, etc.</li>
+        <li><strong>Headless</strong> - Headless implementation status</li>
+        <li><strong>Engagement</strong> - Active, At Risk, Critical</li>
+        <li><strong>Blockers</strong> - Current blocking issues</li>
+        <li><strong>Feedback</strong> - Customer feedback indicator</li>
+        <li><strong>Health Score</strong> - Calculated health metric (0-100)</li>
+        <li><strong>Summary of Engagement</strong> - Detailed engagement notes</li>
+        <li><strong>MAU</strong> - Monthly Active Users</li>
+        <li><strong>TTIV</strong> - Time to Initial Value</li>
+        <li><strong>Oppty Realized</strong> - Opportunity realization status</li>
+        <li><strong>Preflight</strong> - Preflight check status</li>
+        <li><strong>Auto-Optimize Enabled</strong> - Auto-optimization feature status</li>
+        <li><strong>Auto-Optimize Button Pressed</strong> - Customer activation of auto-optimize</li>
+        <li><strong>Service Principle Deployed</strong> - Service principle deployment status</li>
+        <li><strong>Brand Profile</strong> - Brand profile configuration</li>
+        <li><strong>AEMY Deployed</strong> - AEMY deployment status</li>
+        <li><strong>Code Repo</strong> - Git, GitLab, Bitbucket, etc.</li>
+        <li><strong>Auth Implementation</strong> - IMS, SAML, or Basic auth</li>
+        <li><strong>Workflow Manager</strong> - Jira, Asana, etc.</li>
+        <li><strong>Customer Self Serve</strong> - Self-service capability status</li>
+      </ul>
+      </div>
+      </details>
+    </div>
+  </main>
+  <footer></footer>
+  
+  <script type="module">
+    let allCustomers = [];
+    let filteredCustomers = [];
+    let currentSortColumn = null;
+    let currentSortDirection = 'asc';
+    
+    // Load and display customer data
+    async function loadFullTable() {
+      try {
+        const response = await fetch('/data/customers.json');
+        const data = await response.json();
+        
+        // Filter to current week
+        const currentWeek = '2026-01-23';
+        allCustomers = data.data.filter(c => c.week === currentWeek);
+        filteredCustomers = [...allCustomers];
+        
+        console.log(`Loaded ${allCustomers.length} customers for week ${currentWeek}`);
+        
+        // Populate status filter options
+        const statuses = [...new Set(allCustomers.map(c => c.status).filter(Boolean))];
+        const statusFilter = document.getElementById('status-filter');
+        statuses.forEach(status => {
+          const option = document.createElement('option');
+          option.value = status;
+          option.textContent = status;
+          statusFilter.appendChild(option);
+        });
+        
+        // Set up event listeners
+        document.getElementById('search-input').addEventListener('input', applyFilters);
+        document.getElementById('status-filter').addEventListener('change', applyFilters);
+        document.getElementById('engagement-filter').addEventListener('change', applyFilters);
+        document.getElementById('clear-filters').addEventListener('click', clearFilters);
+        document.getElementById('export-csv').addEventListener('click', exportToCSV);
+        
+        // Show controls and render table
+        document.getElementById('table-controls').style.display = 'flex';
+        renderTable(filteredCustomers);
+        
+        // Show table, hide loading
+        document.getElementById('full-table-loading').style.display = 'none';
+        document.getElementById('full-table-container').style.display = 'block';
+        
+      } catch (error) {
+        console.error('Error loading customer data:', error);
+        document.getElementById('full-table-loading').innerHTML = 
+          '<p style="color: red;">Error loading data. Check console for details.</p>';
+      }
+    }
+    
+    function applyFilters() {
+      const searchText = document.getElementById('search-input').value.toLowerCase();
+      const statusFilter = document.getElementById('status-filter').value;
+      const engagementFilter = document.getElementById('engagement-filter').value;
+      
+      filteredCustomers = allCustomers.filter(customer => {
+        // Search filter (across all fields)
+        const searchMatch = !searchText || Object.values(customer).some(value => 
+          String(value).toLowerCase().includes(searchText)
+        );
+        
+        // Status filter
+        const statusMatch = !statusFilter || customer.status === statusFilter;
+        
+        // Engagement filter
+        const engagementMatch = !engagementFilter || customer.engagement === engagementFilter;
+        
+        return searchMatch && statusMatch && engagementMatch;
+      });
+      
+      // Re-apply current sort
+      if (currentSortColumn !== null) {
+        sortTable(currentSortColumn, currentSortDirection, false);
+      }
+      
+      renderTable(filteredCustomers);
+    }
+    
+    function clearFilters() {
+      document.getElementById('search-input').value = '';
+      document.getElementById('status-filter').value = '';
+      document.getElementById('engagement-filter').value = '';
+      applyFilters();
+    }
+    
+    function exportToCSV() {
+      // Define column headers (all 28 columns)
+      const headers = [
+        'Company Name', 'License Type', 'Industry', 'ESE Lead', 'Status',
+        'Delay Reason', 'Close Date', 'Onboard Date', 'Deployment Type', 'Headless',
+        'Engagement', 'Blockers', 'Feedback', 'Health Score', 'Summary of Engagement',
+        'MAU', 'TTIV', 'Oppty Realized', 'Preflight', 'Auto-Optimize Enabled',
+        'Auto-Optimize Button Pressed', 'Service Principle Deployed', 'Brand Profile',
+        'AEMY Deployed', 'Code Repo', 'Auth Implementation', 'Workflow Manager',
+        'Customer Self Serve', 'Week'
+      ];
+      
+      // Map to data fields
+      const fields = [
+        'companyName', 'licenseType', 'industry', 'eseLead', 'status',
+        'delayReason', 'closeDate', 'onboardDate', 'deploymentType', 'headless',
+        'engagement', 'blockers', 'feedback', 'healthScore', 'summary',
+        'mau', 'ttiv', 'opptyRealized', 'preflight', 'autoOptimizeEnabled',
+        'autoOptimizeButtonPressed', 'servicePrincipleDeployed', 'brandProfile',
+        'aemyDeployed', 'codeRepo', 'authImplementation', 'workflowManager',
+        'customerSelfServe', 'week'
+      ];
+      
+      // Build CSV content
+      let csv = headers.join(',') + '\n';
+      
+      filteredCustomers.forEach(customer => {
+        const row = fields.map(field => {
+          let value = customer[field] || '';
+          // Escape quotes and wrap in quotes if contains comma or newline
+          value = String(value).replace(/"/g, '""');
+          if (value.includes(',') || value.includes('\n') || value.includes('"')) {
+            value = `"${value}"`;
+          }
+          return value;
+        });
+        csv += row.join(',') + '\n';
+      });
+      
+      // Create download
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      // Generate filename with date and count
+      const date = new Date().toISOString().split('T')[0];
+      const filename = `customer-data-${date}-${filteredCustomers.length}-records.csv`;
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log(`Exported ${filteredCustomers.length} customers to ${filename}`);
+    }
+    
+    function sortTable(columnIndex, direction = 'asc', toggle = true) {
+      if (toggle && currentSortColumn === columnIndex) {
+        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSortDirection = direction;
+      }
+      currentSortColumn = columnIndex;
+      
+      const columnMap = [
+        null, 'companyName', 'licenseType', 'industry', 'eseLead', 'status', 
+        'delayReason', 'closeDate', 'onboardDate', 'deploymentType', 'headless',
+        'engagement', 'blockers', 'feedback', 'healthScore', 'summary',
+        'mau', 'ttiv', 'opptyRealized', 'preflight', 'autoOptimizeEnabled',
+        'autoOptimizeButtonPressed', 'servicePrincipleDeployed', 'brandProfile',
+        'aemyDeployed', 'codeRepo', 'authImplementation', 'workflowManager', 'customerSelfServe'
+      ];
+      
+      const fieldName = columnMap[columnIndex];
+      if (!fieldName) return;
+      
+      filteredCustomers.sort((a, b) => {
+        let aVal = a[fieldName] || '';
+        let bVal = b[fieldName] || '';
+        
+        // Numeric sort for health score
+        if (fieldName === 'healthScore') {
+          aVal = Number(aVal) || 0;
+          bVal = Number(bVal) || 0;
+        }
+        
+        if (aVal < bVal) return currentSortDirection === 'asc' ? -1 : 1;
+        if (aVal > bVal) return currentSortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+      
+      renderTable(filteredCustomers);
+      updateSortIndicators(columnIndex);
+    }
+    
+    function updateSortIndicators(activeColumn) {
+      document.querySelectorAll('th').forEach((th, index) => {
+        th.classList.remove('sort-asc', 'sort-desc');
+        if (index === activeColumn) {
+          th.classList.add(currentSortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+        }
+      });
+    }
+    
+    function renderTable(customers) {
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = '';
+      
+      // Update results count
+      document.getElementById('results-count').textContent = 
+        `Showing ${customers.length} of ${allCustomers.length} customers`;
+      
+      customers.forEach((customer, index) => {
+          const row = document.createElement('tr');
+          
+          // Helper to get status badge class
+          const getStatusClass = (status) => {
+            const s = (status || '').toLowerCase();
+            if (s.includes('production')) return s.includes('pre') ? 'pre-production' : 'production';
+            if (s.includes('planning')) return 'planning';
+            return '';
+          };
+          
+          // Helper to get engagement badge class
+          const getEngagementClass = (engagement) => {
+            const e = (engagement || '').toLowerCase();
+            if (e.includes('active')) return 'active';
+            if (e.includes('risk')) return 'at-risk';
+            if (e.includes('critical')) return 'critical';
+            return '';
+          };
+          
+          // Helper to get health class
+          const getHealthClass = (score) => {
+            if (score >= 80) return 'healthy';
+            if (score >= 60) return 'warning';
+            return 'critical';
+          };
+          
+          row.innerHTML = `
+            <td>${index + 1}</td>
+            <td><strong>${customer.companyName || ''}</strong></td>
+            <td>${customer.licenseType || ''}</td>
+            <td>${customer.industry || ''}</td>
+            <td>${customer.eseLead || ''}</td>
+            <td><span class="status-badge ${getStatusClass(customer.status)}">${customer.status || ''}</span></td>
+            <td>${customer.delayReason || ''}</td>
+            <td>${customer.closeDate || ''}</td>
+            <td>${customer.onboardDate || ''}</td>
+            <td>${customer.deploymentType || ''}</td>
+            <td>${customer.headless || ''}</td>
+            <td><span class="engagement-badge ${getEngagementClass(customer.engagement)}">${customer.engagement || ''}</span></td>
+            <td>${customer.blockers || ''}</td>
+            <td>${customer.feedback || ''}</td>
+            <td><span class="health-score ${getHealthClass(customer.healthScore)}">${customer.healthScore || ''}</span></td>
+            <td class="summary-cell">${customer.summary || ''}</td>
+            <td>${customer.mau || ''}</td>
+            <td>${customer.ttiv || ''}</td>
+            <td>${customer.opptyRealized || ''}</td>
+            <td>${customer.preflight || ''}</td>
+            <td>${customer.autoOptimizeEnabled || ''}</td>
+            <td>${customer.autoOptimizeButtonPressed || ''}</td>
+            <td>${customer.servicePrincipleDeployed || ''}</td>
+            <td>${customer.brandProfile || ''}</td>
+            <td>${customer.aemyDeployed || ''}</td>
+            <td>${customer.codeRepo || ''}</td>
+            <td>${customer.authImplementation || ''}</td>
+            <td>${customer.workflowManager || ''}</td>
+            <td>${customer.customerSelfServe || ''}</td>
+          `;
+          
+          tbody.appendChild(row);
+        });
+      
+      // Add click handlers to sortable headers
+      document.querySelectorAll('th').forEach((th, index) => {
+        if (index > 0) { // Skip the # column
+          th.classList.add('sortable');
+          th.onclick = () => sortTable(index);
+        }
+      });
+    }
+    
+    // Load on page load
+    loadFullTable();
+  </script>
+</body>
+</html>

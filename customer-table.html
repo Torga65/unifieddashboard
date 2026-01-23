@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Customer Data Table</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="description" content="Complete table view of all customer engagement data"/>
+  <meta name="week" content="2026-01-23"/>
+  <script src="/scripts/aem.js" type="module"></script>
+  <script src="/scripts/scripts.js" type="module"></script>
+  <link rel="stylesheet" href="/styles/styles.css"/>
+</head>
+<body>
+  <header></header>
+  <main>
+    <div>
+      <h1>Customer Data Table</h1>
+      <p>Complete table view of all customer engagement data with columns matching the source spreadsheet.</p>
+    </div>
+    <div>
+      <!-- Weekly Engagement Block - Displays customer data in table format -->
+      <div class="weekly-engagement" data-source="/data/customers.json">
+        Loading customer data...
+      </div>
+    </div>
+    <div>
+      <h2>About This Table</h2>
+      <p>This table displays all customer data with interactive features including search, filtering, and sorting.</p>
+      
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Search</strong> - Type to search across all fields</li>
+        <li><strong>Filter by Status</strong> - Production, Pre-Production, Planning, etc.</li>
+        <li><strong>Filter by Engagement</strong> - Active, At Risk, Critical</li>
+        <li><strong>Filter by Health</strong> - Healthy, Needs Attention, Critical</li>
+        <li><strong>Sort</strong> - By name, health score, or engagement level</li>
+        <li><strong>Click Rows</strong> - Click any row to highlight</li>
+      </ul>
+      
+      <h3>Columns</h3>
+      <ul>
+        <li><strong>Company Name</strong> - Customer organization</li>
+        <li><strong>Status</strong> - Production stage</li>
+        <li><strong>Engagement</strong> - Engagement level</li>
+        <li><strong>Health Score</strong> - Numeric score with visual bar (0-100)</li>
+        <li><strong>Summary of Engagement</strong> - Detailed notes and activities</li>
+        <li><strong>Blockers</strong> - Current obstacles or issues</li>
+        <li><strong>Feedback</strong> - Customer sentiment</li>
+        <li><strong>Last Updated</strong> - Date of last update</li>
+      </ul>
+      
+      <h3>Responsive Design</h3>
+      <p><strong>Desktop:</strong> All columns visible</p>
+      <p><strong>Tablet:</strong> Most columns visible (Feedback and Last Updated hidden)</p>
+      <p><strong>Mobile:</strong> Essential columns only (Company Name, Status, Engagement, Health Score)</p>
+    </div>
+    <div>
+      <h2>Data Source</h2>
+      <p>This table loads data from <code>/data/customers.json</code>, which is converted from the SharePoint Excel file:</p>
+      <p><a href="https://adobe.sharepoint.com/sites/AEMSitesOptimizerTeam/Shared%20Documents/Unified%20Dashboard/clients/AEM_Sites_Optimizer-CustomerExperience.xlsx" target="_blank">AEM_Sites_Optimizer-CustomerExperience.xlsx</a></p>
+      
+      <p><strong>Current Data:</strong></p>
+      <ul>
+        <li>598 total customer records</li>
+        <li>16 weeks of historical data</li>
+        <li>46 customers in current week (January 23, 2026)</li>
+      </ul>
+    </div>
+  </main>
+  <footer></footer>
+</body>
+</html>
