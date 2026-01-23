@@ -1,0 +1,77 @@
+SharePoint Folder Structure
+===========================
+
+Create this structure in SharePoint:
+
+📁 Unified Dashboard/                  (Root - already exists)
+│
+├── 📄 index.docx                      (Home page)
+├── 📄 weekly-current.docx             (Current week report)
+├── 📄 all-customers.docx              (All customer dashboard)
+├── 📄 executive-summary.docx          (Executive overview)
+│
+├── 📁 weekly/                         (Weekly reports by date)
+│   ├── 📄 2026-01-23.docx
+│   ├── 📄 2026-01-15.docx
+│   └── 📄 2026-01-08.docx
+│
+└── 📁 clients/                        (Individual client profiles)
+    ├── 📄 template.docx
+    ├── 📄 acme-corp.docx
+    ├── 📄 bhg-financial.docx
+    └── 📄 breville.docx
+
+
+URL Mapping
+-----------
+
+SharePoint Document                    → Web URL
+---------------------------------------------
+index.docx                             → /
+weekly-current.docx                    → /weekly-current
+all-customers.docx                     → /all-customers
+executive-summary.docx                 → /executive-summary
+weekly/2026-01-23.docx                 → /weekly/2026-01-23
+clients/acme-corp.docx                 → /clients/acme-corp
+
+
+Minimum Required (Start Here)
+------------------------------
+
+✅ MUST CREATE:
+   - index.docx                        (Home page)
+   - weekly-current.docx               (Main report)
+
+⭐ RECOMMENDED:
+   - all-customers.docx                (Dashboard view)
+   - executive-summary.docx            (Executive overview)
+
+📁 OPTIONAL (Create as needed):
+   - weekly/ folder with date-specific reports
+   - clients/ folder with individual client pages
+
+
+Template Files Provided
+------------------------
+
+Use these markdown templates to create Word docs:
+
+📄 index.md                    → Create index.docx
+📄 weekly-current.md           → Create weekly-current.docx
+📄 all-customers.md            → Create all-customers.docx
+📄 executive-summary.md        → Create executive-summary.docx
+📄 weekly-template.md          → Create YYYY-MM-DD.docx files
+📄 client-template.md          → Create client-name.docx files
+
+
+Instructions
+------------
+
+1. Open SharePoint folder
+2. Create Word document
+3. Copy content from template .md file
+4. Format in Word (headings, tables, lists)
+5. Use AEM Sidekick to mark blocks
+6. Preview and publish
+
+See SETUP_GUIDE.md for detailed step-by-step instructions.
