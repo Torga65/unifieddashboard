@@ -485,14 +485,14 @@
   border-top: 2px solid #667eea;
   margin-top: 12px;
   border-radius: 8px;
-  animation: slideDown 0.3s ease-out;
+  animation: slide-down 0.3s ease-out;
 }
 
 .customer-card.expanded .ai-insights-section {
   display: block;
 }
 
-@keyframes slideDown {
+@keyframes slide-down {
   from {
     opacity: 0;
     transform: translateY(-10px);
