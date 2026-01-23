@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Customer Historical Analysis</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="description" content="Historical analysis of customer data across all 28 columns and 16 weeks"/>
+  <script src="/scripts/aem.js" type="module"></script>
+  <script src="/scripts/scripts.js" type="module"></script>
+  <link rel="stylesheet" href="/styles/styles.css"/>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+    }
+    
+    main {
+      padding: 12px;
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
+    
+    main > div:first-child {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 14px 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    
+    main > div:first-child h1 {
+      color: white;
+      margin: 0 0 8px 0;
+    }
+    
+    main > div:first-child p {
+      color: rgb(255 255 255 / 95%);
+      margin: 0;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 8px;
+    }
+    
+    .controls label {
+      font-weight: 600;
+      margin-right: 4px;
+      font-size: 14px;
+    }
+    
+    .controls select,
+    .controls input {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+    }
+    
+    .controls button {
+      padding: 8px 16px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .controls button:hover {
+      background: #5568d3;
+    }
+    
+    .customer-timeline {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .customer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #667eea;
+    }
+    
+    .customer-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #333;
+    }
+    
+    .week-count {
+      font-size: 14px;
+      color: #666;
+      background: #f0f7ff;
+      padding: 4px 12px;
+      border-radius: 4px;
+    }
+    
+    .timeline-container {
+      overflow-x: auto;
+      margin-bottom: 16px;
+    }
+    
+    .timeline-table {
+      width: 100%;
+      min-width: 2000px;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    
+    .timeline-table th,
+    .timeline-table td {
+      padding: 8px 12px;
+      border: 1px solid #e0e0e0;
+      text-align: left;
+      white-space: nowrap;
+    }
+    
+    .timeline-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    
+    .timeline-table td.week-col {
+      font-weight: 600;
+      background: #f0f7ff;
+    }
+    
+    .timeline-table td.changed {
+      background: #fef3c7;
+    }
+    
+    .timeline-table td.improved {
+      background: #dcfce7;
+    }
+    
+    .timeline-table td.declined {
+      background: #fee2e2;
+    }
+    
+    .trend-indicator {
+      display: inline-block;
+      margin-left: 4px;
+      font-weight: 700;
+    }
+    
+    .trend-up {
+      color: #166534;
+    }
+    
+    .trend-down {
+      color: #991b1b;
+    }
+    
+    .trend-stable {
+      color: #666;
+    }
+    
+    .insights-section {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 12px;
+    }
+    
+    .insights-section h4 {
+      margin: 0 0 8px 0;
+      color: #667eea;
+    }
+    
+    .insights-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .insights-list li {
+      padding: 4px 0;
+      font-size: 14px;
+    }
+    
+    .loading-message {
+      padding: 40px;
+      text-align: center;
+      color: #666;
+    }
+    
+    .summary-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .stat-card {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #667eea;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header></header>
+  <main>
+    <div>
+      <h1>Customer Historical Analysis</h1>
+      <p>Track customer changes across all 28 columns over 16 weeks</p>
+    </div>
+    
+    <div id="loading" class="loading-message">
+      Loading historical data...
+    </div>
+    
+    <!-- Summary Statistics -->
+    <div id="summary-stats" class="summary-stats" style="display: none;"></div>
+    
+    <!-- Controls -->
+    <div class="controls" id="controls" style="display: none;">
+      <div>
+        <label for="customer-select">Select Customer:</label>
+        <select id="customer-select">
+          <option value="">-- Choose a customer --</option>
+        </select>
+      </div>
+      <div>
+        <label for="metric-select">Focus Metric:</label>
+        <select id="metric-select">
+          <option value="all">All Columns</option>
+          <option value="engagement">Engagement Metrics</option>
+          <option value="implementation">Implementation Status</option>
+          <option value="business">Business Info</option>
+        </select>
+      </div>
+      <button id="show-all">Show All Customers</button>
+      <button id="export-history">📥 Export History</button>
+    </div>
+    
+    <!-- Timeline Display -->
+    <div id="timeline-display"></div>
+  </main>
+  <footer></footer>
+  
+  <script type="module">
+    let allData = [];
+    let weeks = [];
+    
+    async function loadHistoricalData() {
+      try {
+        const response = await fetch('/data/customers.json');
+        const data = await response.json();
+        allData = data.data;
+        
+        // Get all unique weeks, sorted
+        weeks = [...new Set(allData.map(c => c.week))].sort();
+        
+        console.log(`Loaded ${allData.length} records across ${weeks.length} weeks`);
+        
+        // Get unique customers
+        const customers = [...new Set(allData.map(c => c.companyName))].sort();
+        
+        // Populate customer dropdown
+        const select = document.getElementById('customer-select');
+        customers.forEach(name => {
+          const option = document.createElement('option');
+          option.value = name;
+          option.textContent = name;
+          select.appendChild(option);
+        });
+        
+        // Show summary stats
+        displaySummaryStats(customers.length, weeks);
+        
+        // Set up event listeners
+        document.getElementById('customer-select').addEventListener('change', (e) => {
+          if (e.target.value) {
+            displayCustomerTimeline(e.target.value);
+          }
+        });
+        
+        document.getElementById('show-all').addEventListener('click', showAllCustomers);
+        document.getElementById('export-history').addEventListener('click', exportHistory);
+        
+        // Show controls
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('summary-stats').style.display = 'grid';
+        document.getElementById('controls').style.display = 'flex';
+        
+        // Show first customer by default
+        if (customers.length > 0) {
+          select.value = customers[0];
+          displayCustomerTimeline(customers[0]);
+        }
+        
+      } catch (error) {
+        console.error('Error loading data:', error);
+        document.getElementById('loading').innerHTML = 
+          '<p style="color: red;">Error loading historical data. Check console.</p>';
+      }
+    }
+    
+    function displaySummaryStats(customerCount, weeksList) {
+      const container = document.getElementById('summary-stats');
+      
+      const stats = [
+        { label: 'Total Customers', value: customerCount },
+        { label: 'Weeks of Data', value: weeksList.length },
+        { label: 'Total Records', value: allData.length },
+        { label: 'Latest Week', value: formatWeek(weeksList[weeksList.length - 1]) }
+      ];
+      
+      container.innerHTML = stats.map(stat => `
+        <div class="stat-card">
+          <div class="stat-value">${stat.value}</div>
+          <div class="stat-label">${stat.label}</div>
+        </div>
+      `).join('');
+    }
+    
+    function formatWeek(weekStr) {
+      const date = new Date(weekStr);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    
+    function displayCustomerTimeline(customerName) {
+      const customerData = allData
+        .filter(c => c.companyName === customerName)
+        .sort((a, b) => a.week.localeCompare(b.week));
+      
+      if (customerData.length === 0) return;
+      
+      const container = document.getElementById('timeline-display');
+      
+      // Analyze changes and trends
+      const insights = analyzeCustomerHistory(customerData);
+      
+      container.innerHTML = `
+        <div class="customer-timeline">
+          <div class="customer-header">
+            <div class="customer-name">${customerName}</div>
+            <div class="week-count">${customerData.length} weeks of data</div>
+          </div>
+          
+          ${createTimelineTable(customerData)}
+          
+          <div class="insights-section">
+            <h4>📊 Historical Insights</h4>
+            <ul class="insights-list">
+              ${insights.map(insight => `<li>• ${insight}</li>`).join('')}
+            </ul>
+          </div>
+        </div>
+      `;
+    }
+    
+    function createTimelineTable(customerData) {
+      const metricSelect = document.getElementById('metric-select').value;
+      
+      // Define column groups
+      const allColumns = [
+        'week', 'status', 'engagement', 'healthScore', 'licenseType', 'industry',
+        'eseLead', 'delayReason', 'closeDate', 'onboardDate', 'deploymentType',
+        'headless', 'blockers', 'feedback', 'mau', 'ttiv', 'opptyRealized',
+        'preflight', 'autoOptimizeEnabled', 'autoOptimizeButtonPressed',
+        'servicePrincipleDeployed', 'brandProfile', 'aemyDeployed', 'codeRepo',
+        'authImplementation', 'workflowManager', 'customerSelfServe'
+      ];
+      
+      const engagementCols = [
+        'week', 'status', 'engagement', 'healthScore', 'blockers', 'feedback', 'mau', 'ttiv'
+      ];
+      
+      const implementationCols = [
+        'week', 'preflight', 'autoOptimizeEnabled', 'servicePrincipleDeployed',
+        'brandProfile', 'aemyDeployed', 'codeRepo', 'authImplementation'
+      ];
+      
+      const businessCols = [
+        'week', 'licenseType', 'industry', 'eseLead', 'status', 'closeDate',
+        'onboardDate', 'deploymentType'
+      ];
+      
+      let columns = allColumns;
+      if (metricSelect === 'engagement') columns = engagementCols;
+      if (metricSelect === 'implementation') columns = implementationCols;
+      if (metricSelect === 'business') columns = businessCols;
+      
+      const headers = columns.map(col => formatColumnName(col));
+      
+      let html = '<div class="timeline-container"><table class="timeline-table">';
+      html += '<thead><tr>';
+      html += headers.map(h => `<th>${h}</th>`).join('');
+      html += '</tr></thead><tbody>';
+      
+      customerData.forEach((record, idx) => {
+        const prevRecord = idx > 0 ? customerData[idx - 1] : null;
+        
+        html += '<tr>';
+        columns.forEach(col => {
+          let value = record[col] || '';
+          let cellClass = '';
+          let trendIndicator = '';
+          
+          if (col === 'week') {
+            cellClass = 'week-col';
+            value = formatWeek(value);
+          } else if (prevRecord) {
+            const prevValue = prevRecord[col] || '';
+            if (value !== prevValue) {
+              cellClass = 'changed';
+              
+              // Determine if change is improvement or decline
+              if (col === 'healthScore') {
+                const curr = Number(value) || 0;
+                const prev = Number(prevValue) || 0;
+                if (curr > prev) {
+                  cellClass = 'improved';
+                  trendIndicator = '<span class="trend-indicator trend-up">↑</span>';
+                } else if (curr < prev) {
+                  cellClass = 'declined';
+                  trendIndicator = '<span class="trend-indicator trend-down">↓</span>';
+                }
+              } else if (col === 'engagement') {
+                const levels = { 'Active': 3, 'At Risk': 2, 'Critical': 1 };
+                const curr = levels[value] || 0;
+                const prev = levels[prevValue] || 0;
+                if (curr > prev) {
+                  cellClass = 'improved';
+                  trendIndicator = '<span class="trend-indicator trend-up">↑</span>';
+                } else if (curr < prev) {
+                  cellClass = 'declined';
+                  trendIndicator = '<span class="trend-indicator trend-down">↓</span>';
+                }
+              }
+            }
+          }
+          
+          html += `<td class="${cellClass}">${value}${trendIndicator}</td>`;
+        });
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table></div>';
+      return html;
+    }
+    
+    function formatColumnName(col) {
+      return col
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, str => str.toUpperCase())
+        .trim();
+    }
+    
+    function analyzeCustomerHistory(customerData) {
+      const insights = [];
+      const first = customerData[0];
+      const last = customerData[customerData.length - 1];
+      
+      // Health score trend
+      const firstHealth = Number(first.healthScore) || 0;
+      const lastHealth = Number(last.healthScore) || 0;
+      const healthChange = lastHealth - firstHealth;
+      
+      if (healthChange > 10) {
+        insights.push(`Health score improved by ${healthChange} points (${firstHealth} → ${lastHealth})`);
+      } else if (healthChange < -10) {
+        insights.push(`Health score declined by ${Math.abs(healthChange)} points (${firstHealth} → ${lastHealth})`);
+      } else {
+        insights.push(`Health score stable around ${lastHealth}`);
+      }
+      
+      // Status progression
+      if (first.status !== last.status) {
+        insights.push(`Status changed from ${first.status} to ${last.status}`);
+      }
+      
+      // Engagement trend
+      const engagementLevels = customerData.map(d => d.engagement);
+      const activeCount = engagementLevels.filter(e => e === 'Active').length;
+      const atRiskCount = engagementLevels.filter(e => e === 'At Risk').length;
+      const criticalCount = engagementLevels.filter(e => e === 'Critical').length;
+      
+      insights.push(`Engagement history: ${activeCount} weeks Active, ${atRiskCount} weeks At Risk, ${criticalCount} weeks Critical`);
+      
+      // Implementation progress
+      const implementations = ['autoOptimizeEnabled', 'servicePrincipleDeployed', 'brandProfile', 'aemyDeployed'];
+      const firstCount = implementations.filter(impl => first[impl] && first[impl].toLowerCase() === 'yes').length;
+      const lastCount = implementations.filter(impl => last[impl] && last[impl].toLowerCase() === 'yes').length;
+      
+      if (lastCount > firstCount) {
+        insights.push(`Implementation progress: ${lastCount - firstCount} new features enabled`);
+      }
+      
+      // Weeks tracked
+      insights.push(`Tracked for ${customerData.length} weeks from ${formatWeek(first.week)} to ${formatWeek(last.week)}`);
+      
+      return insights;
+    }
+    
+    function showAllCustomers() {
+      const container = document.getElementById('timeline-display');
+      const customers = [...new Set(allData.map(c => c.companyName))].sort();
+      
+      let html = '';
+      customers.forEach(customerName => {
+        const customerData = allData
+          .filter(c => c.companyName === customerName)
+          .sort((a, b) => a.week.localeCompare(b.week));
+        
+        if (customerData.length === 0) return;
+        
+        const latest = customerData[customerData.length - 1];
+        const earliest = customerData[0];
+        const healthChange = (Number(latest.healthScore) || 0) - (Number(earliest.healthScore) || 0);
+        
+        html += `
+          <div class="customer-timeline">
+            <div class="customer-header">
+              <div>
+                <div class="customer-name">${customerName}</div>
+                <div style="font-size: 14px; color: #666; margin-top: 4px;">
+                  ${customerData.length} weeks | Health: ${earliest.healthScore} → ${latest.healthScore} 
+                  <span class="trend-indicator ${healthChange > 0 ? 'trend-up' : healthChange < 0 ? 'trend-down' : 'trend-stable'}">
+                    ${healthChange > 0 ? '↑' : healthChange < 0 ? '↓' : '→'} ${healthChange > 0 ? '+' : ''}${healthChange}
+                  </span>
+                </div>
+              </div>
+              <div class="week-count">${latest.status} | ${latest.engagement}</div>
+            </div>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+    }
+    
+    function exportHistory() {
+      const headers = [
+        'Week', 'Company Name', 'License Type', 'Industry', 'ESE Lead', 'Status',
+        'Delay Reason', 'Close Date', 'Onboard Date', 'Deployment Type', 'Headless',
+        'Engagement', 'Blockers', 'Feedback', 'Health Score', 'Summary',
+        'MAU', 'TTIV', 'Oppty Realized', 'Preflight', 'Auto-Optimize Enabled',
+        'Auto-Optimize Button Pressed', 'Service Principle Deployed', 'Brand Profile',
+        'AEMY Deployed', 'Code Repo', 'Auth Implementation', 'Workflow Manager',
+        'Customer Self Serve'
+      ];
+      
+      const fields = [
+        'week', 'companyName', 'licenseType', 'industry', 'eseLead', 'status',
+        'delayReason', 'closeDate', 'onboardDate', 'deploymentType', 'headless',
+        'engagement', 'blockers', 'feedback', 'healthScore', 'summary',
+        'mau', 'ttiv', 'opptyRealized', 'preflight', 'autoOptimizeEnabled',
+        'autoOptimizeButtonPressed', 'servicePrincipleDeployed', 'brandProfile',
+        'aemyDeployed', 'codeRepo', 'authImplementation', 'workflowManager',
+        'customerSelfServe'
+      ];
+      
+      let csv = headers.join(',') + '\n';
+      
+      // Sort by customer name then week
+      const sortedData = [...allData].sort((a, b) => {
+        const nameCompare = a.companyName.localeCompare(b.companyName);
+        return nameCompare !== 0 ? nameCompare : a.week.localeCompare(b.week);
+      });
+      
+      sortedData.forEach(record => {
+        const row = fields.map(field => {
+          let value = record[field] || '';
+          value = String(value).replace(/"/g, '""');
+          if (value.includes(',') || value.includes('\n') || value.includes('"')) {
+            value = `"${value}"`;
+          }
+          return value;
+        });
+        csv += row.join(',') + '\n';
+      });
+      
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      const date = new Date().toISOString().split('T')[0];
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `customer-history-${date}-${allData.length}-records.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log(`Exported ${allData.length} historical records`);
+    }
+    
+    // Load data on page load
+    loadHistoricalData();
+  </script>
+</body>
+</html>
