@@ -2,6 +2,14 @@
 """
 Convert Customer Experience Excel to JSON for EDS
 Processes all weekly sheets and creates a complete dataset
+
+Source Excel file in SharePoint:
+https://adobe.sharepoint.com/sites/AEMSitesOptimizerTeam/Shared%20Documents/Unified%20Dashboard/clients/AEM_Sites_Optimizer-CustomerExperience.xlsx
+
+Usage:
+1. Download Excel from SharePoint to /data/ folder
+2. Run: python3 scripts/convert-customer-data.py
+3. Output: data/customers.json and data/weeks.json
 """
 import json
 import sys
@@ -108,41 +116,51 @@ def convert_excel_to_json(excel_path, json_path):
                 feedback_ind = row_dict.get('Feedback', '')
                 health_ind = row_dict.get('Health Score', '')
                 
-                # Create standardized record
+                # Create standardized record with ALL 28 columns
                 customer_record = {
                     'week': week_date,
+                    
+                    # Core Information (Columns 1-10)
                     'companyName': row_dict.get('Company Name', ''),
                     'licenseType': row_dict.get('License Type', ''),
                     'industry': row_dict.get('Industry', ''),
                     'eseLead': row_dict.get('ESE Lead', ''),
                     'status': row_dict.get('Status', ''),
+                    'delayReason': row_dict.get('Delay Reason', ''),
                     'closeDate': row_dict.get('Close Date', ''),
                     'onboardDate': row_dict.get('Onboard Date', ''),
                     'deploymentType': row_dict.get('Deployment Type', ''),
+                    'headless': row_dict.get('Headless', ''),
                     
-                    # Engagement indicators
+                    # Engagement & Health (Columns 11-15)
                     'engagement': map_indicator_to_status(engagement),
                     'engagementRaw': engagement,
                     'blockersStatus': blockers_ind,
-                    'feedbackStatus': feedback_ind,
-                    'healthScoreRaw': health_ind,
-                    
-                    # Calculate numeric health score
-                    'healthScore': calculate_health_score(
-                        engagement, blockers_ind, feedback_ind, health_ind
-                    ),
-                    
-                    # Text fields
-                    'summary': row_dict.get('Summary of Engagement', ''),
                     'blockers': 'Issues present' if blockers_ind and str(blockers_ind).lower() in ['yellow', 'red'] else 'None',
+                    'feedbackStatus': feedback_ind,
                     'feedback': row_dict.get('Feedback', '') if isinstance(row_dict.get('Feedback', ''), str) and len(row_dict.get('Feedback', '')) > 10 else 'See engagement status',
+                    'healthScoreRaw': health_ind,
+                    'healthScore': calculate_health_score(engagement, blockers_ind, feedback_ind, health_ind),
+                    'summary': row_dict.get('Summary of Engagement', ''),
                     
-                    # Metrics
+                    # Metrics (Columns 16-18)
                     'mau': row_dict.get('MAU', ''),
                     'ttiv': row_dict.get('TTIV', ''),
                     'opptyRealized': row_dict.get('Oppty Realized', ''),
                     
-                    # Last updated
+                    # Implementation Status (Columns 19-28)
+                    'preflight': row_dict.get('Preflight', ''),
+                    'autoOptimizeEnabled': row_dict.get('Auto-Opimize Enabled?', ''),
+                    'autoOptimizeButtonPressed': row_dict.get('Auto-Optimize Button pressed by Customer?', ''),
+                    'servicePrincipleDeployed': row_dict.get('Service Principle Deployed', ''),
+                    'brandProfile': row_dict.get('Brand Profile', ''),
+                    'aemyDeployed': row_dict.get('AEMY Deployed', ''),
+                    'codeRepo': row_dict.get('Code Repo (git,gitlab,bitbucket,etc..)', ''),
+                    'authImplementation': row_dict.get('Auth Implementation (IMS/SAML/Basic)', ''),
+                    'workflowManager': row_dict.get('Workflow Manager (Jira/Asana)', ''),
+                    'customerSelfServe': row_dict.get('Customer Self Serve', ''),
+                    
+                    # Metadata
                     'lastUpdated': week_date,
                 }
                 

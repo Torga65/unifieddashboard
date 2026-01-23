@@ -2,6 +2,26 @@
 
 This folder contains templates for creating Word documents in SharePoint.
 
+---
+
+## 📊 Data Source
+
+**Source Excel File:**
+```
+/clients/AEM_Sites_Optimizer-CustomerExperience.xlsx
+```
+
+This Excel file contains 16 weeks of customer engagement data (598 records). It's converted to `/data/customers.json` for use by the dashboard blocks.
+
+**SharePoint URL:**
+```
+https://adobe.sharepoint.com/sites/AEMSitesOptimizerTeam/Shared%20Documents/Unified%20Dashboard/clients/AEM_Sites_Optimizer-CustomerExperience.xlsx
+```
+
+**To update data:** Download Excel from SharePoint, run `python3 scripts/convert-customer-data.py`
+
+---
+
 ## Quick Setup
 
 1. **Navigate to SharePoint:**
