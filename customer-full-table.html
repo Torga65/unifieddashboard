@@ -12,7 +12,7 @@
     /* Full-width table styling */
     .full-table-container {
       width: 100%;
-      max-height: calc(100vh - 180px); /* Nearly full screen height */
+      max-height: calc(75vh - 180px); /* Nearly full screen height */
       overflow: auto; /* Both horizontal and vertical scroll */
       margin: 0;
       border: 1px solid #ddd;
@@ -214,6 +214,343 @@
       color: #666;
     }
     
+    /* Advanced Filters Panel */
+    .advanced-filters-panel {
+      background: white;
+      border: 2px solid #667eea;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    
+    .advanced-filters-panel.show {
+      display: block;
+    }
+    
+    .advanced-filters-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    
+    .advanced-filters-header h3 {
+      margin: 0;
+      color: #667eea;
+    }
+    
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .filter-group {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 6px;
+    }
+    
+    .filter-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: #333;
+    }
+    
+    .filter-group select,
+    .filter-group input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      background: white;
+    }
+    
+    .filter-group select[multiple] {
+      height: 120px;
+    }
+    
+    .range-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    
+    .range-inputs input {
+      padding: 6px 8px;
+      font-size: 13px;
+    }
+    
+    .boolean-filters {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .boolean-filter {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      cursor: pointer;
+    }
+    
+    .boolean-filter input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+      cursor: pointer;
+    }
+    
+    .boolean-filter label {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    
+    .active-filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e0e0e0;
+    }
+    
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #667eea;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .filter-chip button {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      padding: 0;
+      margin: 0;
+      font-size: 16px;
+      line-height: 1;
+      opacity: 0.8;
+    }
+    
+    .filter-chip button:hover {
+      opacity: 1;
+    }
+    
+    .filter-presets {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e0e0e0;
+    }
+    
+    .filter-presets label {
+      font-weight: 600;
+      font-size: 13px;
+    }
+    
+    .filter-presets button {
+      padding: 6px 12px;
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    .filter-presets button:hover {
+      background: #e5e7eb;
+    }
+    
+    .filter-presets button.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+    
+    .table-controls button.advanced-btn {
+      background: #8b5cf6;
+    }
+    
+    .table-controls button.advanced-btn:hover {
+      background: #7c3aed;
+    }
+    
+    .table-controls button.advanced-btn.active {
+      background: #6d28d9;
+    }
+    
+    /* Edit Mode Styles */
+    .table-controls button.edit-mode-btn {
+      background: #f59e0b;
+    }
+    
+    .table-controls button.edit-mode-btn:hover {
+      background: #d97706;
+    }
+    
+    .table-controls button.edit-mode-btn.active {
+      background: #dc2626;
+    }
+    
+    .full-customer-table.edit-mode td[contenteditable="true"] {
+      background: #fef3c7;
+      border: 2px solid #f59e0b;
+      cursor: text;
+      position: relative;
+    }
+    
+    .full-customer-table.edit-mode td[contenteditable="true"]:focus {
+      background: #fef9c3;
+      outline: none;
+      border-color: #d97706;
+    }
+    
+    .full-customer-table.edit-mode td[contenteditable="false"] {
+      background: #f3f4f6;
+      cursor: not-allowed;
+    }
+    
+    .row-edited {
+      background: #dbeafe !important;
+      border-left: 4px solid #3b82f6 !important;
+    }
+    
+    .row-actions {
+      display: none;
+      gap: 4px;
+      padding: 4px;
+    }
+    
+    .edit-mode .row-actions {
+      display: flex;
+    }
+    
+    .row-actions button {
+      padding: 4px 8px;
+      font-size: 12px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    
+    .row-actions .save-btn {
+      background: #10b981;
+      color: white;
+    }
+    
+    .row-actions .save-btn:hover {
+      background: #059669;
+    }
+    
+    .row-actions .cancel-btn {
+      background: #ef4444;
+      color: white;
+    }
+    
+    .row-actions .cancel-btn:hover {
+      background: #dc2626;
+    }
+    
+    .row-actions .edit-btn {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .row-actions .edit-btn:hover {
+      background: #2563eb;
+    }
+    
+    .edit-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #3b82f6;
+      border-radius: 50%;
+      margin-left: 6px;
+      animation: pulse-blue 2s infinite;
+    }
+    
+    @keyframes pulse-blue {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .edit-mode-notice {
+      background: #fef3c7;
+      border: 2px solid #f59e0b;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .edit-mode-notice.show {
+      display: flex;
+    }
+    
+    .edit-mode-notice strong {
+      color: #92400e;
+    }
+    
+    .changes-summary {
+      background: #dbeafe;
+      border: 2px solid #3b82f6;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    
+    .changes-summary.show {
+      display: block;
+    }
+    
+    .changes-summary h4 {
+      margin: 0 0 8px 0;
+      color: #1e40af;
+    }
+    
+    .changes-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 13px;
+    }
+    
+    .changes-list li {
+      padding: 4px 0;
+      border-bottom: 1px solid #bfdbfe;
+    }
+    
+    .changes-list li:last-child {
+      border-bottom: none;
+    }
+    
     * {
       box-sizing: border-box;
     }
@@ -251,7 +588,7 @@
   <main>
     <div style="margin-bottom: 12px;">
       <h1 style="margin-bottom: 8px;">Customer Data - Full Table View</h1>
-      <p style="margin: 0;"><strong>Week:</strong> January 23, 2026 | <strong>Total:</strong> 46 customers | <strong>Columns:</strong> 28 | <strong>💡 Scroll horizontally →</strong></p>
+      <p style="margin: 0;" id="page-header-info"><strong>Week:</strong> Loading... | <strong>Total:</strong> Loading... | <strong>Columns:</strong> 28 | <strong>💡 Scroll horizontally →</strong></p>
     </div>
     
     <div>
@@ -262,33 +599,170 @@
       <!-- Search and Filter Controls -->
       <div class="table-controls" id="table-controls" style="display: none;">
         <div>
+          <label for="week-select">📅 Week:</label>
+          <select id="week-select">
+            <option value="">Loading weeks...</option>
+          </select>
+        </div>
+        <button id="goto-current-week" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">📍 Current Week</button>
+        <div>
           <label for="search-input">🔍 Search:</label>
           <input type="text" id="search-input" placeholder="Type to search all columns...">
         </div>
-        <div>
-          <label for="status-filter">Status:</label>
-          <select id="status-filter">
-            <option value="">All</option>
-          </select>
-        </div>
-        <div>
-          <label for="engagement-filter">Engagement:</label>
-          <select id="engagement-filter">
-            <option value="">All</option>
-            <option value="Active">Active</option>
-            <option value="At Risk">At Risk</option>
-            <option value="Critical">Critical</option>
-          </select>
-        </div>
+        <button id="toggle-advanced" class="advanced-btn">🔧 Advanced Filters</button>
+        <button id="toggle-edit-mode" class="edit-mode-btn">✏️ Edit Mode</button>
         <button id="clear-filters">Clear All</button>
         <button id="export-csv" class="export-btn">📥 Export to CSV</button>
         <span class="results-count" id="results-count"></span>
+      </div>
+      
+      <!-- Edit Mode Notice -->
+      <div class="edit-mode-notice" id="edit-mode-notice">
+        <span style="font-size: 20px;">✏️</span>
+        <div>
+          <strong>Edit Mode Active</strong> - Click any cell to edit. Click "💾 Save" on each row to save changes, or "❌" to cancel.
+          Changes are saved to your browser and will persist across page refreshes.
+        </div>
+        <button id="save-all-btn" style="margin-left: auto; padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">💾 Save All Changes</button>
+        <button id="reset-all-btn" style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">🔄 Reset All Data</button>
+      </div>
+      
+      <!-- Changes Summary -->
+      <div class="changes-summary" id="changes-summary">
+        <h4>📝 Unsaved Changes (<span id="changes-count">0</span>)</h4>
+        <ul class="changes-list" id="changes-list"></ul>
+      </div>
+      
+      <!-- Advanced Filters Panel -->
+      <div class="advanced-filters-panel" id="advanced-filters">
+        <div class="advanced-filters-header">
+          <h3>🔍 Advanced Filters</h3>
+          <button id="close-advanced" style="background: #ef4444; padding: 6px 12px; border: none; border-radius: 4px; color: white; cursor: pointer;">✕ Close</button>
+        </div>
+        
+        <div class="filter-grid">
+          <!-- Multi-select filters -->
+          <div class="filter-group">
+            <label for="industry-filter">Industry (multi-select)</label>
+            <select id="industry-filter" multiple>
+              <option value="">-- All --</option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label for="ese-filter">ESE Lead (multi-select)</label>
+            <select id="ese-filter" multiple>
+              <option value="">-- All --</option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label for="license-filter">License Type</label>
+            <select id="license-filter">
+              <option value="">All</option>
+              <option value="Paid">Paid</option>
+              <option value="Trial">Trial</option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label for="deployment-filter">Deployment Type</label>
+            <select id="deployment-filter">
+              <option value="">All</option>
+            </select>
+          </div>
+          
+          <!-- Range filters -->
+          <div class="filter-group">
+            <label for="health-range">Health Score Range</label>
+            <div class="range-inputs">
+              <input type="number" id="health-min" placeholder="Min" min="0" max="100">
+              <input type="number" id="health-max" placeholder="Max" min="0" max="100">
+            </div>
+          </div>
+          
+          <div class="filter-group">
+            <label for="mau-range">MAU Range</label>
+            <div class="range-inputs">
+              <input type="number" id="mau-min" placeholder="Min">
+              <input type="number" id="mau-max" placeholder="Max">
+            </div>
+          </div>
+          
+          <div class="filter-group">
+            <label for="ttiv-range">TTIV Range (days)</label>
+            <div class="range-inputs">
+              <input type="number" id="ttiv-min" placeholder="Min">
+              <input type="number" id="ttiv-max" placeholder="Max">
+            </div>
+          </div>
+          
+          <!-- Date filters -->
+          <div class="filter-group">
+            <label for="close-date-range">Close Date Range</label>
+            <div class="range-inputs">
+              <input type="date" id="close-date-start">
+              <input type="date" id="close-date-end">
+            </div>
+          </div>
+          
+          <div class="filter-group">
+            <label for="onboard-date-range">Onboard Date Range</label>
+            <div class="range-inputs">
+              <input type="date" id="onboard-date-start">
+              <input type="date" id="onboard-date-end">
+            </div>
+          </div>
+        </div>
+        
+        <!-- Boolean/Yes-No Filters -->
+        <div class="filter-group">
+          <label>Feature Status (check to filter for "Yes" only)</label>
+          <div class="boolean-filters">
+            <div class="boolean-filter">
+              <input type="checkbox" id="filter-preflight">
+              <label for="filter-preflight">Preflight</label>
+            </div>
+            <div class="boolean-filter">
+              <input type="checkbox" id="filter-auto-optimize">
+              <label for="filter-auto-optimize">Auto-Optimize Enabled</label>
+            </div>
+            <div class="boolean-filter">
+              <input type="checkbox" id="filter-service-principle">
+              <label for="filter-service-principle">Service Principle</label>
+            </div>
+            <div class="boolean-filter">
+              <input type="checkbox" id="filter-brand-profile">
+              <label for="filter-brand-profile">Brand Profile</label>
+            </div>
+            <div class="boolean-filter">
+              <input type="checkbox" id="filter-aemy">
+              <label for="filter-aemy">AEMY Deployed</label>
+            </div>
+            <div class="boolean-filter">
+              <input type="checkbox" id="filter-headless">
+              <label for="filter-headless">Headless</label>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Filter Presets -->
+        <div class="filter-presets">
+          <label>Quick Filters:</label>
+          <button id="preset-high-health">💪 High Health (80+)</button>
+          <button id="preset-paid">💰 Paid Licenses</button>
+          <button id="preset-fully-deployed">🎯 Fully Deployed</button>
+        </div>
+        
+        <!-- Active Filters Display -->
+        <div id="active-filters-display"></div>
       </div>
       
       <div class="full-table-container" id="full-table-container" style="display: none;">
         <table class="full-customer-table" id="full-customer-table">
           <thead>
             <tr>
+              <th>Actions</th>
               <th>#</th>
               <th>Company Name</th>
               <th>License Type</th>
@@ -368,43 +842,304 @@
   <footer></footer>
   
   <script type="module">
+    let allCustomersAllWeeks = [];
     let allCustomers = [];
     let filteredCustomers = [];
     let currentSortColumn = null;
     let currentSortDirection = 'asc';
+    let isEditMode = false;
+    let editedData = {};
+    let pendingChanges = {};
+    let availableWeeks = [];
+    let currentWeek = '2026-01-23';
     
     // Load and display customer data
+    // ===== LOCAL STORAGE FUNCTIONS =====
+    function loadEditedData() {
+      const stored = localStorage.getItem('customerDataEdits');
+      if (stored) {
+        try {
+          editedData = JSON.parse(stored);
+          console.log(`Loaded ${Object.keys(editedData).length} edited customer records from localStorage`);
+        } catch (e) {
+          console.error('Error parsing stored edits:', e);
+          editedData = {};
+        }
+      }
+    }
+    
+    function saveEditedData() {
+      localStorage.setItem('customerDataEdits', JSON.stringify(editedData));
+      console.log(`Saved ${Object.keys(editedData).length} edited records to localStorage`);
+    }
+    
+    function mergeEditedData(customers) {
+      return customers.map(customer => {
+        const edited = editedData[customer.companyName];
+        return edited ? { ...customer, ...edited, _edited: true } : customer;
+      });
+    }
+    
+    function resetAllData() {
+      if (confirm('Are you sure you want to reset ALL data? This will discard all changes and cannot be undone.')) {
+        localStorage.removeItem('customerDataEdits');
+        editedData = {};
+        pendingChanges = {};
+        location.reload();
+      }
+    }
+    
+    // ===== EDIT MODE FUNCTIONS =====
+    function toggleEditMode() {
+      isEditMode = !isEditMode;
+      const button = document.getElementById('toggle-edit-mode');
+      const table = document.getElementById('full-customer-table');
+      const notice = document.getElementById('edit-mode-notice');
+      
+      button.classList.toggle('active', isEditMode);
+      table.classList.toggle('edit-mode', isEditMode);
+      notice.classList.toggle('show', isEditMode);
+      
+      button.textContent = isEditMode ? '❌ Exit Edit Mode' : '✏️ Edit Mode';
+      
+      // Re-render table to show/hide action buttons
+      renderTable(filteredCustomers);
+    }
+    
+    function makeRowEditable(row, customer) {
+      const cells = row.querySelectorAll('td');
+      // Skip first cell (actions) and second cell (#), start from company name
+      for (let i = 2; i < cells.length; i++) {
+        const cell = cells[i];
+        // Don't make badges editable, extract text first
+        if (cell.querySelector('.status-badge, .engagement-badge, .health-score')) {
+          cell.textContent = cell.textContent.trim();
+        }
+        cell.contentEditable = 'true';
+        cell.dataset.originalValue = cell.textContent;
+      }
+      
+      // Update action buttons
+      const actionsCell = cells[0];
+      actionsCell.innerHTML = `
+        <div class="row-actions">
+          <button class="save-btn" onclick="saveRowChanges(this)">💾</button>
+          <button class="cancel-btn" onclick="cancelRowChanges(this)">❌</button>
+        </div>
+      `;
+      
+      row.dataset.customerName = customer.companyName;
+      row.classList.add('row-editing');
+    }
+    
+    window.saveRowChanges = function(button) {
+      const row = button.closest('tr');
+      const customerName = row.dataset.customerName;
+      const cells = row.querySelectorAll('td');
+      
+      // Collect changed values
+      const changes = {};
+      const fieldNames = [
+        'companyName', 'licenseType', 'industry', 'eseLead', 'status',
+        'delayReason', 'closeDate', 'onboardDate', 'deploymentType', 'headless',
+        'engagement', 'blockers', 'feedback', 'healthScore', 'summary',
+        'mau', 'ttiv', 'opptyRealized', 'preflight', 'autoOptimizeEnabled',
+        'autoOptimizeButtonPressed', 'servicePrincipleDeployed', 'brandProfile',
+        'aemyDeployed', 'codeRepo', 'authImplementation', 'workflowManager',
+        'customerSelfServe'
+      ];
+      
+      for (let i = 2; i < cells.length; i++) {
+        const cell = cells[i];
+        const fieldName = fieldNames[i - 2];
+        const newValue = cell.textContent.trim();
+        const originalValue = cell.dataset.originalValue;
+        
+        if (newValue !== originalValue) {
+          changes[fieldName] = newValue;
+        }
+      }
+      
+      if (Object.keys(changes).length > 0) {
+        // Store edits
+        if (!editedData[customerName]) {
+          editedData[customerName] = {};
+        }
+        Object.assign(editedData[customerName], changes);
+        saveEditedData();
+        
+        // Update the customer in allCustomers
+        const customerIndex = allCustomers.findIndex(c => c.companyName === customerName);
+        if (customerIndex !== -1) {
+          Object.assign(allCustomers[customerIndex], changes);
+          allCustomers[customerIndex]._edited = true;
+        }
+        
+        // Clear pending changes for this row
+        delete pendingChanges[customerName];
+        
+        alert(`✅ Changes saved for ${customerName}!\n\nUpdated fields: ${Object.keys(changes).join(', ')}`);
+      }
+      
+      // Make row non-editable and mark as edited
+      const cellsList = row.querySelectorAll('td');
+      for (let i = 2; i < cellsList.length; i++) {
+        cellsList[i].contentEditable = 'false';
+      }
+      row.classList.remove('row-editing');
+      row.classList.add('row-edited');
+      
+      // Re-render to show updated data
+      applyFilters();
+    };
+    
+    window.cancelRowChanges = function(button) {
+      const row = button.closest('tr');
+      const customerName = row.dataset.customerName;
+      const cells = row.querySelectorAll('td');
+      
+      // Restore original values
+      for (let i = 2; i < cells.length; i++) {
+        const cell = cells[i];
+        cell.textContent = cell.dataset.originalValue;
+        cell.contentEditable = 'false';
+      }
+      
+      row.classList.remove('row-editing');
+      delete pendingChanges[customerName];
+      
+      // Re-render to restore proper formatting
+      applyFilters();
+    };
+    
+    window.editRow = function(button) {
+      const row = button.closest('tr');
+      const customerName = row.dataset.customerName;
+      const customer = allCustomers.find(c => c.companyName === customerName);
+      if (customer) {
+        makeRowEditable(row, customer);
+      }
+    };
+    
+    function saveAllChanges() {
+      const editingRows = document.querySelectorAll('tr.row-editing');
+      if (editingRows.length === 0) {
+        alert('No unsaved changes to save.');
+        return;
+      }
+      
+      editingRows.forEach(row => {
+        const saveBtn = row.querySelector('.save-btn');
+        if (saveBtn) {
+          saveRowChanges(saveBtn);
+        }
+      });
+    }
+    
+    function updateChangesSummary() {
+      const changesCount = Object.keys(pendingChanges).length;
+      document.getElementById('changes-count').textContent = changesCount;
+      
+      const summaryDiv = document.getElementById('changes-summary');
+      const changesList = document.getElementById('changes-list');
+      
+      if (changesCount > 0) {
+        summaryDiv.classList.add('show');
+        changesList.innerHTML = Object.entries(pendingChanges).map(([customer, fields]) => 
+          `<li><strong>${customer}:</strong> ${Object.keys(fields).join(', ')}</li>`
+        ).join('');
+      } else {
+        summaryDiv.classList.remove('show');
+      }
+    }
+    
     async function loadFullTable() {
       try {
+        // Load any existing edits from localStorage
+        loadEditedData();
+        
         const response = await fetch('/data/customers.json');
         const data = await response.json();
         
+        // Store all data
+        allCustomersAllWeeks = data.data || data;
+        
+        // Get all unique weeks, sorted (newest first)
+        availableWeeks = [...new Set(allCustomersAllWeeks.map((c) => c.week))].sort().reverse();
+        
+        // Set current week to latest
+        currentWeek = availableWeeks[0] || '2026-01-23';
+        
+        // Populate week dropdown
+        const weekSelect = document.getElementById('week-select');
+        weekSelect.innerHTML = availableWeeks.map((week) => {
+          const date = new Date(week);
+          const formatted = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          return `<option value="${week}">${formatted} (${week})</option>`;
+        }).join('');
+        weekSelect.value = currentWeek;
+        
         // Filter to current week
-        const currentWeek = '2026-01-23';
-        allCustomers = data.data.filter(c => c.week === currentWeek);
+        allCustomers = allCustomersAllWeeks.filter((c) => c.week === currentWeek);
+        
+        // Merge with edited data
+        allCustomers = mergeEditedData(allCustomers);
+        
         filteredCustomers = [...allCustomers];
         
         console.log(`Loaded ${allCustomers.length} customers for week ${currentWeek}`);
         
-        // Populate status filter options
-        const statuses = [...new Set(allCustomers.map(c => c.status).filter(Boolean))];
-        const statusFilter = document.getElementById('status-filter');
-        statuses.forEach(status => {
-          const option = document.createElement('option');
-          option.value = status;
-          option.textContent = status;
-          statusFilter.appendChild(option);
-        });
+        // Populate filter dropdowns
+        populateFilterOptions();
         
-        // Set up event listeners
+        // Set up basic event listeners
+        document.getElementById('week-select').addEventListener('change', (e) => changeWeek(e.target.value));
+        document.getElementById('goto-current-week').addEventListener('click', goToCurrentWeek);
         document.getElementById('search-input').addEventListener('input', applyFilters);
-        document.getElementById('status-filter').addEventListener('change', applyFilters);
-        document.getElementById('engagement-filter').addEventListener('change', applyFilters);
         document.getElementById('clear-filters').addEventListener('click', clearFilters);
         document.getElementById('export-csv').addEventListener('click', exportToCSV);
         
+        // Advanced filters toggle
+        document.getElementById('toggle-advanced').addEventListener('click', toggleAdvancedFilters);
+        document.getElementById('close-advanced').addEventListener('click', toggleAdvancedFilters);
+        
+        // Advanced filter event listeners
+        document.getElementById('industry-filter').addEventListener('change', applyFilters);
+        document.getElementById('ese-filter').addEventListener('change', applyFilters);
+        document.getElementById('license-filter').addEventListener('change', applyFilters);
+        document.getElementById('deployment-filter').addEventListener('change', applyFilters);
+        document.getElementById('health-min').addEventListener('input', applyFilters);
+        document.getElementById('health-max').addEventListener('input', applyFilters);
+        document.getElementById('mau-min').addEventListener('input', applyFilters);
+        document.getElementById('mau-max').addEventListener('input', applyFilters);
+        document.getElementById('ttiv-min').addEventListener('input', applyFilters);
+        document.getElementById('ttiv-max').addEventListener('input', applyFilters);
+        document.getElementById('close-date-start').addEventListener('change', applyFilters);
+        document.getElementById('close-date-end').addEventListener('change', applyFilters);
+        document.getElementById('onboard-date-start').addEventListener('change', applyFilters);
+        document.getElementById('onboard-date-end').addEventListener('change', applyFilters);
+        
+        // Boolean filters
+        document.getElementById('filter-preflight').addEventListener('change', applyFilters);
+        document.getElementById('filter-auto-optimize').addEventListener('change', applyFilters);
+        document.getElementById('filter-service-principle').addEventListener('change', applyFilters);
+        document.getElementById('filter-brand-profile').addEventListener('change', applyFilters);
+        document.getElementById('filter-aemy').addEventListener('change', applyFilters);
+        document.getElementById('filter-headless').addEventListener('change', applyFilters);
+        
+        // Filter presets
+        document.getElementById('preset-high-health').addEventListener('click', () => applyPreset('high-health'));
+        document.getElementById('preset-paid').addEventListener('click', () => applyPreset('paid'));
+        document.getElementById('preset-fully-deployed').addEventListener('click', () => applyPreset('fully-deployed'));
+        
+        // Edit mode handlers
+        document.getElementById('toggle-edit-mode').addEventListener('click', toggleEditMode);
+        document.getElementById('save-all-btn').addEventListener('click', saveAllChanges);
+        document.getElementById('reset-all-btn').addEventListener('click', resetAllData);
+        
         // Show controls and render table
         document.getElementById('table-controls').style.display = 'flex';
+        updatePageHeader();
         renderTable(filteredCustomers);
         
         // Show table, hide loading
@@ -418,10 +1153,119 @@
       }
     }
     
+    function populateFilterOptions() {
+      // Industry filter
+      const industries = [...new Set(allCustomers.map(c => c.industry).filter(Boolean))].sort();
+      const industryFilter = document.getElementById('industry-filter');
+      industryFilter.innerHTML = '<option value="">-- All --</option>';
+      industries.forEach(industry => {
+        const option = document.createElement('option');
+        option.value = industry;
+        option.textContent = industry;
+        industryFilter.appendChild(option);
+      });
+      
+      // ESE Lead filter
+      const eseLeads = [...new Set(allCustomers.map(c => c.eseLead).filter(Boolean))].sort();
+      const eseFilter = document.getElementById('ese-filter');
+      eseFilter.innerHTML = '<option value="">-- All --</option>';
+      eseLeads.forEach(lead => {
+        const option = document.createElement('option');
+        option.value = lead;
+        option.textContent = lead;
+        eseFilter.appendChild(option);
+      });
+      
+      // Deployment Type filter
+      const deployments = [...new Set(allCustomers.map(c => c.deploymentType).filter(Boolean))].sort();
+      const deploymentFilter = document.getElementById('deployment-filter');
+      deploymentFilter.innerHTML = '<option value="">All</option>';
+      deployments.forEach(type => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.textContent = type;
+        deploymentFilter.appendChild(option);
+      });
+    }
+    
+    function changeWeek(week) {
+      currentWeek = week;
+      
+      // Filter data to selected week
+      allCustomers = allCustomersAllWeeks.filter(c => c.week === currentWeek);
+      
+      // Merge with edited data
+      allCustomers = mergeEditedData(allCustomers);
+      
+      filteredCustomers = [...allCustomers];
+      
+      // Repopulate filter options for new week
+      populateFilterOptions();
+      
+      // Update page header with new week
+      updatePageHeader();
+      
+      // Clear and reapply filters
+      clearFilters();
+      applyFilters();
+      
+      console.log(`Loaded ${allCustomers.length} customers for week ${currentWeek}`);
+    }
+    
+    function goToCurrentWeek() {
+      if (availableWeeks.length > 0) {
+        const latestWeek = availableWeeks[0];
+        document.getElementById('week-select').value = latestWeek;
+        changeWeek(latestWeek);
+      }
+    }
+    
+    function toggleAdvancedFilters() {
+      const panel = document.getElementById('advanced-filters');
+      const button = document.getElementById('toggle-advanced');
+      panel.classList.toggle('show');
+      button.classList.toggle('active');
+    }
+    
+    function updatePageHeader() {
+      const date = new Date(currentWeek);
+      const formatted = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      const headerInfo = document.getElementById('page-header-info');
+      if (headerInfo) {
+        headerInfo.innerHTML = `<strong>Week:</strong> ${formatted} (${currentWeek}) | <strong>Total:</strong> ${allCustomers.length} customers | <strong>Columns:</strong> 28 | <strong>💡 Scroll horizontally →</strong>`;
+      }
+    }
+    
     function applyFilters() {
       const searchText = document.getElementById('search-input').value.toLowerCase();
-      const statusFilter = document.getElementById('status-filter').value;
-      const engagementFilter = document.getElementById('engagement-filter').value;
+      
+      // Advanced filters
+      const industryFilter = Array.from(document.getElementById('industry-filter').selectedOptions).map(o => o.value).filter(v => v);
+      const eseFilter = Array.from(document.getElementById('ese-filter').selectedOptions).map(o => o.value).filter(v => v);
+      const licenseFilter = document.getElementById('license-filter').value;
+      const deploymentFilter = document.getElementById('deployment-filter').value;
+      
+      // Range filters
+      const healthMin = document.getElementById('health-min').value;
+      const healthMax = document.getElementById('health-max').value;
+      const mauMin = document.getElementById('mau-min').value;
+      const mauMax = document.getElementById('mau-max').value;
+      const ttivMin = document.getElementById('ttiv-min').value;
+      const ttivMax = document.getElementById('ttiv-max').value;
+      
+      // Date filters
+      const closeDateStart = document.getElementById('close-date-start').value;
+      const closeDateEnd = document.getElementById('close-date-end').value;
+      const onboardDateStart = document.getElementById('onboard-date-start').value;
+      const onboardDateEnd = document.getElementById('onboard-date-end').value;
+      
+      // Boolean filters
+      const filterPreflight = document.getElementById('filter-preflight').checked;
+      const filterAutoOptimize = document.getElementById('filter-auto-optimize').checked;
+      const filterServicePrinciple = document.getElementById('filter-service-principle').checked;
+      const filterBrandProfile = document.getElementById('filter-brand-profile').checked;
+      const filterAemy = document.getElementById('filter-aemy').checked;
+      const filterHeadless = document.getElementById('filter-headless').checked;
       
       filteredCustomers = allCustomers.filter(customer => {
         // Search filter (across all fields)
@@ -429,13 +1273,45 @@
           String(value).toLowerCase().includes(searchText)
         );
         
-        // Status filter
-        const statusMatch = !statusFilter || customer.status === statusFilter;
+        // Advanced categorical filters
+        const industryMatch = industryFilter.length === 0 || industryFilter.includes(customer.industry);
+        const eseMatch = eseFilter.length === 0 || eseFilter.includes(customer.eseLead);
+        const licenseMatch = !licenseFilter || customer.licenseType === licenseFilter;
+        const deploymentMatch = !deploymentFilter || customer.deploymentType === deploymentFilter;
         
-        // Engagement filter
-        const engagementMatch = !engagementFilter || customer.engagement === engagementFilter;
+        // Range filters
+        const healthScore = Number(customer.healthScore) || 0;
+        const healthMinMatch = !healthMin || healthScore >= Number(healthMin);
+        const healthMaxMatch = !healthMax || healthScore <= Number(healthMax);
         
-        return searchMatch && statusMatch && engagementMatch;
+        const mau = Number(customer.mau) || 0;
+        const mauMinMatch = !mauMin || mau >= Number(mauMin);
+        const mauMaxMatch = !mauMax || mau <= Number(mauMax);
+        
+        const ttiv = Number(customer.ttiv) || 0;
+        const ttivMinMatch = !ttivMin || ttiv >= Number(ttivMin);
+        const ttivMaxMatch = !ttivMax || ttiv <= Number(ttivMax);
+        
+        // Date filters
+        const closeDateMatch = (!closeDateStart || customer.closeDate >= closeDateStart) &&
+                               (!closeDateEnd || customer.closeDate <= closeDateEnd);
+        const onboardDateMatch = (!onboardDateStart || customer.onboardDate >= onboardDateStart) &&
+                                 (!onboardDateEnd || customer.onboardDate <= onboardDateEnd);
+        
+        // Boolean filters (only filter if checked)
+        const preflightMatch = !filterPreflight || (customer.preflight && customer.preflight.toLowerCase() === 'yes');
+        const autoOptimizeMatch = !filterAutoOptimize || (customer.autoOptimizeEnabled && customer.autoOptimizeEnabled.toLowerCase() === 'yes');
+        const servicePrincipleMatch = !filterServicePrinciple || (customer.servicePrincipleDeployed && customer.servicePrincipleDeployed.toLowerCase() === 'yes');
+        const brandProfileMatch = !filterBrandProfile || (customer.brandProfile && customer.brandProfile.toLowerCase() === 'yes');
+        const aemyMatch = !filterAemy || (customer.aemyDeployed && customer.aemyDeployed.toLowerCase() === 'yes');
+        const headlessMatch = !filterHeadless || (customer.headless && customer.headless.toLowerCase() === 'yes');
+        
+        return searchMatch &&
+               industryMatch && eseMatch && licenseMatch && deploymentMatch &&
+               healthMinMatch && healthMaxMatch && mauMinMatch && mauMaxMatch &&
+               ttivMinMatch && ttivMaxMatch && closeDateMatch && onboardDateMatch &&
+               preflightMatch && autoOptimizeMatch && servicePrincipleMatch &&
+               brandProfileMatch && aemyMatch && headlessMatch;
       });
       
       // Re-apply current sort
@@ -443,14 +1319,210 @@
         sortTable(currentSortColumn, currentSortDirection, false);
       }
       
+      // Update active filters display
+      updateActiveFiltersDisplay();
+      
       renderTable(filteredCustomers);
     }
     
+    function updateActiveFiltersDisplay() {
+      const activeFilters = [];
+      
+      // Collect all active filters
+      const searchText = document.getElementById('search-input').value;
+      if (searchText) activeFilters.push({ label: `Search: "${searchText}"`, type: 'search' });
+      
+      const industries = Array.from(document.getElementById('industry-filter').selectedOptions).map(o => o.value).filter(v => v);
+      if (industries.length) activeFilters.push({ label: `Industry: ${industries.join(', ')}`, type: 'industry' });
+      
+      const eses = Array.from(document.getElementById('ese-filter').selectedOptions).map(o => o.value).filter(v => v);
+      if (eses.length) activeFilters.push({ label: `ESE: ${eses.join(', ')}`, type: 'ese' });
+      
+      const license = document.getElementById('license-filter').value;
+      if (license) activeFilters.push({ label: `License: ${license}`, type: 'license' });
+      
+      const deployment = document.getElementById('deployment-filter').value;
+      if (deployment) activeFilters.push({ label: `Deployment: ${deployment}`, type: 'deployment' });
+      
+      const healthMin = document.getElementById('health-min').value;
+      const healthMax = document.getElementById('health-max').value;
+      if (healthMin || healthMax) {
+        const label = `Health: ${healthMin || '0'}-${healthMax || '100'}`;
+        activeFilters.push({ label, type: 'health' });
+      }
+      
+      const mauMin = document.getElementById('mau-min').value;
+      const mauMax = document.getElementById('mau-max').value;
+      if (mauMin || mauMax) {
+        const label = `MAU: ${mauMin || '0'}-${mauMax || '∞'}`;
+        activeFilters.push({ label, type: 'mau' });
+      }
+      
+      const ttivMin = document.getElementById('ttiv-min').value;
+      const ttivMax = document.getElementById('ttiv-max').value;
+      if (ttivMin || ttivMax) {
+        const label = `TTIV: ${ttivMin || '0'}-${ttivMax || '∞'}`;
+        activeFilters.push({ label, type: 'ttiv' });
+      }
+      
+      if (document.getElementById('filter-preflight').checked) activeFilters.push({ label: 'Preflight: Yes', type: 'preflight' });
+      if (document.getElementById('filter-auto-optimize').checked) activeFilters.push({ label: 'Auto-Optimize: Yes', type: 'auto-optimize' });
+      if (document.getElementById('filter-service-principle').checked) activeFilters.push({ label: 'Service Principle: Yes', type: 'service-principle' });
+      if (document.getElementById('filter-brand-profile').checked) activeFilters.push({ label: 'Brand Profile: Yes', type: 'brand-profile' });
+      if (document.getElementById('filter-aemy').checked) activeFilters.push({ label: 'AEMY: Yes', type: 'aemy' });
+      if (document.getElementById('filter-headless').checked) activeFilters.push({ label: 'Headless: Yes', type: 'headless' });
+      
+      // Render chips
+      const container = document.getElementById('active-filters-display');
+      if (activeFilters.length > 0) {
+        container.innerHTML = `
+          <div class="active-filters">
+            ${activeFilters.map((filter, index) => `
+              <div class="filter-chip">
+                ${filter.label}
+                <button class="filter-chip-remove" data-filter-type="${filter.type}" data-filter-index="${index}">×</button>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        
+        // Add event listeners to remove buttons
+        container.querySelectorAll('.filter-chip-remove').forEach(button => {
+          button.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const filterType = button.dataset.filterType;
+            clearSingleFilter(filterType);
+            applyFilters();
+          });
+        });
+      } else {
+        container.innerHTML = '';
+      }
+    }
+    
+    function clearSingleFilter(type) {
+      switch(type) {
+        case 'search':
+          document.getElementById('search-input').value = '';
+          break;
+        case 'industry':
+          document.getElementById('industry-filter').selectedIndex = -1;
+          break;
+        case 'ese':
+          document.getElementById('ese-filter').selectedIndex = -1;
+          break;
+        case 'license':
+          document.getElementById('license-filter').value = '';
+          break;
+        case 'deployment':
+          document.getElementById('deployment-filter').value = '';
+          break;
+        case 'health':
+          document.getElementById('health-min').value = '';
+          document.getElementById('health-max').value = '';
+          break;
+        case 'mau':
+          document.getElementById('mau-min').value = '';
+          document.getElementById('mau-max').value = '';
+          break;
+        case 'ttiv':
+          document.getElementById('ttiv-min').value = '';
+          document.getElementById('ttiv-max').value = '';
+          break;
+        case 'preflight':
+          document.getElementById('filter-preflight').checked = false;
+          break;
+        case 'auto-optimize':
+          document.getElementById('filter-auto-optimize').checked = false;
+          break;
+        case 'service-principle':
+          document.getElementById('filter-service-principle').checked = false;
+          break;
+        case 'brand-profile':
+          document.getElementById('filter-brand-profile').checked = false;
+          break;
+        case 'aemy':
+          document.getElementById('filter-aemy').checked = false;
+          break;
+        case 'headless':
+          document.getElementById('filter-headless').checked = false;
+          break;
+      }
+    }
+    
     function clearFilters() {
+      // Basic filters
       document.getElementById('search-input').value = '';
-      document.getElementById('status-filter').value = '';
-      document.getElementById('engagement-filter').value = '';
+      
+      // Advanced categorical filters
+      document.getElementById('industry-filter').selectedIndex = -1;
+      document.getElementById('ese-filter').selectedIndex = -1;
+      document.getElementById('license-filter').value = '';
+      document.getElementById('deployment-filter').value = '';
+      
+      // Range filters
+      document.getElementById('health-min').value = '';
+      document.getElementById('health-max').value = '';
+      document.getElementById('mau-min').value = '';
+      document.getElementById('mau-max').value = '';
+      document.getElementById('ttiv-min').value = '';
+      document.getElementById('ttiv-max').value = '';
+      
+      // Date filters
+      document.getElementById('close-date-start').value = '';
+      document.getElementById('close-date-end').value = '';
+      document.getElementById('onboard-date-start').value = '';
+      document.getElementById('onboard-date-end').value = '';
+      
+      // Boolean filters
+      document.getElementById('filter-preflight').checked = false;
+      document.getElementById('filter-auto-optimize').checked = false;
+      document.getElementById('filter-service-principle').checked = false;
+      document.getElementById('filter-brand-profile').checked = false;
+      document.getElementById('filter-aemy').checked = false;
+      document.getElementById('filter-headless').checked = false;
+      
+      // Remove active class from preset buttons
+      document.querySelectorAll('.filter-presets button').forEach(btn => btn.classList.remove('active'));
+      
       applyFilters();
+    }
+    
+    function applyPreset(presetName) {
+      // Clear all filters first
+      clearFilters();
+      
+      // Remove active class from all preset buttons
+      document.querySelectorAll('.filter-presets button').forEach(btn => btn.classList.remove('active'));
+      
+      // Apply preset and set active button
+      switch(presetName) {
+        case 'high-health':
+          document.getElementById('health-min').value = '80';
+          document.getElementById('preset-high-health').classList.add('active');
+          break;
+        case 'paid':
+          document.getElementById('license-filter').value = 'Paid';
+          document.getElementById('preset-paid').classList.add('active');
+          break;
+        case 'fully-deployed':
+          document.getElementById('filter-preflight').checked = true;
+          document.getElementById('filter-auto-optimize').checked = true;
+          document.getElementById('filter-service-principle').checked = true;
+          document.getElementById('filter-brand-profile').checked = true;
+          document.getElementById('filter-aemy').checked = true;
+          document.getElementById('preset-fully-deployed').classList.add('active');
+          break;
+      }
+      
+      applyFilters();
+      
+      // Show advanced panel if advanced preset is used
+      if (['high-health', 'paid', 'fully-deployed'].includes(presetName)) {
+        document.getElementById('advanced-filters').classList.add('show');
+        document.getElementById('toggle-advanced').classList.add('active');
+      }
     }
     
     function exportToCSV() {
@@ -564,11 +1636,21 @@
       tbody.innerHTML = '';
       
       // Update results count
-      document.getElementById('results-count').textContent = 
-        `Showing ${customers.length} of ${allCustomers.length} customers`;
+      const editedCount = customers.filter(c => c._edited).length;
+      const countText = editedCount > 0 
+        ? `Showing ${customers.length} of ${allCustomers.length} customers (${editedCount} edited <span class="edit-indicator"></span>)`
+        : `Showing ${customers.length} of ${allCustomers.length} customers`;
+      document.getElementById('results-count').innerHTML = countText;
       
       customers.forEach((customer, index) => {
           const row = document.createElement('tr');
+          
+          // Mark edited rows
+          if (customer._edited) {
+            row.classList.add('row-edited');
+          }
+          
+          row.dataset.customerName = customer.companyName;
           
           // Helper to get status badge class
           const getStatusClass = (status) => {
@@ -594,9 +1676,20 @@
             return 'critical';
           };
           
+          // Action buttons (only show in edit mode)
+          const actionsHtml = isEditMode 
+            ? `<div class="row-actions">
+                <button class="edit-btn" onclick="editRow(this)">✏️</button>
+              </div>`
+            : '';
+          
+          // Edited indicator
+          const editedIndicator = customer._edited ? '<span class="edit-indicator"></span>' : '';
+          
           row.innerHTML = `
+            <td>${actionsHtml}</td>
             <td>${index + 1}</td>
-            <td><strong>${customer.companyName || ''}</strong></td>
+            <td><strong>${customer.companyName || ''}${editedIndicator}</strong></td>
             <td>${customer.licenseType || ''}</td>
             <td>${customer.industry || ''}</td>
             <td>${customer.eseLead || ''}</td>
@@ -631,7 +1724,7 @@
       
       // Add click handlers to sortable headers
       document.querySelectorAll('th').forEach((th, index) => {
-        if (index > 0) { // Skip the # column
+        if (index > 1) { // Skip the Actions and # columns
           th.classList.add('sortable');
           th.onclick = () => sortTable(index);
         }
