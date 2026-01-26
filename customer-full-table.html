@@ -551,6 +551,156 @@
       border-bottom: none;
     }
     
+    /* Add New Customer Styles */
+    .add-customer-btn {
+      background: #10b981 !important;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      display: inline-block;
+    }
+    
+    .add-customer-btn:hover {
+      background: #059669 !important;
+    }
+    
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-overlay.show {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #667eea;
+    }
+    
+    .modal-header h2 {
+      margin: 0;
+      color: #667eea;
+    }
+    
+    .modal-close {
+      background: #ef4444;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    
+    .modal-close:hover {
+      background: #dc2626;
+    }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .form-field {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .form-field.full-width {
+      grid-column: span 2;
+    }
+    
+    .form-field label {
+      font-weight: 600;
+      margin-bottom: 4px;
+      font-size: 13px;
+      color: #333;
+    }
+    
+    .form-field label .required {
+      color: #ef4444;
+    }
+    
+    .form-field input,
+    .form-field select,
+    .form-field textarea {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    
+    .form-field textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+    }
+    
+    .modal-footer button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .btn-cancel {
+      background: #6b7280;
+      color: white;
+    }
+    
+    .btn-cancel:hover {
+      background: #4b5563;
+    }
+    
+    .btn-save {
+      background: #10b981;
+      color: white;
+    }
+    
+    .btn-save:hover {
+      background: #059669;
+    }
+    
     * {
       box-sizing: border-box;
     }
@@ -623,6 +773,7 @@
           <strong>Edit Mode Active</strong> - Click any cell to edit. Click "💾 Save" on each row to save changes, or "❌" to cancel.
           Changes are saved to your browser and will persist across page refreshes.
         </div>
+        <button id="add-customer-btn" class="add-customer-btn">➕ Add Customer</button>
         <button id="save-all-btn" style="margin-left: auto; padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">💾 Save All Changes</button>
         <button id="reset-all-btn" style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">🔄 Reset All Data</button>
       </div>
@@ -837,6 +988,209 @@
       </ul>
       </div>
       </details>
+    </div>
+    
+    <!-- Add New Customer Modal -->
+    <div class="modal-overlay" id="add-customer-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>➕ Add Customer</h2>
+          <button class="modal-close" id="modal-close">✕ Close</button>
+        </div>
+        
+        <form id="new-customer-form">
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Company Name <span class="required">*</span></label>
+              <input type="text" id="new-companyName" required>
+            </div>
+            
+            <div class="form-field">
+              <label>License Type</label>
+              <select id="new-licenseType">
+                <option value="">Select...</option>
+                <option value="Paid">Paid</option>
+                <option value="Trial">Trial</option>
+              </select>
+            </div>
+            
+            <div class="form-field">
+              <label>Industry</label>
+              <input type="text" id="new-industry">
+            </div>
+            
+            <div class="form-field">
+              <label>ESE Lead</label>
+              <input type="text" id="new-eseLead">
+            </div>
+            
+            <div class="form-field">
+              <label>Status</label>
+              <select id="new-status">
+                <option value="">Select...</option>
+                <option value="Planning">Planning</option>
+                <option value="Pre-Production">Pre-Production</option>
+                <option value="Production">Production</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+            
+            <div class="form-field">
+              <label>Engagement</label>
+              <select id="new-engagement">
+                <option value="">Select...</option>
+                <option value="Active">Active</option>
+                <option value="At Risk">At Risk</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
+            
+            <div class="form-field">
+              <label>Health Score</label>
+              <input type="number" id="new-healthScore" min="0" max="100" placeholder="0-100">
+            </div>
+            
+            <div class="form-field">
+              <label>MAU</label>
+              <input type="number" id="new-mau" placeholder="Monthly Active Users">
+            </div>
+            
+            <div class="form-field">
+              <label>TTIV (days)</label>
+              <input type="number" id="new-ttiv" placeholder="Time to Initial Value">
+            </div>
+            
+            <div class="form-field">
+              <label>Close Date</label>
+              <input type="date" id="new-closeDate">
+            </div>
+            
+            <div class="form-field">
+              <label>Onboard Date</label>
+              <input type="date" id="new-onboardDate">
+            </div>
+            
+            <div class="form-field">
+              <label>Deployment Type</label>
+              <input type="text" id="new-deploymentType" placeholder="e.g., OnPrem to CS, Cloud">
+            </div>
+            
+            <div class="form-field full-width">
+              <label>Summary of Engagement</label>
+              <textarea id="new-summary" placeholder="Enter engagement summary for this week"></textarea>
+            </div>
+            
+            <div class="form-field full-width">
+              <label>Blockers</label>
+              <textarea id="new-blockers" placeholder="Any blocking issues"></textarea>
+            </div>
+            
+            <div class="form-field">
+              <label>Feedback</label>
+              <input type="text" id="new-feedback">
+            </div>
+            
+            <div class="form-field">
+              <label>Delay Reason</label>
+              <input type="text" id="new-delayReason">
+            </div>
+            
+            <div class="form-field">
+              <label>Headless</label>
+              <select id="new-headless">
+                <option value="">Select...</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            
+            <div class="form-field">
+              <label>Oppty Realized</label>
+              <input type="text" id="new-opptyRealized">
+            </div>
+            
+            <div class="form-field">
+              <label>Preflight</label>
+              <select id="new-preflight">
+                <option value="">Select...</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            
+            <div class="form-field">
+              <label>Auto-Optimize Enabled</label>
+              <select id="new-autoOptimizeEnabled">
+                <option value="">Select...</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            
+            <div class="form-field">
+              <label>Auto-Optimize Button Pressed</label>
+              <select id="new-autoOptimizeButtonPressed">
+                <option value="">Select...</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            
+            <div class="form-field">
+              <label>Service Principle Deployed</label>
+              <select id="new-servicePrincipleDeployed">
+                <option value="">Select...</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            
+            <div class="form-field">
+              <label>Brand Profile</label>
+              <select id="new-brandProfile">
+                <option value="">Select...</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            
+            <div class="form-field">
+              <label>AEMY Deployed</label>
+              <select id="new-aemyDeployed">
+                <option value="">Select...</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            
+            <div class="form-field">
+              <label>Code Repo</label>
+              <input type="text" id="new-codeRepo" placeholder="e.g., Git, GitLab">
+            </div>
+            
+            <div class="form-field">
+              <label>Auth Implementation</label>
+              <input type="text" id="new-authImplementation" placeholder="e.g., IMS, SAML">
+            </div>
+            
+            <div class="form-field">
+              <label>Workflow Manager</label>
+              <input type="text" id="new-workflowManager" placeholder="e.g., Jira, Asana">
+            </div>
+            
+            <div class="form-field">
+              <label>Customer Self Serve</label>
+              <input type="text" id="new-customerSelfServe">
+            </div>
+          </div>
+          
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel" id="cancel-new-customer">Cancel</button>
+            <button type="submit" class="btn-save">💾 Save Customer</button>
+          </div>
+        </form>
+      </div>
     </div>
   </main>
   <footer></footer>
@@ -1053,6 +1407,96 @@
       }
     }
     
+    // ===== ADD CUSTOMER FUNCTIONS =====
+    function openAddCustomerModal() {
+      document.getElementById('add-customer-modal').classList.add('show');
+      document.getElementById('new-customer-form').reset();
+    }
+    
+    function closeAddCustomerModal() {
+      document.getElementById('add-customer-modal').classList.remove('show');
+      document.getElementById('new-customer-form').reset();
+    }
+    
+    function saveNewCustomer(e) {
+      e.preventDefault();
+      
+      // Get form values
+      const newCustomer = {
+        week: currentWeek,
+        companyName: document.getElementById('new-companyName').value.trim(),
+        licenseType: document.getElementById('new-licenseType').value,
+        industry: document.getElementById('new-industry').value,
+        eseLead: document.getElementById('new-eseLead').value,
+        status: document.getElementById('new-status').value,
+        delayReason: document.getElementById('new-delayReason').value,
+        closeDate: document.getElementById('new-closeDate').value,
+        onboardDate: document.getElementById('new-onboardDate').value,
+        deploymentType: document.getElementById('new-deploymentType').value,
+        headless: document.getElementById('new-headless').value,
+        engagement: document.getElementById('new-engagement').value,
+        blockers: document.getElementById('new-blockers').value,
+        feedback: document.getElementById('new-feedback').value,
+        healthScore: document.getElementById('new-healthScore').value,
+        summary: document.getElementById('new-summary').value,
+        mau: document.getElementById('new-mau').value,
+        ttiv: document.getElementById('new-ttiv').value,
+        opptyRealized: document.getElementById('new-opptyRealized').value,
+        preflight: document.getElementById('new-preflight').value,
+        autoOptimizeEnabled: document.getElementById('new-autoOptimizeEnabled').value,
+        autoOptimizeButtonPressed: document.getElementById('new-autoOptimizeButtonPressed').value,
+        servicePrincipleDeployed: document.getElementById('new-servicePrincipleDeployed').value,
+        brandProfile: document.getElementById('new-brandProfile').value,
+        aemyDeployed: document.getElementById('new-aemyDeployed').value,
+        codeRepo: document.getElementById('new-codeRepo').value,
+        authImplementation: document.getElementById('new-authImplementation').value,
+        workflowManager: document.getElementById('new-workflowManager').value,
+        customerSelfServe: document.getElementById('new-customerSelfServe').value,
+        _edited: true,
+        _isNew: true
+      };
+      
+      // Validate required fields
+      if (!newCustomer.companyName) {
+        alert('❌ Company Name is required');
+        return;
+      }
+      
+      // Check if customer already exists
+      const exists = allCustomers.some(c => c.companyName.toLowerCase() === newCustomer.companyName.toLowerCase());
+      if (exists) {
+        if (!confirm(`⚠️ A customer named "${newCustomer.companyName}" already exists for this week.\n\nAdd anyway?`)) {
+          return;
+        }
+      }
+      
+      // Add to allCustomers and filteredCustomers
+      allCustomers.push(newCustomer);
+      
+      // Save to editedData (localStorage)
+      if (!editedData[newCustomer.companyName]) {
+        editedData[newCustomer.companyName] = {};
+      }
+      // Store all fields for new customer
+      Object.keys(newCustomer).forEach(key => {
+        if (!key.startsWith('_')) {
+          editedData[newCustomer.companyName][key] = newCustomer[key];
+        }
+      });
+      saveEditedData();
+      
+      // Close modal
+      closeAddCustomerModal();
+      
+      // Reapply filters and render
+      applyFilters();
+      
+      // Show success message
+      alert(`✅ New customer "${newCustomer.companyName}" added successfully!\n\nThe customer has been added to ${currentWeek}.`);
+      
+      console.log(`Added new customer: ${newCustomer.companyName} to week ${currentWeek}`);
+    }
+    
     async function loadFullTable() {
       try {
         // Load any existing edits from localStorage
@@ -1136,6 +1580,12 @@
         document.getElementById('toggle-edit-mode').addEventListener('click', toggleEditMode);
         document.getElementById('save-all-btn').addEventListener('click', saveAllChanges);
         document.getElementById('reset-all-btn').addEventListener('click', resetAllData);
+        
+        // Add customer handlers
+        document.getElementById('add-customer-btn').addEventListener('click', openAddCustomerModal);
+        document.getElementById('modal-close').addEventListener('click', closeAddCustomerModal);
+        document.getElementById('cancel-new-customer').addEventListener('click', closeAddCustomerModal);
+        document.getElementById('new-customer-form').addEventListener('submit', saveNewCustomer);
         
         // Show controls and render table
         document.getElementById('table-controls').style.display = 'flex';
