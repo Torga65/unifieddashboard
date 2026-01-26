@@ -5,9 +5,10 @@
 
 import { resolveSelectedWeek, formatWeekDate } from '../../scripts/week-utils.js';
 import { analyzeEngagement } from '../../scripts/engagement-analyzer.js';
+import { mergeEditedData } from '../../scripts/customer-data-manager.js';
 
 /**
- * Load customer data from JSON
+ * Load customer data from JSON with edited data merged
  */
 async function loadCustomerData(dataSource) {
   try {
@@ -16,7 +17,20 @@ async function loadCustomerData(dataSource) {
       return [];
     }
     const json = await response.json();
-    return json.data || json;
+    let customers = json.data || json;
+
+    // Merge with any locally edited data
+    customers = mergeEditedData(customers);
+
+    // eslint-disable-next-line no-console
+    // eslint-disable-next-line no-underscore-dangle
+    const editedCount = customers.filter((c) => c._edited).length;
+    if (editedCount > 0) {
+      // eslint-disable-next-line no-console
+      console.log(`Customer Overview: Loaded ${customers.length} customers (${editedCount} with local edits)`);
+    }
+
+    return customers;
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Error loading customer data:', error);
@@ -61,12 +75,19 @@ function createCustomerCard(customer) {
     urgencyLabel = '⚠️ ATTENTION';
   }
 
+  // Edited indicator
+  // eslint-disable-next-line no-underscore-dangle
+  const editedIndicator = customer._edited
+    ? '<span class="badge" style="background: #3b82f6; color: white; font-size: 11px;">✏️ EDITED</span>'
+    : '';
+
   card.innerHTML = `
     <div class="customer-card-header">
       <h3 class="customer-name">${customer.companyName}</h3>
       <div class="customer-badges">
         <span class="badge status-badge ${statusClass}">${customer.status}</span>
         ${urgencyLabel ? `<span class="badge urgency-badge ${urgencyClass}">${urgencyLabel}</span>` : ''}
+        ${editedIndicator}
       </div>
     </div>
     

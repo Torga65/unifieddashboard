@@ -51,6 +51,36 @@ This page displays every column from the Excel sheet:
 
 ---
 
+## 🎯 Interactive Features
+
+The full table view includes comprehensive filtering and analysis tools:
+
+### Advanced Filtering System
+- **Multi-select filters** - Industry, ESE Lead (hold Ctrl/Cmd)
+- **Range filters** - Health Score (0-100), MAU, TTIV
+- **Date range filters** - Close Date, Onboard Date
+- **Boolean filters** - Feature status (Preflight, Auto-Optimize, etc.)
+- **Quick presets** - Active, At Risk, Critical, High Health, Paid, etc.
+- **Active filter chips** - Visual display with individual remove
+
+### Table Features
+- **Full horizontal scroll** - Scrollable before page fold
+- **Sticky Company Name** - First column stays visible
+- **Search** - Find text across all 28 columns
+- **Sort** - Click any column header
+- **Export to CSV** - Download filtered results with all data
+
+### Quick Filter Presets
+1. ✅ **Active Customers** - Engagement = Active
+2. ⚠️ **At Risk** - Needs attention
+3. 🚨 **Critical** - Urgent intervention
+4. 🚀 **In Production** - Live customers only
+5. 💪 **High Health (80+)** - Best performers
+6. 💰 **Paid Licenses** - Exclude trials
+7. 🎯 **Fully Deployed** - All features enabled
+
+---
+
 ## Full Data Table
 
 > **Note for AEM Sidekick:**
