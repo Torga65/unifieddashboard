@@ -116,11 +116,11 @@ def convert_excel_to_json(excel_path, json_path):
                 feedback_ind = row_dict.get('Feedback', '')
                 health_ind = row_dict.get('Health Score', '')
                 
-                # Create standardized record with ALL 28 columns
+                # Create standardized record with ALL columns including Onboarded URLs
                 customer_record = {
                     'week': week_date,
                     
-                    # Core Information (Columns 1-10)
+                    # Core Information (Columns 1-11)
                     'companyName': row_dict.get('Company Name', ''),
                     'licenseType': row_dict.get('License Type', ''),
                     'industry': row_dict.get('Industry', ''),
@@ -131,8 +131,9 @@ def convert_excel_to_json(excel_path, json_path):
                     'onboardDate': row_dict.get('Onboard Date', ''),
                     'deploymentType': row_dict.get('Deployment Type', ''),
                     'headless': row_dict.get('Headless', ''),
+                    'onboardedUrls': row_dict.get('Onboarded URL\'s', ''),
                     
-                    # Engagement & Health (Columns 11-15)
+                    # Engagement & Health (Columns 12-16)
                     'engagement': map_indicator_to_status(engagement),
                     'engagementRaw': engagement,
                     'blockersStatus': blockers_ind,
@@ -143,9 +144,7 @@ def convert_excel_to_json(excel_path, json_path):
                     'healthScore': calculate_health_score(engagement, blockers_ind, feedback_ind, health_ind),
                     'summary': row_dict.get('Summary of Engagement', ''),
                     
-                    # Metrics (Columns 16-18)
-                    'mau': row_dict.get('MAU', ''),
-                    'ttiv': row_dict.get('TTIV', ''),
+                    # Metrics
                     'opptyRealized': row_dict.get('Oppty Realized', ''),
                     
                     # Implementation Status (Columns 19-28)

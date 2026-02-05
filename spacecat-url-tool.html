@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SpaceCat URL Fetcher</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <script src="/scripts/aem.js" type="module"></script>
+  <script src="/scripts/scripts.js" type="module"></script>
+  <link rel="stylesheet" href="/styles/styles.css"/>
+  <style>
+    .tool-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .tool-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 24px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+    
+    .tool-header h1 {
+      margin: 0 0 8px;
+      color: white;
+    }
+    
+    .tool-header p {
+      margin: 0;
+      opacity: 0.95;
+    }
+    
+    .config-section {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    
+    .config-section h2 {
+      margin: 0 0 16px;
+      color: #667eea;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #374151;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: monospace;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+      background: #5568d3;
+      transform: translateY(-1px);
+    }
+    
+    .btn-primary:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    
+    .btn-success {
+      background: #10b981;
+      color: white;
+    }
+    
+    .btn-success:hover {
+      background: #059669;
+    }
+    
+    .status-message {
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin: 16px 0;
+      display: none;
+    }
+    
+    .status-message.show {
+      display: block;
+    }
+    
+    .status-message.loading {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #93c5fd;
+    }
+    
+    .status-message.success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #6ee7b7;
+    }
+    
+    .status-message.error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+    }
+    
+    .results-section {
+      display: none;
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    
+    .results-section.show {
+      display: block;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin: 20px 0;
+    }
+    
+    .stat-card {
+      background: #f9fafb;
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 4px;
+    }
+    
+    .stat-label {
+      font-size: 13px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .matches-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+    
+    .matches-table th,
+    .matches-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .matches-table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #374151;
+    }
+    
+    .matches-table tr:hover {
+      background: #f9fafb;
+    }
+    
+    .url-cell {
+      font-family: monospace;
+      font-size: 12px;
+      color: #667eea;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 2px solid #e5e7eb;
+      margin-bottom: 20px;
+    }
+    
+    .tab {
+      padding: 12px 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      color: #6b7280;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+    
+    .tab:hover {
+      color: #667eea;
+    }
+    
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .unmatched-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .unmatched-list li {
+      padding: 8px 12px;
+      background: #fef3c7;
+      border: 1px solid #fbbf24;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header></header>
+  <main>
+    <div class="tool-container">
+      <div class="tool-header">
+        <h1>🔗 SpaceCat URL Fetcher</h1>
+        <p>Automatically fetch and match customer site URLs from the SpaceCat API</p>
+      </div>
+      
+      <div class="config-section">
+        <h2>Configuration</h2>
+        <div class="form-group">
+          <label for="api-key">SpaceCat API Key</label>
+          <input type="password" id="api-key" placeholder="Enter your SpaceCat API key or load from credentials.json" />
+          <small style="color: #6b7280; margin-top: 4px; display: block;">
+            💡 Tip: Store your key in <code>credentials.json</code> for easier access
+            <a href="/CREDENTIALS_SETUP.md" target="_blank" style="color: #667eea; margin-left: 8px;">Setup Guide</a>
+          </small>
+        </div>
+        
+        <button id="fetch-btn" class="btn btn-primary">
+          🚀 Fetch & Match URLs
+        </button>
+        
+        <div id="status-message" class="status-message"></div>
+        
+        <details style="margin-top: 16px; padding: 12px; background: #f9fafb; border-radius: 6px;">
+          <summary style="cursor: pointer; font-weight: 600; color: #667eea;">
+            ℹ️ How to set up credentials.json
+          </summary>
+          <div style="margin-top: 12px; font-size: 14px; color: #4b5563;">
+            <p><strong>Option 1: Use credentials.json (Recommended)</strong></p>
+            <ol style="margin: 8px 0; padding-left: 20px;">
+              <li>Copy <code>credentials.example.json</code> to <code>credentials.json</code></li>
+              <li>Edit <code>credentials.json</code> with your SpaceCat API key</li>
+              <li>Tools will automatically load your key</li>
+            </ol>
+            
+            <p style="margin-top: 12px;"><strong>Option 2: Enter manually</strong></p>
+            <p style="margin: 4px 0;">Enter your API key in the field above. It will be saved in your browser.</p>
+            
+            <p style="margin-top: 12px; padding: 8px; background: #fef3c7; border-radius: 4px; border: 1px solid #fbbf24;">
+              <strong>⚠️ Security:</strong> Never commit <code>credentials.json</code> to Git. It's already in <code>.gitignore</code>.
+            </p>
+          </div>
+        </details>
+      </div>
+      
+      <div id="results-section" class="results-section">
+        <h2>Results</h2>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="stat-sites">0</div>
+            <div class="stat-label">Total Sites</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-matched">0</div>
+            <div class="stat-label">Matched</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-unmatched">0</div>
+            <div class="stat-label">Unmatched</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-rate">0%</div>
+            <div class="stat-label">Match Rate</div>
+          </div>
+        </div>
+        
+        <div style="margin: 20px 0;">
+          <button id="apply-btn" class="btn btn-success">
+            ✅ Apply URLs to Customer Data
+          </button>
+          <button id="download-report-btn" class="btn" style="background: #6b7280; color: white; margin-left: 8px;">
+            📄 Download Report
+          </button>
+        </div>
+        
+        <div class="tabs">
+          <button class="tab active" data-tab="matched">Matched Customers</button>
+          <button class="tab" data-tab="unmatched">Unmatched Customers</button>
+        </div>
+        
+        <div id="matched-tab" class="tab-content active">
+          <table class="matches-table" id="matches-table">
+            <thead>
+              <tr>
+                <th>Company Name</th>
+                <th>Onboarded URLs</th>
+                <th>Site Count</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        
+        <div id="unmatched-tab" class="tab-content">
+          <p style="color: #6b7280; margin-bottom: 16px;">
+            The following customers could not be automatically matched. You'll need to add their URLs manually.
+          </p>
+          <ul class="unmatched-list" id="unmatched-list"></ul>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer></footer>
+  
+  <script type="module">
+    import { fetchAndMatchSites, applyMatchedUrls } from './scripts/spacecat-url-fetcher.js';
+    
+    let currentResults = null;
+    let currentCustomers = [];
+    
+    // Load customers data
+    async function loadCustomers() {
+      const response = await fetch('/data/customers.json');
+      const data = await response.json();
+      return data.data || data;
+    }
+    
+    // Show status message
+    function showStatus(message, type = 'loading') {
+      const statusEl = document.getElementById('status-message');
+      statusEl.textContent = message;
+      statusEl.className = `status-message show ${type}`;
+    }
+    
+    // Hide status message
+    function hideStatus() {
+      const statusEl = document.getElementById('status-message');
+      statusEl.className = 'status-message';
+    }
+    
+    // Fetch and match
+    document.getElementById('fetch-btn').addEventListener('click', async () => {
+      const apiKey = document.getElementById('api-key').value.trim();
+      
+      if (!apiKey) {
+        showStatus('❌ Please enter your SpaceCat API key', 'error');
+        return;
+      }
+      
+      // Save API key to localStorage
+      localStorage.setItem('spacecatApiKey', apiKey);
+      
+      const btn = document.getElementById('fetch-btn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Fetching...';
+      
+      showStatus('🔄 Fetching sites from SpaceCat API...', 'loading');
+      
+      try {
+        // Load customers
+        currentCustomers = await loadCustomers();
+        
+        // Fetch and match
+        const results = await fetchAndMatchSites(apiKey, currentCustomers);
+        
+        if (!results.success) {
+          showStatus(`❌ Error: ${results.error}`, 'error');
+          btn.disabled = false;
+          btn.textContent = '🚀 Fetch & Match URLs';
+          return;
+        }
+        
+        currentResults = results;
+        
+        // Update stats
+        document.getElementById('stat-sites').textContent = results.stats.totalSites;
+        document.getElementById('stat-matched').textContent = results.stats.customersMatched;
+        document.getElementById('stat-unmatched').textContent = results.stats.customersUnmatched;
+        document.getElementById('stat-rate').textContent = results.stats.matchRate + '%';
+        
+        // Populate matched table
+        const tbody = document.querySelector('#matches-table tbody');
+        tbody.innerHTML = results.matches.map(match => `
+          <tr>
+            <td><strong>${match.companyName}</strong></td>
+            <td class="url-cell">${match.urls}</td>
+            <td>${match.siteCount}</td>
+          </tr>
+        `).join('');
+        
+        // Populate unmatched list
+        const unmatchedList = document.getElementById('unmatched-list');
+        unmatchedList.innerHTML = results.unmatched.map(name => `
+          <li>⚠️ ${name}</li>
+        `).join('');
+        
+        // Show results
+        document.getElementById('results-section').classList.add('show');
+        showStatus(`✅ Found ${results.matches.length} matches out of ${results.matches.length + results.unmatched.length} customers`, 'success');
+        
+        btn.disabled = false;
+        btn.textContent = '🚀 Fetch & Match URLs';
+        
+      } catch (error) {
+        showStatus(`❌ Error: ${error.message}`, 'error');
+        btn.disabled = false;
+        btn.textContent = '🚀 Fetch & Match URLs';
+      }
+    });
+    
+    // Apply URLs to customer data
+    document.getElementById('apply-btn').addEventListener('click', async () => {
+      if (!currentResults || !currentCustomers) {
+        alert('No results to apply');
+        return;
+      }
+      
+      if (!confirm(`Apply ${currentResults.matches.length} URLs to customer data?\n\nThis will update the onboardedUrls field for matched customers.`)) {
+        return;
+      }
+      
+      // Apply URLs
+      const updatedCustomers = applyMatchedUrls(currentCustomers, currentResults.matches);
+      
+      // Download as JSON
+      const data = {
+        data: updatedCustomers,
+        total: updatedCustomers.length,
+        generated: new Date().toISOString(),
+        spacecatMatches: currentResults.matches.length,
+        spacecatFetchDate: new Date().toISOString()
+      };
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `customers-with-urls-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      alert('✅ Updated customers.json downloaded!\n\nReplace /data/customers.json with this file.');
+    });
+    
+    // Download report
+    document.getElementById('download-report-btn').addEventListener('click', () => {
+      if (!currentResults) {
+        alert('No results to export');
+        return;
+      }
+      
+      const report = `SpaceCat URL Fetch Report
+Generated: ${new Date().toISOString()}
+${'='.repeat(70)}
+
+SUMMARY
+-------
+Total Sites in SpaceCat: ${currentResults.stats.totalSites}
+Customers Matched: ${currentResults.stats.customersMatched}
+Customers Unmatched: ${currentResults.stats.customersUnmatched}
+Match Rate: ${currentResults.stats.matchRate}%
+
+MATCHED CUSTOMERS (${currentResults.matches.length})
+${'-'.repeat(70)}
+${currentResults.matches.map(m => `
+${m.companyName}
+  URLs: ${m.urls}
+  Site Count: ${m.siteCount}
+`).join('\n')}
+
+UNMATCHED CUSTOMERS (${currentResults.unmatched.length})
+${'-'.repeat(70)}
+${currentResults.unmatched.map(name => `  - ${name}`).join('\n')}
+`;
+      
+      const blob = new Blob([report], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `spacecat-url-report-${new Date().toISOString().split('T')[0]}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+    
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.dataset.tab;
+        
+        // Update active tab
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Update active content
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.classList.remove('active');
+        });
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+      });
+    });
+    
+    // Load saved API key
+    const savedApiKey = localStorage.getItem('spacecatApiKey');
+    if (savedApiKey) {
+      document.getElementById('api-key').value = savedApiKey;
+    }
+  </script>
+</body>
+</html>

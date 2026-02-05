@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authenticating - Unified Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .callback-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 60px 50px;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 30px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        h1 {
+            color: #2d3748;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            color: #718096;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        .success {
+            display: none;
+        }
+
+        .success.show {
+            display: block;
+        }
+
+        .success-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .error {
+            display: none;
+            background: #fed7d7;
+            border: 2px solid #fc8181;
+            border-radius: 12px;
+            padding: 20px;
+            color: #742a2a;
+            margin-top: 20px;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .retry-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .retry-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .debug-info {
+            margin-top: 30px;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 12px;
+            color: #4a5568;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .debug-info pre {
+            margin-top: 10px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="callback-container">
+        <div class="spinner"></div>
+        <h1>Completing Sign In</h1>
+        <p class="status" id="status">Processing authentication...</p>
+
+        <div class="success" id="success">
+            <div class="success-icon">✅</div>
+            <h1>Authentication Successful!</h1>
+            <p class="status">Redirecting to dashboard...</p>
+        </div>
+
+        <div class="error" id="error">
+            <strong>Authentication Failed</strong>
+            <p id="error-message" style="margin-top: 10px;"></p>
+            <button class="retry-btn" onclick="retrySignIn()">Try Again</button>
+        </div>
+
+        <div class="debug-info" id="debug-info" style="display: none;">
+            <strong>Debug Information:</strong>
+            <pre id="debug-content"></pre>
+        </div>
+    </div>
+
+    <script>
+        async function processCallback() {
+            const statusEl = document.getElementById('status');
+            const successEl = document.getElementById('success');
+            const errorEl = document.getElementById('error');
+            const errorMessageEl = document.getElementById('error-message');
+            const debugInfoEl = document.getElementById('debug-info');
+            const debugContentEl = document.getElementById('debug-content');
+
+            try {
+                // Parse URL hash (IMS returns token in hash)
+                const hash = window.location.hash.substring(1);
+                const params = new URLSearchParams(hash);
+
+                // Also check query parameters (in case of error)
+                const queryParams = new URLSearchParams(window.location.search);
+
+                // Check for errors
+                const error = params.get('error') || queryParams.get('error');
+                if (error) {
+                    throw new Error(params.get('error_description') || queryParams.get('error_description') || error);
+                }
+
+                // Get access token
+                const accessToken = params.get('access_token');
+                if (!accessToken) {
+                    throw new Error('No access token received from Adobe IMS');
+                }
+
+                statusEl.textContent = 'Validating token...';
+
+                // Parse and validate token
+                const parts = accessToken.split('.');
+                if (parts.length !== 3) {
+                    throw new Error('Invalid token format');
+                }
+
+                const payload = JSON.parse(atob(parts[1]));
+                
+                // Check expiration
+                let expiresAt = null;
+                let issuedAt = null;
+                
+                if (payload.exp) {
+                    expiresAt = new Date(payload.exp * 1000);
+                }
+                if (payload.iat) {
+                    issuedAt = new Date(payload.iat * 1000);
+                }
+                if (payload.created_at && payload.expires_in) {
+                    issuedAt = new Date(parseInt(payload.created_at));
+                    expiresAt = new Date(parseInt(payload.created_at) + parseInt(payload.expires_in));
+                }
+                
+                const now = new Date();
+                const expired = expiresAt && expiresAt < now;
+                
+                if (expired) {
+                    throw new Error('Token has already expired');
+                }
+
+                // Store token
+                localStorage.setItem('unified_dashboard_ims_token', accessToken);
+                
+                // Store profile
+                const profile = {
+                    userId: payload.user_id || payload.sub,
+                    email: payload.email,
+                    name: payload.name,
+                    expiresAt: expiresAt ? expiresAt.toISOString() : null
+                };
+                localStorage.setItem('unified_dashboard_ims_profile', JSON.stringify(profile));
+                
+                // Also save for API scripts
+                localStorage.setItem('spacecat_api_token', accessToken);
+
+                console.log('✅ Authenticated as:', profile.userId);
+
+                // Show success
+                document.querySelector('.spinner').style.display = 'none';
+                statusEl.style.display = 'none';
+                successEl.classList.add('show');
+
+                // Save token to .token file command
+                const token = accessToken;
+                console.log('To save token for API scripts, run:');
+                console.log(`echo "${token}" > .token`);
+
+                // Redirect after 2 seconds
+                setTimeout(() => {
+                    const redirect = sessionStorage.getItem('auth_redirect') || '/dashboard.html';
+                    sessionStorage.removeItem('auth_redirect');
+                    window.location.href = redirect;
+                }, 2000);
+
+            } catch (err) {
+                console.error('Authentication error:', err);
+
+                // Show error
+                document.querySelector('.spinner').style.display = 'none';
+                statusEl.style.display = 'none';
+                errorEl.classList.add('show');
+                errorMessageEl.textContent = err.message;
+
+                // Show debug info in development
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    debugInfoEl.style.display = 'block';
+                    debugContentEl.textContent = JSON.stringify({
+                        error: err.message,
+                        hash: window.location.hash,
+                        search: window.location.search,
+                        href: window.location.href
+                    }, null, 2);
+                }
+            }
+        }
+
+        function retrySignIn() {
+            window.location.href = '/login.html';
+        }
+
+        // Process callback when page loads
+        processCallback();
+    </script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - Unified Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 60px 50px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #2d3748;
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: #718096;
+            font-size: 16px;
+            margin-bottom: 40px;
+        }
+
+        .sign-in-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .sign-in-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .sign-in-btn:active {
+            transform: translateY(0);
+        }
+
+        .sign-in-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .features {
+            margin-top: 50px;
+            text-align: left;
+            border-top: 2px solid #e2e8f0;
+            padding-top: 30px;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            color: #4a5568;
+            font-size: 14px;
+        }
+
+        .feature-icon {
+            font-size: 20px;
+            margin-right: 12px;
+        }
+
+        .info-box {
+            background: #ebf4ff;
+            border: 2px solid #bee3f8;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .info-box h3 {
+            color: #2c5282;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #2d3748;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 20px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fed7d7;
+            border: 2px solid #fc8181;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            color: #742a2a;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            color: #a0aec0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">🔐</div>
+        <h1>Unified Dashboard</h1>
+        <p class="subtitle">Sign in with your Adobe account</p>
+
+        <button class="sign-in-btn" onclick="signIn()" id="sign-in-btn">
+            Sign In with Adobe IMS
+        </button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            Redirecting to Adobe Sign In...
+        </div>
+
+        <div class="error-message" id="error-message">
+            Authentication failed. Please try again.
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <span class="feature-icon">🛡️</span>
+                <span>Secure Adobe IMS authentication</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">📊</span>
+                <span>Access SpaceCat API and customer data</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">🔄</span>
+                <span>Automatic token refresh</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">✅</span>
+                <span>Single sign-on across Adobe services</span>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>💡 About Authentication</h3>
+            <p>
+                This dashboard uses Adobe Identity Management Service (IMS) for secure authentication.
+                You'll be redirected to Adobe's sign-in page, and once authenticated, you'll have full
+                access to all dashboard features and SpaceCat API integration.
+            </p>
+        </div>
+
+        <footer>
+            <p>Protected by Adobe IMS Authentication</p>
+            <p style="margin-top: 5px;">Unified Dashboard © 2026</p>
+        </footer>
+    </div>
+
+    <script>
+        // Simple authentication check using localStorage directly
+        function isAuthenticated() {
+            const token = localStorage.getItem('unified_dashboard_ims_token');
+            if (!token) return false;
+            
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) return false;
+                
+                const payload = JSON.parse(atob(parts[1]));
+                let expiresAt = null;
+                
+                if (payload.exp) {
+                    expiresAt = new Date(payload.exp * 1000);
+                } else if (payload.created_at && payload.expires_in) {
+                    expiresAt = new Date(parseInt(payload.created_at) + parseInt(payload.expires_in));
+                }
+                
+                return expiresAt && expiresAt > new Date();
+            } catch {
+                return false;
+            }
+        }
+
+        // Check if already authenticated
+        if (isAuthenticated()) {
+            const redirect = sessionStorage.getItem('auth_redirect') || '/dashboard.html';
+            sessionStorage.removeItem('auth_redirect');
+            window.location.href = redirect;
+        }
+
+        async function signIn() {
+            const btn = document.getElementById('sign-in-btn');
+            const loading = document.getElementById('loading');
+            const errorMsg = document.getElementById('error-message');
+
+            try {
+                btn.disabled = true;
+                loading.classList.add('show');
+                errorMsg.classList.remove('show');
+
+                console.log('Starting sign-in process...');
+
+                // Build Adobe IMS authorization URL directly
+                const imsConfig = {
+                    client_id: 'unified-dashboard',
+                    scope: 'openid,AdobeID,additional_info,additional_info.projectedProductContext,read_organizations,account_cluster.read',
+                    response_type: 'token',
+                    redirect_uri: window.location.origin + '/auth-callback.html',
+                    locale: 'en_US'
+                };
+
+                const baseUrl = 'https://ims-na1.adobelogin.com/ims/authorize/v2';
+                const params = new URLSearchParams(imsConfig);
+                const authUrl = `${baseUrl}?${params.toString()}`;
+
+                console.log('Redirecting to Adobe IMS...');
+                
+                // Redirect to Adobe IMS
+                window.location.href = authUrl;
+
+            } catch (error) {
+                console.error('Sign in error:', error);
+                btn.disabled = false;
+                loading.classList.remove('show');
+                errorMsg.classList.add('show');
+                errorMsg.textContent = error.message || 'Authentication failed. Please try again.';
+            }
+        }
+
+        // Handle URL parameters (in case of error from IMS)
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('error')) {
+            const errorMsg = document.getElementById('error-message');
+            errorMsg.classList.add('show');
+            errorMsg.textContent = 'Authentication failed: ' + (params.get('error_description') || params.get('error'));
+        }
+    </script>
+</body>
+</html>

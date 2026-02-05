@@ -1,9 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Customer Data - Full Table (All 24 Columns)</title>
+  <!-- Adobe IMS Authentication (matches aso-spacecat-dashboard) -->
+  <script src="/scripts/ims-config.js"></script>
+  <script src="/scripts/adobe-ims-client.js"></script>
+  <script src="/scripts/adobe-ims-guard.js"></script>
+  
+  <title>Customer Data - Full Table (All 25 Columns)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="description" content="Complete customer data table with all 24 columns from spreadsheet"/>
+  <meta name="description" content="Complete customer data table with all 25 columns from spreadsheet"/>
   <meta name="week" content="2026-01-23"/>
   <script src="/scripts/aem.js" type="module"></script>
   <script src="/scripts/scripts.js" type="module"></script>
@@ -84,7 +89,7 @@
     
     .full-customer-table {
       width: 100%;
-      min-width: 3500px; /* Wider for more visible columns */
+      min-width: 3700px; /* Wider for more visible columns (added Onboarded URLs) */
       border-collapse: collapse;
       font-size: 13px;
     }
@@ -728,7 +733,7 @@
   <main>
     <div style="margin-bottom: 12px;">
       <h1 style="margin-bottom: 8px;">Customer Data - Full Table View</h1>
-      <p style="margin: 0;" id="page-header-info"><strong>Week:</strong> Loading... | <strong>Total:</strong> Loading... | <strong>Columns:</strong> 24 | <strong>💡 Scroll horizontally →</strong></p>
+      <p style="margin: 0;" id="page-header-info"><strong>Week:</strong> Loading... | <strong>Total:</strong> Loading... | <strong>Columns:</strong> 25 | <strong>💡 Scroll horizontally →</strong></p>
     </div>
     
     <div>
@@ -879,6 +884,7 @@
               <th>Onboard Date</th>
               <th>Deployment Type</th>
               <th>Headless</th>
+              <th>Onboarded URL's</th>
               <th>Engagement</th>
               <th>Blockers</th>
               <th>Feedback</th>
@@ -907,7 +913,7 @@
       <details>
         <summary style="cursor: pointer; font-weight: 600; font-size: 18px; margin-bottom: 12px;">📋 Column Descriptions (Click to expand)</summary>
       <div style="margin-top: 12px;">
-      <h3 style="margin-top: 0;">All 24 Columns</h3>
+      <h3 style="margin-top: 0;">All 25 Columns</h3>
       <ul>
         <li><strong>Company Name</strong> - Customer organization name</li>
         <li><strong>License Type</strong> - Paid or Trial</li>
@@ -919,6 +925,7 @@
         <li><strong>Onboard Date</strong> - Onboarding start date</li>
         <li><strong>Deployment Type</strong> - OnPrem to CS, Cloud, etc.</li>
         <li><strong>Headless</strong> - Headless implementation status</li>
+        <li><strong>Onboarded URL's</strong> - Customer site URLs for API tracking</li>
         <li><strong>Engagement</strong> - Active, At Risk, Critical</li>
         <li><strong>Blockers</strong> - Current blocking issues</li>
         <li><strong>Feedback</strong> - Customer feedback indicator</li>
@@ -1053,6 +1060,11 @@
                 <option value="Yes">Yes</option>
                 <option value="No">No</option>
               </select>
+            </div>
+            
+            <div class="form-field full-width">
+              <label>Onboarded URL's</label>
+              <input type="text" id="new-onboardedUrls" placeholder="e.g., https://customer-site.com">
             </div>
             
             <div class="form-field">
@@ -1251,7 +1263,7 @@
       const changes = {};
       const fieldNames = [
         'licenseType', 'industry', 'eseLead', 'status',
-        'delayReason', 'closeDate', 'onboardDate', 'deploymentType', 'headless',
+        'delayReason', 'closeDate', 'onboardDate', 'deploymentType', 'headless', 'onboardedUrls',
         'engagement', 'blockers', 'feedback', 'healthScore', 'summary',
         'opptyRealized', 'preflight', 'autoOptimizeEnabled',
         'autoOptimizeButtonPressed', 'servicePrincipleDeployed', 'brandProfile',
@@ -1390,6 +1402,7 @@
         onboardDate: document.getElementById('new-onboardDate').value,
         deploymentType: document.getElementById('new-deploymentType').value,
         headless: document.getElementById('new-headless').value,
+        onboardedUrls: document.getElementById('new-onboardedUrls').value,
         engagement: document.getElementById('new-engagement').value,
         blockers: document.getElementById('new-blockers').value,
         feedback: document.getElementById('new-feedback').value,
@@ -1629,7 +1642,7 @@
       const formatted = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
       const headerInfo = document.getElementById('page-header-info');
       if (headerInfo) {
-        headerInfo.innerHTML = `<strong>Week:</strong> ${formatted} (${currentWeek}) | <strong>Total:</strong> ${allCustomers.length} customers | <strong>Columns:</strong> 24 | <strong>💡 Scroll horizontally →</strong>`;
+        headerInfo.innerHTML = `<strong>Week:</strong> ${formatted} (${currentWeek}) | <strong>Total:</strong> ${allCustomers.length} customers | <strong>Columns:</strong> 25 | <strong>💡 Scroll horizontally →</strong>`;
       }
     }
     
@@ -1850,10 +1863,10 @@
     }
     
     function exportToCSV() {
-      // Define column headers (all 24 columns)
+      // Define column headers (all 25 columns)
       const headers = [
         'Company Name', 'License Type', 'Industry', 'ESE Lead', 'Status',
-        'Delay Reason', 'Close Date', 'Onboard Date', 'Deployment Type', 'Headless',
+        'Delay Reason', 'Close Date', 'Onboard Date', 'Deployment Type', 'Headless', 'Onboarded URL\'s',
         'Engagement', 'Blockers', 'Feedback', 'Health Score', 'Summary of Engagement',
         'Oppty Realized', 'Preflight', 'Auto-Optimize Enabled',
         'Auto-Optimize Button Pressed', 'Service Principle Deployed', 'Brand Profile',
@@ -1864,7 +1877,7 @@
       // Map to data fields
       const fields = [
         'companyName', 'licenseType', 'industry', 'eseLead', 'status',
-        'delayReason', 'closeDate', 'onboardDate', 'deploymentType', 'headless',
+        'delayReason', 'closeDate', 'onboardDate', 'deploymentType', 'headless', 'onboardedUrls',
         'engagement', 'blockers', 'feedback', 'healthScore', 'summary',
         'opptyRealized', 'preflight', 'autoOptimizeEnabled',
         'autoOptimizeButtonPressed', 'servicePrincipleDeployed', 'brandProfile',
@@ -1917,7 +1930,7 @@
       
       const columnMap = [
         null, 'companyName', 'licenseType', 'industry', 'eseLead', 'status', 
-        'delayReason', 'closeDate', 'onboardDate', 'deploymentType', 'headless',
+        'delayReason', 'closeDate', 'onboardDate', 'deploymentType', 'headless', 'onboardedUrls',
         'engagement', 'blockers', 'feedback', 'healthScore', 'summary',
         'mau', 'ttiv', 'opptyRealized', 'preflight', 'autoOptimizeEnabled',
         'autoOptimizeButtonPressed', 'servicePrincipleDeployed', 'brandProfile',
@@ -2021,6 +2034,7 @@
             <td>${customer.onboardDate || ''}</td>
             <td>${customer.deploymentType || ''}</td>
             <td>${customer.headless || ''}</td>
+            <td>${customer.onboardedUrls || ''}</td>
             <td><span class="engagement-badge ${getEngagementClass(customer.engagement)}">${customer.engagement || ''}</span></td>
             <td>${customer.blockers || ''}</td>
             <td>${customer.feedback || ''}</td>

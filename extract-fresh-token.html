@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🔑 Extract Fresh IMS Token</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin: 0 0 10px 0;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .token-display {
+            background: #2d3748;
+            color: #68d391;
+            padding: 20px;
+            border-radius: 8px;
+            word-break: break-all;
+            margin: 15px 0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .success {
+            background: #48bb78;
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+            margin: 20px 0;
+            display: none;
+        }
+        .error {
+            background: #f56565;
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+            margin: 20px 0;
+        }
+        .info-box {
+            background: #e6fffa;
+            border: 2px solid #81e6d9;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .command-box {
+            background: #1a202c;
+            color: #48bb78;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .command-box:hover {
+            background: #2d3748;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .token-info {
+            background: #fff5f5;
+            border-left: 4px solid #fc8181;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .token-info.valid {
+            background: #f0fff4;
+            border-left-color: #48bb78;
+        }
+        #result {
+            margin-top: 30px;
+        }
+        .link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔑 Extract Fresh IMS Token</h1>
+        <p class="subtitle">Get your authentication token from aso-spacecat-dashboard</p>
+        
+        <div class="step">
+            <h3><span class="step-number">1</span> Open ASO dashboard and sign in</h3>
+            <p>Open the ASO dashboard in another tab and sign in with Adobe IMS:</p>
+            <a href="https://aso.experiencecloud.live/" target="_blank" rel="noopener" class="link" id="aso-dashboard-link">
+                🚀 Open ASO dashboard (aso.experiencecloud.live)
+            </a>
+            <p style="margin-top: 10px; color: #666; font-size: 14px;">
+                ⚠️ You must be signed in with Adobe IMS for this to work. Token extraction only works when both apps are on the same origin (e.g. local dev). Otherwise paste your token manually below.
+            </p>
+        </div>
+
+        <div class="step">
+            <h3><span class="step-number">2</span> Extract Token from localStorage</h3>
+            <button onclick="extractToken()">🔍 Extract Token from aso-spacecat-dashboard</button>
+            <p style="margin-top: 10px; color: #666; font-size: 14px;">
+                This reads from the same localStorage that aso-spacecat-dashboard uses
+            </p>
+        </div>
+        
+        <div id="result"></div>
+
+        <div class="info-box" style="margin-top: 40px;">
+            <h3 style="margin-top: 0;">💡 How This Works</h3>
+            <p>The aso-spacecat-dashboard stores your IMS token in <code>localStorage.aso_api_token</code>. This page reads that token and saves it to your unified-dashboard project.</p>
+            <p style="margin-top: 10px;"><strong>Authentication Method:</strong> Adobe IMS (Identity Management Service) with Bearer token</p>
+        </div>
+    </div>
+    
+    <script>
+        async function extractToken() {
+            const resultDiv = document.getElementById('result');
+            
+            // Try to get token from localStorage (needs to be on same origin)
+            const token = localStorage.getItem('aso_api_token');
+            
+            if (!token) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <strong>⚠️ No token found in localStorage</strong>
+                        <p style="margin-top: 10px;">To get a token:</p>
+                        <ol style="margin: 10px 0; padding-left: 20px;">
+                            <li>Open the <a href="https://aso.experiencecloud.live/" target="_blank" rel="noopener" style="color: white; text-decoration: underline;">ASO dashboard</a></li>
+                            <li>Sign in with Adobe IMS</li>
+                            <li>Open browser console (F12) and run the command below, then paste the token here</li>
+                        </ol>
+                        <p style="margin-top: 15px;"><strong>Copy this in the ASO dashboard console:</strong></p>
+                        <div class="command-box" onclick="copyText(this.innerText)">localStorage.getItem('aso_api_token')</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Parse token info
+            const tokenInfo = parseToken(token);
+            
+            // Display token info
+            const statusClass = tokenInfo.valid ? 'valid' : '';
+            const statusIcon = tokenInfo.valid ? '✅' : '❌';
+            const statusText = tokenInfo.expired ? 'EXPIRED' : 'VALID';
+            
+            resultDiv.innerHTML = `
+                <div class="success" style="display: block;">
+                    <strong>✅ Token Found!</strong>
+                </div>
+                
+                <div class="token-info ${statusClass}">
+                    <h4 style="margin-top: 0;">Token Status: ${statusIcon} ${statusText}</h4>
+                    ${tokenInfo.expiresAt ? `
+                        <p><strong>Issued:</strong> ${new Date(tokenInfo.issuedAt).toLocaleString()}</p>
+                        <p><strong>Expires:</strong> ${new Date(tokenInfo.expiresAt).toLocaleString()}</p>
+                        <p><strong>Time Left:</strong> ${tokenInfo.timeLeft}</p>
+                    ` : ''}
+                    <p><strong>User ID:</strong> ${tokenInfo.userId || 'N/A'}</p>
+                    <p><strong>Client:</strong> ${tokenInfo.clientId || 'N/A'}</p>
+                </div>
+                
+                <div class="step">
+                    <h3><span class="step-number">3</span> Token Extracted</h3>
+                    <div class="token-display">${token}</div>
+                    <button onclick="copyToken()">📋 Copy Token</button>
+                    <button onclick="saveTokenToFile()">💾 Save to .token File</button>
+                </div>
+                
+                <div class="step">
+                    <h3><span class="step-number">4</span> Run the URL Fetcher</h3>
+                    <p>Now run this command in your terminal:</p>
+                    <div class="command-box" onclick="copyText(this.innerText)">cd /Users/tgardner/Documents/unified-dashboard/unifieddashboard && node scripts/fetch-spacecat-urls.js</div>
+                    <p style="margin-top: 10px; color: #666; font-size: 14px;">Click to copy command</p>
+                </div>
+            `;
+            
+            // Store token for copy functions
+            window.currentToken = token;
+        }
+        
+        function parseToken(token) {
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) return { valid: false };
+                
+                const payload = JSON.parse(atob(parts[1]));
+                
+                let expiresAt = null;
+                let issuedAt = null;
+                
+                // Standard JWT format
+                if (payload.exp) {
+                    expiresAt = payload.exp * 1000;
+                }
+                if (payload.iat) {
+                    issuedAt = payload.iat * 1000;
+                }
+                
+                // Adobe IMS format
+                if (payload.created_at && payload.expires_in) {
+                    issuedAt = parseInt(payload.created_at);
+                    expiresAt = parseInt(payload.created_at) + parseInt(payload.expires_in);
+                }
+                
+                const now = Date.now();
+                const expired = expiresAt && expiresAt < now;
+                const timeRemaining = expiresAt ? expiresAt - now : 0;
+                
+                let timeLeft = '';
+                if (timeRemaining > 0) {
+                    const hours = Math.floor(timeRemaining / 3600000);
+                    const days = Math.floor(timeRemaining / 86400000);
+                    timeLeft = days > 0 ? `${days} days` : `${hours} hours`;
+                } else {
+                    const hoursAgo = Math.floor(-timeRemaining / 3600000);
+                    timeLeft = `Expired ${hoursAgo} hours ago`;
+                }
+                
+                return {
+                    valid: !expired,
+                    expired,
+                    expiresAt,
+                    issuedAt,
+                    timeLeft,
+                    userId: payload.user_id || payload.sub,
+                    clientId: payload.client_id,
+                    scope: payload.scope
+                };
+            } catch (e) {
+                return { valid: false };
+            }
+        }
+        
+        function copyToken() {
+            navigator.clipboard.writeText(window.currentToken).then(() => {
+                showMessage('✅ Token copied to clipboard!');
+            });
+        }
+        
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showMessage('✅ Copied to clipboard!');
+            });
+        }
+        
+        async function saveTokenToFile() {
+            // Since we can't write files directly from browser, copy command to save
+            const command = `echo "${window.currentToken}" > /Users/tgardner/Documents/unified-dashboard/unifieddashboard/.token`;
+            navigator.clipboard.writeText(command).then(() => {
+                showMessage('✅ Command copied! Paste in terminal to save token to .token file');
+            });
+        }
+        
+        function showMessage(msg) {
+            const existingMsg = document.querySelector('.temp-message');
+            if (existingMsg) existingMsg.remove();
+            
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'success temp-message';
+            msgDiv.style.display = 'block';
+            msgDiv.style.position = 'fixed';
+            msgDiv.style.top = '20px';
+            msgDiv.style.right = '20px';
+            msgDiv.style.zIndex = '9999';
+            msgDiv.textContent = msg;
+            document.body.appendChild(msgDiv);
+            
+            setTimeout(() => msgDiv.remove(), 3000);
+        }
+        
+        // Auto-extract if token exists
+        window.onload = function() {
+            const token = localStorage.getItem('llmo_api_token');
+            if (token) {
+                setTimeout(() => extractToken(), 500);
+            }
+        }
+    </script>
+</body>
+</html>

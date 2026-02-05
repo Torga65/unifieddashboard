@@ -8,7 +8,7 @@
  */
 function generateSynopsis(customer) {
   const {
-    summary, engagement, status, healthScore, mau, ttiv,
+    summary, engagement, status, healthScore,
   } = customer;
   const summaryLower = summary ? summary.toLowerCase() : '';
 
@@ -26,7 +26,7 @@ function generateSynopsis(customer) {
   }
 
   if (summaryLower.includes('on hold') || status === 'On Hold') {
-    return `Account is currently in On Hold status. Analysis of similar accounts shows this typically occurs due to budget cycles, internal priorities, or organizational changes. ${mau ? `Previous MAU of ${mau} indicates prior active usage.` : 'Limited usage data available from pre-hold period.'}`;
+    return 'Account is currently in On Hold status. Analysis of similar accounts shows this typically occurs due to budget cycles, internal priorities, or organizational changes. Limited usage data available from pre-hold period.';
   }
 
   if (summaryLower.includes('auto-optimi') && summaryLower.includes('stop')) {
@@ -34,11 +34,11 @@ function generateSynopsis(customer) {
   }
 
   if (summaryLower.includes('seo report') || summaryLower.includes('delivering')) {
-    return `Active value delivery cycle with regular reporting. ${mau ? `${mau} MAU shows consistent platform usage.` : ''} Health score of ${healthScore} combined with ${engagement} engagement indicates the customer is realizing value from the platform through data and insights.`;
+    return `Active value delivery cycle with regular reporting. Health score of ${healthScore} combined with ${engagement} engagement indicates the customer is realizing value from the platform through data and insights.`;
   }
 
   if (summaryLower.includes('showing the customer') || summaryLower.includes('demo')) {
-    return `Currently in demonstration/proof-of-value phase with ${status} status. Historical conversion data shows customers in this phase typically take 4-8 weeks to reach production decision. ${ttiv ? `TTIV of ${ttiv} will be a key metric to track.` : 'Time to value metrics not yet established.'}`;
+    return `Currently in demonstration/proof-of-value phase with ${status} status. Historical conversion data shows customers in this phase typically take 4-8 weeks to reach production decision. Time to value metrics not yet established.`;
   }
 
   if (summaryLower.includes('no update') || summaryLower.includes('no response')) {
@@ -47,11 +47,11 @@ function generateSynopsis(customer) {
 
   // Default synopsis based on health score and engagement
   if (healthScore >= 75 && engagement === 'Active') {
-    return `Strong engagement indicators with health score of ${healthScore} and Active status. ${mau ? `${mau} MAU demonstrates consistent platform adoption.` : ''} Historical patterns show customers in this range typically exhibit stable, long-term platform usage with low churn risk.`;
+    return `Strong engagement indicators with health score of ${healthScore} and Active status. Historical patterns show customers in this range typically exhibit stable, long-term platform usage with low churn risk.`;
   } if (healthScore < 50) {
     return `Multiple risk indicators present with health score below 50 (currently ${healthScore}). ${engagement} engagement level combined with ${status} status suggests challenges in adoption or satisfaction. Similar historical patterns have indicated need for intervention.`;
   }
-  return `Moderate engagement profile with health score of ${healthScore}. Customer is ${engagement} with ${status} status. ${mau ? `${mau} MAU shows ongoing usage.` : 'Usage metrics indicate room for growth.'} Pattern suggests opportunity for deeper adoption and increased value realization.`;
+  return `Moderate engagement profile with health score of ${healthScore}. Customer is ${engagement} with ${status} status. Usage metrics indicate room for growth. Pattern suggests opportunity for deeper adoption and increased value realization.`;
 }
 
 /**
@@ -60,7 +60,7 @@ function generateSynopsis(customer) {
 function extractKeyObservations(customer) {
   const observations = [];
   const {
-    summary, blockers, blockersStatus, engagement, healthScore, status, mau, ttiv,
+    summary, blockers, blockersStatus, engagement, healthScore, status,
   } = customer;
   const summaryLower = summary ? summary.toLowerCase() : '';
 
@@ -80,15 +80,6 @@ function extractKeyObservations(customer) {
     observations.push(`💛 Health Score: Moderate at ${healthScore} - some challenges present`);
   } else {
     observations.push(`❤️ Health Score: Low at ${healthScore} - multiple risk factors detected`);
-  }
-
-  // Usage metrics
-  if (mau) {
-    observations.push(`👥 Monthly Active Users: ${mau} users currently engaging with the platform`);
-  }
-
-  if (ttiv) {
-    observations.push(`⚡ Time to Initial Value: ${ttiv} - measures onboarding efficiency`);
   }
 
   // Status observations

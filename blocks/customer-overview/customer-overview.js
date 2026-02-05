@@ -109,20 +109,6 @@ function createCustomerCard(customer) {
           </div>
         </div>
       </div>
-      
-      ${customer.mau ? `
-        <div class="metric">
-          <div class="metric-label">MAU</div>
-          <div class="metric-value"><strong>${customer.mau}</strong></div>
-        </div>
-      ` : ''}
-      
-      ${customer.ttiv ? `
-        <div class="metric">
-          <div class="metric-label">TTIV</div>
-          <div class="metric-value">${customer.ttiv}</div>
-        </div>
-      ` : ''}
     </div>
     
     ${customer.summary ? `
@@ -168,6 +154,13 @@ function createCustomerCard(customer) {
         </div>
       ` : ''}
     </div>
+    
+    ${customer.onboardedUrls ? `
+      <div class="customer-urls">
+        <div class="urls-label">🔗 Onboarded URLs:</div>
+        <div class="urls-value">${customer.onboardedUrls}</div>
+      </div>
+    ` : ''}
     
     <div class="customer-footer">
       <div class="customer-meta">

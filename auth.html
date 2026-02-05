@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SpaceCat Authentication - Unified Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/styles/styles.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .auth-container {
+            background: white;
+            border-radius: 16px;
+            padding: 48px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .auth-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .auth-header h1 {
+            color: #667eea;
+            margin: 0 0 8px 0;
+            font-size: 32px;
+        }
+        
+        .auth-header p {
+            color: #666;
+            margin: 0;
+        }
+        
+        .auth-method {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s;
+        }
+        
+        .auth-method:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+        }
+        
+        .auth-method h3 {
+            margin-top: 0;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .badge {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge.recommended {
+            background: #48bb78;
+        }
+        
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 12px;
+        }
+        
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        button.secondary {
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        button.secondary:hover {
+            background: #dee2e6;
+        }
+        
+        .token-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            margin-top: 12px;
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .token-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .status-message {
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        
+        .token-info {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        
+        .token-info strong {
+            color: #856404;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .instructions {
+            background: #e7f3ff;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .instructions ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        
+        .instructions code {
+            background: rgba(0,0,0,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-header">
+            <h1>🔐 SpaceCat Authentication</h1>
+            <p>Choose your authentication method</p>
+        </div>
+
+        <!-- Method 1: Adobe IMS Direct -->
+        <div class="auth-method">
+            <h3>
+                <span>🎯 Adobe IMS Authentication</span>
+                <span class="badge recommended">Recommended</span>
+            </h3>
+            <p>Authenticate directly with Adobe Identity Management Service</p>
+            <button onclick="authenticateWithIMS()">Sign In with Adobe IMS</button>
+            
+            <div class="instructions">
+                <strong>How it works:</strong>
+                <ol>
+                    <li>Click "Sign In with Adobe IMS"</li>
+                    <li>Sign in with your Adobe credentials</li>
+                    <li>Your token will be automatically saved</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Method 2: Manual Token Entry -->
+        <div class="auth-method">
+            <h3>
+                <span>📝 Manual Token Entry</span>
+            </h3>
+            <p>Already have a token? Paste it here</p>
+            <textarea 
+                id="manual-token" 
+                class="token-input" 
+                placeholder="Paste your IMS token here...&#10;&#10;Example: eyJhbGciOiJSUzI1NiIsIng1dSI6Iml..."></textarea>
+            <button onclick="saveManualToken()">Save Token</button>
+            
+            <div class="instructions">
+                <strong>Where to get a token:</strong>
+                <ol>
+                    <li>Go to <a href="https://aso.experiencecloud.live/" target="_blank">aso.experiencecloud.live</a></li>
+                    <li>Sign in and open browser console (F12)</li>
+                    <li>Run: <code>localStorage.getItem('aso_api_token')</code></li>
+                    <li>Copy the token and paste it above</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Method 3: Use API Key (Legacy) -->
+        <div class="auth-method">
+            <h3>
+                <span>🔑 API Key (Legacy)</span>
+            </h3>
+            <p>Use a static API key if you have one</p>
+            <input 
+                type="text" 
+                id="api-key" 
+                class="token-input" 
+                style="min-height: auto;" 
+                placeholder="Enter API key...">
+            <button onclick="saveApiKey()" class="secondary">Save API Key</button>
+            
+            <div class="token-info">
+                <strong>⚠️ Note:</strong> API keys may have limited functionality compared to IMS tokens. IMS authentication is recommended.
+            </div>
+        </div>
+
+        <!-- Status Messages -->
+        <div id="status-message" class="status-message"></div>
+
+        <!-- View Dashboard Button -->
+        <div style="margin-top: 32px; padding-top: 32px; border-top: 2px solid #e9ecef;">
+            <button onclick="window.location.href='dashboard.html'" class="secondary">
+                🏠 Go to Dashboard
+            </button>
+        </div>
+    </div>
+
+    <script src="https://auth.services.adobe.com/imslib/imslib.min.js"></script>
+    <script src="/scripts/spacecat-auth.js" type="module"></script>
+    <script type="module">
+        // Check if already authenticated
+        window.addEventListener('DOMContentLoaded', checkAuthentication);
+        
+        async function checkAuthentication() {
+            try {
+                const response = await fetch('/data/auth-status.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.authenticated) {
+                        showStatus('success', `✅ Already authenticated as ${data.user || 'user'}. Token expires in ${data.expiresIn}.`);
+                    }
+                }
+            } catch (error) {
+                // Not authenticated, that's ok
+            }
+        }
+        
+        // Method 1: Adobe IMS Authentication
+        async function authenticateWithIMS() {
+            showStatus('info', '🔄 Redirecting to Adobe IMS...');
+            
+            // Configure Adobe IMS
+            const adobeIMS = window.adobeIMS = window.adobeIMS || new Promise((resolve) => {
+                window.adobeIMSLoaded = () => {
+                    const adobeIMSInstance = new window.adobeIMS.AdobeIMS({
+                        client_id: 'unified-dashboard',
+                        scope: 'openid,AdobeID,additional_info,read_organizations',
+                        locale: 'en_US',
+                        environment: 'prod',
+                        redirect_uri: window.location.origin + '/auth-callback.html',
+                        onReady: () => resolve(adobeIMSInstance)
+                    });
+                };
+                
+                if (window.adobeIMS && window.adobeIMS.AdobeIMS) {
+                    window.adobeIMSLoaded();
+                }
+            });
+            
+            const imsInstance = await adobeIMS;
+            
+            // Check if already signed in
+            if (imsInstance.isSignedInUser()) {
+                const token = imsInstance.getAccessToken();
+                await saveToken(token.token);
+            } else {
+                // Redirect to sign in
+                imsInstance.signIn();
+            }
+        }
+        
+        // Method 2: Manual Token Entry
+        async function saveManualToken() {
+            const token = document.getElementById('manual-token').value.trim();
+            
+            if (!token) {
+                showStatus('error', '❌ Please paste a token');
+                return;
+            }
+            
+            await saveToken(token);
+        }
+        
+        // Method 3: API Key
+        async function saveApiKey() {
+            const apiKey = document.getElementById('api-key').value.trim();
+            
+            if (!apiKey) {
+                showStatus('error', '❌ Please enter an API key');
+                return;
+            }
+            
+            await saveToken(apiKey, true);
+        }
+        
+        // Save token to credentials.json via API
+        async function saveToken(token, isApiKey = false) {
+            showStatus('info', '💾 Saving token...');
+            
+            // Validate token format (JWT should have 3 parts)
+            if (!isApiKey && token.split('.').length !== 3) {
+                showStatus('error', '❌ Invalid token format. JWT tokens should have 3 parts separated by dots.');
+                return;
+            }
+            
+            try {
+                // Parse token info if it's a JWT
+                let tokenInfo = null;
+                if (!isApiKey) {
+                    try {
+                        const parts = token.split('.');
+                        const payload = JSON.parse(atob(parts[1]));
+                        
+                        let expiresAt = null;
+                        if (payload.exp) {
+                            expiresAt = new Date(payload.exp * 1000);
+                        } else if (payload.created_at && payload.expires_in) {
+                            expiresAt = new Date(parseInt(payload.created_at) + parseInt(payload.expires_in));
+                        }
+                        
+                        const now = new Date();
+                        const expired = expiresAt && expiresAt < now;
+                        
+                        if (expired) {
+                            showStatus('error', '❌ This token has expired. Please get a fresh token.');
+                            return;
+                        }
+                        
+                        const timeRemaining = expiresAt ? expiresAt.getTime() - now.getTime() : 0;
+                        const hours = Math.floor(timeRemaining / 3600000);
+                        const days = Math.floor(timeRemaining / 86400000);
+                        
+                        tokenInfo = {
+                            userId: payload.user_id || payload.sub,
+                            expiresAt: expiresAt.toISOString(),
+                            expiresIn: days > 0 ? `${days} days` : `${hours} hours`
+                        };
+                    } catch (e) {
+                        showStatus('error', '❌ Could not parse token. Make sure it\'s a valid JWT.');
+                        return;
+                    }
+                }
+                
+                // Save to localStorage for now (you can send to server later)
+                const credentials = {
+                    spacecat: isApiKey ? {
+                        apiKey: token,
+                        baseUrl: 'https://spacecat.experiencecloud.live/api/v1'
+                    } : {
+                        imsToken: token,
+                        baseUrl: 'https://spacecat.experiencecloud.live/api/v1',
+                        ...tokenInfo
+                    }
+                };
+                
+                localStorage.setItem('spacecat_credentials', JSON.stringify(credentials));
+                
+                // Display success with token info
+                let message = '✅ Token saved successfully!';
+                if (tokenInfo) {
+                    message += `\n\n👤 User: ${tokenInfo.userId}\n⏰ Valid for: ${tokenInfo.expiresIn}`;
+                }
+                message += '\n\n📋 Next step: Copy this command to update credentials.json:';
+                
+                showStatus('success', message);
+                
+                // Show copy command
+                const copyCommand = document.createElement('div');
+                copyCommand.className = 'token-input';
+                copyCommand.style.marginTop = '12px';
+                copyCommand.style.cursor = 'pointer';
+                copyCommand.textContent = `echo '${JSON.stringify(credentials, null, 2)}' > credentials.json`;
+                copyCommand.onclick = () => {
+                    navigator.clipboard.writeText(copyCommand.textContent);
+                    showStatus('success', '✅ Command copied! Paste it in your terminal.');
+                };
+                document.getElementById('status-message').appendChild(copyCommand);
+                
+                // Also save to .token file command
+                const tokenCommand = document.createElement('div');
+                tokenCommand.className = 'token-input';
+                tokenCommand.style.marginTop = '8px';
+                tokenCommand.style.cursor = 'pointer';
+                tokenCommand.textContent = `echo "${token}" > .token`;
+                tokenCommand.onclick = () => {
+                    navigator.clipboard.writeText(tokenCommand.textContent);
+                    showStatus('success', '✅ Command copied! Paste it in your terminal.');
+                };
+                document.getElementById('status-message').appendChild(tokenCommand);
+                
+            } catch (error) {
+                showStatus('error', `❌ Error saving token: ${error.message}`);
+            }
+        }
+        
+        function showStatus(type, message) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.className = `status-message ${type}`;
+            statusDiv.innerHTML = message.replace(/\n/g, '<br>');
+        }
+        
+        // Make functions global
+        window.authenticateWithIMS = authenticateWithIMS;
+        window.saveManualToken = saveManualToken;
+        window.saveApiKey = saveApiKey;
+    </script>
+</body>
+</html>

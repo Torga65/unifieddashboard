@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🔑 Extract IMS Token</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin: 0 0 10px 0;
+        }
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            padding: 14px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .token-display {
+            background: #2d3748;
+            color: #68d391;
+            padding: 20px;
+            border-radius: 8px;
+            word-break: break-all;
+            font-family: 'Monaco', monospace;
+            font-size: 12px;
+            margin: 15px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        .token-display:hover {
+            border-color: #68d391;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 2px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 2px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 2px solid #bee5eb;
+        }
+        .command-box {
+            background: #1a202c;
+            color: #48bb78;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            margin: 10px 0;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        .command-box:hover {
+            background: #2d3748;
+            border-color: #48bb78;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔑 IMS Token Extractor</h1>
+        <p style="color: #666;">Get your Adobe IMS authentication token</p>
+
+        <div class="step">
+            <h3>Step 1: Extract Token from ASO</h3>
+            <p>This will attempt to read your token from aso.experiencecloud.live localStorage:</p>
+            <button onclick="extractFromASO()">🔍 Extract Token from ASO</button>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Manual Console Method</h3>
+            <p>If automatic extraction doesn't work, use this manual method:</p>
+            <ol style="line-height: 1.8;">
+                <li>Open <a href="https://aso.experiencecloud.live/" target="_blank" style="color: #667eea;">aso.experiencecloud.live</a></li>
+                <li>Sign in with Adobe credentials</li>
+                <li>Press <strong>F12</strong> or <strong>Cmd+Option+I</strong> to open console</li>
+                <li>Copy and run this command:</li>
+            </ol>
+            <div class="command-box" onclick="copyText(this.innerText)">localStorage.getItem('aso_api_token')</div>
+            <button onclick="showPasteArea()">📝 I Have the Token, Let Me Paste</button>
+        </div>
+
+        <div id="paste-area" class="step hidden">
+            <h3>Step 3: Paste Your Token</h3>
+            <textarea id="manual-token" class="token-display" style="min-height: 120px; width: 100%; box-sizing: border-box;" placeholder="Paste your token here..."></textarea>
+            <button onclick="saveToken()">💾 Save Token</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function extractFromASO() {
+            const resultDiv = document.getElementById('result');
+            
+            // Try to get token from localStorage
+            try {
+                const token = localStorage.getItem('aso_api_token');
+                
+                if (!token) {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <strong>❌ No token found in localStorage</strong>
+                            <p style="margin-top: 10px;">This usually means:</p>
+                            <ul>
+                                <li>You're not signed in to ASO</li>
+                                <li>You need to visit aso.experiencecloud.live first</li>
+                                <li>Browser security prevents cross-domain localStorage access</li>
+                            </ul>
+                            <p style="margin-top: 10px;"><strong>Use Step 2 (Manual Console Method) instead.</strong></p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                displayToken(token);
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <strong>❌ Cannot access localStorage</strong>
+                        <p style="margin-top: 10px;">This is a browser security restriction.</p>
+                        <p><strong>Use Step 2 (Manual Console Method) instead.</strong></p>
+                    </div>
+                `;
+            }
+        }
+
+        function showPasteArea() {
+            document.getElementById('paste-area').classList.remove('hidden');
+            document.getElementById('manual-token').focus();
+        }
+
+        function saveToken() {
+            const token = document.getElementById('manual-token').value.trim();
+            
+            if (!token) {
+                showResult('error', '❌ Please paste a token first');
+                return;
+            }
+            
+            displayToken(token);
+        }
+
+        function displayToken(token) {
+            // Validate token format
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                showResult('error', '❌ Invalid token format. JWT tokens should have 3 parts separated by dots.');
+                return;
+            }
+
+            try {
+                // Parse token info
+                const payload = JSON.parse(atob(parts[1]));
+                
+                let expiresAt = null;
+                let issuedAt = null;
+                
+                if (payload.exp) {
+                    expiresAt = new Date(payload.exp * 1000);
+                }
+                if (payload.iat) {
+                    issuedAt = new Date(payload.iat * 1000);
+                }
+                if (payload.created_at && payload.expires_in) {
+                    issuedAt = new Date(parseInt(payload.created_at));
+                    expiresAt = new Date(parseInt(payload.created_at) + parseInt(payload.expires_in));
+                }
+                
+                const now = new Date();
+                const expired = expiresAt && expiresAt < now;
+                
+                if (expired) {
+                    showResult('error', '❌ This token has expired. Please sign in to ASO again to get a fresh token.');
+                    return;
+                }
+                
+                const timeRemaining = expiresAt ? expiresAt.getTime() - now.getTime() : 0;
+                const hours = Math.floor(timeRemaining / 3600000);
+                const days = Math.floor(timeRemaining / 86400000);
+                const timeLeft = days > 0 ? `${days} days` : `${hours} hours`;
+                
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <strong>✅ Valid Token Found!</strong>
+                        <p style="margin: 10px 0 0 0;">
+                            <strong>User:</strong> ${payload.user_id || payload.sub || 'Unknown'}<br>
+                            <strong>Expires:</strong> ${expiresAt ? expiresAt.toLocaleString() : 'Unknown'}<br>
+                            <strong>Time Left:</strong> ${timeLeft}
+                        </p>
+                    </div>
+                    
+                    <div class="step">
+                        <h3>Your Token</h3>
+                        <div class="token-display" onclick="copyText(this.innerText)">${token}</div>
+                        <button onclick="copyToken('${token}')">📋 Copy Token</button>
+                    </div>
+                    
+                    <div class="step">
+                        <h3>Save to Your Project</h3>
+                        <p>Run this command in your terminal:</p>
+                        <div class="command-box" onclick="copyText(this.innerText)">echo "${token}" > /Users/tgardner/Documents/unified-dashboard/unifieddashboard/.token</div>
+                        <p style="margin-top: 15px;">Or run the setup script:</p>
+                        <div class="command-box" onclick="copyText(this.innerText)">cd /Users/tgardner/Documents/unified-dashboard/unifieddashboard && bash scripts/setup-auth.sh</div>
+                    </div>
+                `;
+                
+                // Auto-copy to clipboard
+                copyToken(token);
+                
+            } catch (error) {
+                showResult('error', `❌ Could not parse token: ${error.message}`);
+            }
+        }
+
+        function copyToken(token) {
+            navigator.clipboard.writeText(token).then(() => {
+                showToast('✅ Token copied to clipboard!');
+            });
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('✅ Copied to clipboard!');
+            });
+        }
+
+        function showResult(type, message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'success';
+            toast.style.position = 'fixed';
+            toast.style.top = '20px';
+            toast.style.right = '20px';
+            toast.style.zIndex = '9999';
+            toast.style.minWidth = '250px';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Auto-try extraction on load
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const info = document.createElement('div');
+                info.className = 'info';
+                info.innerHTML = '<strong>💡 Tip:</strong> Make sure you\'re signed in to <a href="https://aso.experiencecloud.live/" target="_blank">aso.experiencecloud.live</a> first!';
+                document.querySelector('.container').insertBefore(info, document.querySelector('.step'));
+            }, 500);
+        });
+    </script>
+</body>
+</html>

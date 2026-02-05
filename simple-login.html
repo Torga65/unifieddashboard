@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - Unified Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 60px 50px;
+        }
+
+        .logo {
+            font-size: 64px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #2d3748;
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #718096;
+            font-size: 16px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            color: #4a5568;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .sign-in-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .sign-in-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .sign-in-btn:active {
+            transform: translateY(0);
+        }
+
+        .sign-in-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            background: #fed7d7;
+            border: 2px solid #fc8181;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            color: #742a2a;
+            display: none;
+            font-size: 14px;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .info-box {
+            background: #ebf4ff;
+            border: 2px solid #bee3f8;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .info-box h3 {
+            color: #2c5282;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #2d3748;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .info-box ul {
+            margin: 10px 0 0 20px;
+            color: #2d3748;
+            font-size: 14px;
+        }
+
+        footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            color: #a0aec0;
+            font-size: 12px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">🔐</div>
+        <h1>Unified Dashboard</h1>
+        <p class="subtitle">Enter your Adobe IMS token to continue</p>
+
+        <form id="login-form" onsubmit="handleSignIn(event)">
+            <div class="form-group">
+                <label for="token">Adobe IMS Token</label>
+                <input 
+                    type="password" 
+                    id="token" 
+                    placeholder="Paste your IMS token here..."
+                    required
+                    autocomplete="off"
+                />
+            </div>
+
+            <button type="submit" class="sign-in-btn" id="sign-in-btn">
+                Sign In
+            </button>
+        </form>
+
+        <div class="error-message" id="error-message">
+            Invalid or expired token. Please check and try again.
+        </div>
+
+        <div class="info-box">
+            <h3>💡 How to get your token</h3>
+            <p><strong>Option 1: From another Adobe dashboard</strong></p>
+            <ol style="margin: 8px 0; padding-left: 20px; color: #4a5568;">
+                <li>Visit <a href="https://aso.experiencecloud.live/" target="_blank" style="color: #667eea;">aso.experiencecloud.live</a></li>
+                <li>Sign in with Adobe credentials</li>
+                <li>Open browser console (F12)</li>
+                <li>Run: <code style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 4px;">localStorage.getItem('aso_api_token')</code></li>
+                <li>Copy the token and paste above</li>
+            </ol>
+            <p style="margin-top: 12px;"><strong>Option 2: Use existing token</strong></p>
+            <p style="margin: 4px 0 0 0;">If you have a valid Adobe IMS token, paste it above.</p>
+        </div>
+
+        <footer>
+            <p>Token-based Authentication</p>
+            <p style="margin-top: 5px;">Unified Dashboard © 2026</p>
+        </footer>
+    </div>
+
+    <script>
+        // Check if already authenticated
+        if (isAuthenticated()) {
+            const redirect = sessionStorage.getItem('auth_redirect') || '/index.html';
+            sessionStorage.removeItem('auth_redirect');
+            window.location.href = redirect;
+        }
+
+        function isAuthenticated() {
+            const token = localStorage.getItem('unified_dashboard_ims_token');
+            if (!token) return false;
+            
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) return false;
+                
+                const payload = JSON.parse(atob(parts[1]));
+                let expiresAt = null;
+                
+                if (payload.exp) {
+                    expiresAt = new Date(payload.exp * 1000);
+                } else if (payload.created_at && payload.expires_in) {
+                    expiresAt = new Date(parseInt(payload.created_at) + parseInt(payload.expires_in));
+                }
+                
+                return expiresAt && expiresAt > new Date();
+            } catch {
+                return false;
+            }
+        }
+
+        function handleSignIn(event) {
+            event.preventDefault();
+            
+            const btn = document.getElementById('sign-in-btn');
+            const errorMsg = document.getElementById('error-message');
+            const tokenInput = document.getElementById('token');
+            const token = tokenInput.value.trim();
+
+            try {
+                btn.disabled = true;
+                errorMsg.classList.remove('show');
+
+                // Validate token format
+                const parts = token.split('.');
+                if (parts.length !== 3) {
+                    throw new Error('Invalid token format');
+                }
+
+                // Parse token
+                const payload = JSON.parse(atob(parts[1]));
+                
+                // Check expiration
+                let expiresAt = null;
+                let issuedAt = null;
+                
+                if (payload.exp) {
+                    expiresAt = new Date(payload.exp * 1000);
+                }
+                if (payload.iat) {
+                    issuedAt = new Date(payload.iat * 1000);
+                }
+                if (payload.created_at && payload.expires_in) {
+                    issuedAt = new Date(parseInt(payload.created_at));
+                    expiresAt = new Date(parseInt(payload.created_at) + parseInt(payload.expires_in));
+                }
+                
+                const now = new Date();
+                const expired = expiresAt && expiresAt < now;
+                
+                if (expired) {
+                    throw new Error('Token has expired');
+                }
+
+                // Store token
+                localStorage.setItem('unified_dashboard_ims_token', token);
+                
+                // Store profile
+                const profile = {
+                    userId: payload.user_id || payload.sub || 'user',
+                    email: payload.email || 'user@adobe.com',
+                    name: payload.name || 'Adobe User',
+                    expiresAt: expiresAt ? expiresAt.toISOString() : null
+                };
+                localStorage.setItem('unified_dashboard_ims_profile', JSON.stringify(profile));
+                
+                // Also save for API scripts
+                localStorage.setItem('spacecat_api_token', token);
+
+                console.log('✅ Authenticated as:', profile.userId);
+
+                // Redirect to intended page
+                const redirect = sessionStorage.getItem('auth_redirect') || '/index.html';
+                sessionStorage.removeItem('auth_redirect');
+                window.location.href = redirect;
+
+            } catch (error) {
+                console.error('Sign in error:', error);
+                btn.disabled = false;
+                errorMsg.textContent = error.message || 'Invalid or expired token. Please check and try again.';
+                errorMsg.classList.add('show');
+            }
+        }
+    </script>
+</body>
+</html>
