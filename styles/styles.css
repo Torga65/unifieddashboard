@@ -98,6 +98,27 @@ footer .footer[data-block-status="loaded"] {
   visibility: visible;
 }
 
+/* Right-side sidebar layout (llmo-spacecat-dashboard style) */
+.main-wrapper-with-sidebar {
+  margin-right: 240px;
+  transition: margin-right 0.2s ease;
+}
+
+aside.sidebar {
+  position: relative;
+}
+
+/* When right sidebar is present, hide top nav sections so nav is only in sidebar */
+.has-right-sidebar header .nav-sections {
+  display: none;
+}
+
+@media (width >= 900px) {
+  .has-right-sidebar header .nav-sections {
+    display: none;
+  }
+}
+
 h1,
 h2,
 h3,

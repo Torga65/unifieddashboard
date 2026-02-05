@@ -2,6 +2,8 @@ import {
   buildBlock,
   loadHeader,
   loadFooter,
+  loadBlock,
+  decorateBlock,
   decorateButtons,
   decorateIcons,
   decorateSections,
@@ -117,10 +119,31 @@ async function loadEager(doc) {
  * Loads everything that doesn't need to be delayed.
  * @param {Element} doc The container element
  */
+async function loadSidebar(doc) {
+  const main = doc.querySelector('main');
+  if (!main) return;
+
+  const mainWrapper = document.createElement('div');
+  mainWrapper.className = 'main-wrapper main-wrapper-with-sidebar';
+  main.parentNode.insertBefore(mainWrapper, main);
+  mainWrapper.appendChild(main);
+
+  const aside = document.createElement('aside');
+  aside.className = 'sidebar';
+  const sidebarBlock = buildBlock('sidebar', '');
+  aside.appendChild(sidebarBlock);
+  mainWrapper.parentNode.insertBefore(aside, mainWrapper.nextSibling);
+
+  decorateBlock(sidebarBlock);
+  await loadBlock(sidebarBlock);
+  document.body.classList.add('has-right-sidebar');
+}
+
 async function loadLazy(doc) {
   loadHeader(doc.querySelector('header'));
 
   const main = doc.querySelector('main');
+  await loadSidebar(doc);
   await loadSections(main);
 
   const { hash } = window.location;
