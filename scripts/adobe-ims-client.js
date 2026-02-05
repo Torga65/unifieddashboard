@@ -17,7 +17,7 @@ const IMS_CONFIG = {
     'account_cluster.read',
   ].join(','),
   locale: 'en-US',
-  environment: 'prod',  // or 'stg1' for staging
+  environment: 'prod', // or 'stg1' for staging
   autoValidateToken: true,
 };
 
@@ -58,43 +58,43 @@ class AdobeIMSClient {
       const config = {
         ...IMS_CONFIG,
         redirect_uri: window.location.origin + window.location.pathname,
-        
+
         // Callbacks (matching aso-spacecat-dashboard)
         onAccessToken: (token) => {
           console.log('✅ Access token received');
           this.handleToken(token);
         },
-        
+
         onAccessTokenHasExpired: () => {
           console.log('⚠️ Token has expired');
           this.handleTokenExpired();
         },
-        
+
         onReauthAccessToken: (reauthToken) => {
           console.log('🔄 Reauth token received');
           this.handleToken(reauthToken);
         },
-        
+
         onError: (errorType, error) => {
           console.error('❌ IMS Error:', errorType, error);
           this.handleError(errorType, error);
         },
-        
+
         onReady: (context) => {
           console.log('✅ IMS Ready');
           this.handleReady(context);
         },
-        
+
         onProfile: (profile) => {
           console.log('✅ Profile loaded');
           this.handleProfile(profile);
-        }
+        },
       };
 
       // Initialize IMS instance
       this.imsInstance = new window.adobeIMS.AdobeIMS(config);
       await this.imsInstance.initialize();
-      
+
       return true;
     } catch (error) {
       console.error('Failed to initialize Adobe IMS:', error);
@@ -134,16 +134,16 @@ class AdobeIMSClient {
   handleToken(token) {
     // Extract token string
     const tokenString = typeof token === 'object' ? token.token : token;
-    
+
     // Store token (matching their storage keys)
     localStorage.setItem(STORAGE_KEYS.API_TOKEN, tokenString);
     localStorage.setItem(STORAGE_KEYS.SPACECAT_TOKEN, tokenString);
-    
+
     this.token = token;
-    
+
     // Trigger callbacks
-    this.callbacks.onToken.forEach(cb => cb(tokenString));
-    
+    this.callbacks.onToken.forEach((cb) => cb(tokenString));
+
     // Start auto-refresh timer
     this.startAutoRefresh();
   }
@@ -162,7 +162,7 @@ class AdobeIMSClient {
    */
   handleReady(context) {
     this.ready = true;
-    this.callbacks.onReady.forEach(cb => cb(context));
+    this.callbacks.onReady.forEach((cb) => cb(context));
   }
 
   /**
@@ -171,7 +171,7 @@ class AdobeIMSClient {
   handleProfile(profile) {
     this.profile = profile;
     localStorage.setItem(STORAGE_KEYS.IMS_PROFILE, JSON.stringify(profile));
-    this.callbacks.onProfile.forEach(cb => cb(profile));
+    this.callbacks.onProfile.forEach((cb) => cb(profile));
   }
 
   /**
@@ -179,7 +179,7 @@ class AdobeIMSClient {
    */
   handleError(errorType, error) {
     this.error = { errorType, error };
-    this.callbacks.onError.forEach(cb => cb(errorType, error));
+    this.callbacks.onError.forEach((cb) => cb(errorType, error));
   }
 
   /**
@@ -192,7 +192,7 @@ class AdobeIMSClient {
     }
 
     console.log('Signing in with Adobe IMS...');
-    
+
     if (options.profile_filter) {
       this.imsInstance.signIn({ profile_filter: options.profile_filter });
     } else {
@@ -205,26 +205,26 @@ class AdobeIMSClient {
    */
   async signOut() {
     console.log('Signing out...');
-    
+
     // Clear local state
     this.token = null;
     this.profile = null;
-    
+
     // Aggressively clear ALL IMS-related storage
     const patterns = ['adobeid', 'ims', 'access_token', 'profile', 'aso_api_token', 'spacecat_api_token'];
-    
+
     // Clear sessionStorage
     for (let i = sessionStorage.length - 1; i >= 0; i--) {
       const key = sessionStorage.key(i);
-      if (key && patterns.some(p => key.toLowerCase().includes(p.toLowerCase()))) {
+      if (key && patterns.some((p) => key.toLowerCase().includes(p.toLowerCase()))) {
         sessionStorage.removeItem(key);
       }
     }
-    
+
     // Clear localStorage
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);
-      if (key && patterns.some(p => key.toLowerCase().includes(p.toLowerCase()))) {
+      if (key && patterns.some((p) => key.toLowerCase().includes(p.toLowerCase()))) {
         localStorage.removeItem(key);
       }
     }
@@ -249,7 +249,7 @@ class AdobeIMSClient {
     if (this.imsInstance) {
       return this.imsInstance.getAccessToken();
     }
-    
+
     // Fallback to localStorage
     const token = localStorage.getItem(STORAGE_KEYS.API_TOKEN);
     return token ? { token } : null;
@@ -279,7 +279,7 @@ class AdobeIMSClient {
         return null;
       }
     }
-    
+
     // Fallback to localStorage
     const profileStr = localStorage.getItem(STORAGE_KEYS.IMS_PROFILE);
     return profileStr ? JSON.parse(profileStr) : null;
@@ -292,11 +292,11 @@ class AdobeIMSClient {
     if (this.imsInstance) {
       return this.imsInstance.isSignedInUser();
     }
-    
+
     // Fallback: check if token exists and is valid
     const token = localStorage.getItem(STORAGE_KEYS.API_TOKEN);
     if (!token) return false;
-    
+
     try {
       const tokenInfo = this.parseToken(token);
       return !tokenInfo.expired;
@@ -312,13 +312,13 @@ class AdobeIMSClient {
     try {
       const parts = tokenString.split('.');
       if (parts.length !== 3) throw new Error('Invalid token format');
-      
+
       const payload = JSON.parse(atob(parts[1]));
-      
+
       // Handle Adobe IMS format
       let expiresAt = null;
       let issuedAt = null;
-      
+
       // Standard JWT format
       if (payload.exp) {
         expiresAt = new Date(payload.exp * 1000);
@@ -326,17 +326,17 @@ class AdobeIMSClient {
       if (payload.iat) {
         issuedAt = new Date(payload.iat * 1000);
       }
-      
+
       // Adobe IMS format (created_at + expires_in)
       if (payload.created_at && payload.expires_in) {
         issuedAt = new Date(parseInt(payload.created_at));
         expiresAt = new Date(parseInt(payload.created_at) + parseInt(payload.expires_in));
       }
-      
+
       const now = new Date();
       const expired = expiresAt && expiresAt < now;
       const timeRemaining = expiresAt ? expiresAt.getTime() - now.getTime() : 0;
-      
+
       return {
         userId: payload.user_id || payload.sub,
         clientId: payload.client_id,
@@ -381,7 +381,7 @@ class AdobeIMSClient {
 
     // Check every 2 minutes (matching aso-spacecat-dashboard)
     this.refreshTimer = setInterval(checkAndRefresh, 2 * 60 * 1000);
-    
+
     // Initial check
     checkAndRefresh();
   }
@@ -400,10 +400,10 @@ class AdobeIMSClient {
    */
   getImsOrgId() {
     if (!this.profile) return null;
-    
+
     const ctx = this.profile?.projectedProductContext;
     if (ctx && Array.isArray(ctx)) {
-      return ctx.map(c => c.prodCtx?.owningEntity).find(id => id) || null;
+      return ctx.map((c) => c.prodCtx?.owningEntity).find((id) => id) || null;
     }
     return null;
   }
@@ -413,11 +413,11 @@ class AdobeIMSClient {
    */
   switchOrg(orgId) {
     if (!this.imsInstance || !this.profile) return;
-    
+
     const filter = `{"findFirst":true, "fallbackToAA":true, "preferForwardProfile":true, "searchEntireCluster":true}; isOwnedByOrg('${orgId}')`;
-    this.imsInstance.signIn({ 
-      profile_filter: filter, 
-      response_type: 'token' 
+    this.imsInstance.signIn({
+      profile_filter: filter,
+      response_type: 'token',
     });
   }
 }

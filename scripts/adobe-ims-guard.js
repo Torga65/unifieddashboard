@@ -4,13 +4,11 @@
  * Automatically triggers IMS sign-in without a separate login page
  */
 
-(function() {
-  'use strict';
-
+(function () {
   // Pages that don't require authentication
   const PUBLIC_PAGES = [
     '/extract-fresh-token.html',
-    '/auth.html'
+    '/auth.html',
   ];
 
   // Storage keys (matching aso-spacecat-dashboard)
@@ -20,14 +18,14 @@
   };
 
   // Auth state
-  let authState = 'checking'; // checking, authenticated, authenticating, error
+  let _authState = 'checking'; // checking, authenticated, authenticating, error
 
   /**
    * Check if current page is public
    */
   function isPublicPage() {
     const currentPath = window.location.pathname;
-    return PUBLIC_PAGES.some(page => currentPath.endsWith(page));
+    return PUBLIC_PAGES.some((page) => currentPath.endsWith(page));
   }
 
   /**
@@ -41,23 +39,23 @@
       }
 
       const payload = JSON.parse(atob(parts[1]));
-      
+
       // Handle Adobe IMS format
       let expiresAt = null;
-      
+
       // Standard JWT format
       if (payload.exp) {
         expiresAt = new Date(payload.exp * 1000);
       }
-      
+
       // Adobe IMS format (created_at + expires_in)
       if (payload.created_at && payload.expires_in) {
         expiresAt = new Date(parseInt(payload.created_at) + parseInt(payload.expires_in));
       }
-      
+
       const now = new Date();
       const expired = expiresAt && expiresAt < now;
-      
+
       return {
         valid: !expired,
         expired,
@@ -140,8 +138,8 @@
    */
   async function triggerAutoSignIn(reason) {
     console.log('🔒 Authentication required:', reason);
-    
-    authState = 'authenticating';
+
+    _authState = 'authenticating';
     showAuthOverlay('Redirecting to Adobe IMS...');
 
     try {
@@ -149,10 +147,9 @@
       await waitForIMSClient();
 
       console.log('✅ IMS Client ready, initiating sign-in...');
-      
+
       // Trigger sign-in (will redirect to Adobe)
       window.AdobeIMSClient.signIn();
-      
     } catch (error) {
       console.error('❌ Auto sign-in failed:', error);
       showAuthError(error.message);
@@ -166,10 +163,10 @@
     return new Promise((resolve, reject) => {
       let attempts = 0;
       const maxAttempts = 100; // 10 seconds max
-      
+
       const check = () => {
         attempts++;
-        
+
         if (window.AdobeIMSClient && window.AdobeIMSClient.ready) {
           resolve();
         } else if (attempts >= maxAttempts) {
@@ -178,7 +175,7 @@
           setTimeout(check, 100);
         }
       };
-      
+
       check();
     });
   }
@@ -187,8 +184,8 @@
    * Show authentication error
    */
   function showAuthError(message) {
-    authState = 'error';
-    
+    _authState = 'error';
+
     const overlay = document.getElementById('auth-overlay');
     if (overlay) {
       overlay.innerHTML = `
@@ -228,7 +225,7 @@
 
     // Check for stored token (matching aso-spacecat-dashboard)
     const token = localStorage.getItem(STORAGE_KEYS.API_TOKEN);
-    
+
     if (!token) {
       // No token - automatically trigger sign-in
       await triggerAutoSignIn('No authentication token found');
@@ -238,7 +235,7 @@
     // Validate token
     try {
       const tokenInfo = parseToken(token);
-      
+
       if (!tokenInfo.valid || tokenInfo.expired) {
         // Token expired - automatically trigger sign-in
         await triggerAutoSignIn('Authentication token expired');
@@ -247,17 +244,16 @@
 
       // Token is valid - remove overlay and allow page to load
       console.log('✅ Authenticated as:', tokenInfo.userId);
-      authState = 'authenticated';
-      
+      _authState = 'authenticated';
+
       // Also store for API access (matching their approach)
       localStorage.setItem('spacecat_api_token', token);
-      
+
       // Remove loading overlay
       const overlay = document.getElementById('auth-overlay');
       if (overlay) {
         overlay.remove();
       }
-      
     } catch (error) {
       console.error('❌ Token validation error:', error);
       await triggerAutoSignIn('Invalid authentication token');
@@ -273,12 +269,11 @@
 
   // Export for dynamic use
   window.checkAuthentication = checkAuth;
-  
+
   // Listen for token changes from other tabs (matching aso-spacecat-dashboard cross-tab sync)
-  window.addEventListener('storage', function(e) {
+  window.addEventListener('storage', (e) => {
     if (e.key === STORAGE_KEYS.API_TOKEN) {
       checkAuth();
     }
   });
-
-})();
+}());

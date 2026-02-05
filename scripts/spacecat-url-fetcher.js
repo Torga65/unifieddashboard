@@ -1,9 +1,9 @@
 /**
  * SpaceCat URL Fetcher - Browser Version
- * 
+ *
  * This module can be used in the browser to fetch and match
  * customer sites from the SpaceCat API
- * 
+ *
  * Usage:
  *   import { fetchAndMatchSites } from './spacecat-url-fetcher.js';
  *   const results = await fetchAndMatchSites(apiKey);
@@ -19,8 +19,8 @@ export async function fetchAllSites(apiKey) {
     const response = await fetch(`${SPACECAT_API_BASE}/sites`, {
       headers: {
         'x-api-key': apiKey,
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     });
 
     if (!response.ok) {
@@ -42,8 +42,8 @@ export async function fetchAllOrganizations(apiKey) {
     const response = await fetch(`${SPACECAT_API_BASE}/organizations`, {
       headers: {
         'x-api-key': apiKey,
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     });
 
     if (!response.ok) {
@@ -66,8 +66,8 @@ export async function fetchSiteByUrl(baseURL, apiKey) {
     const response = await fetch(`${SPACECAT_API_BASE}/sites/by-base-url?baseURL=${encodedUrl}`, {
       headers: {
         'x-api-key': apiKey,
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     });
 
     if (!response.ok) {
@@ -102,34 +102,34 @@ function normalizeCompanyName(name) {
  */
 export function matchCustomerToSites(customer, sites, organizations) {
   const orgMap = new Map();
-  organizations.forEach(org => {
+  organizations.forEach((org) => {
     orgMap.set(org.id, org);
   });
-  
+
   const normalizedCustomer = normalizeCompanyName(customer.companyName);
-  
-  const matchingSites = sites.filter(site => {
+
+  const matchingSites = sites.filter((site) => {
     // Match by site name
     if (site.name) {
       const normalizedSiteName = normalizeCompanyName(site.name);
-      if (normalizedSiteName.includes(normalizedCustomer) || 
-          normalizedCustomer.includes(normalizedSiteName)) {
+      if (normalizedSiteName.includes(normalizedCustomer)
+          || normalizedCustomer.includes(normalizedSiteName)) {
         return true;
       }
     }
-    
+
     // Match by organization name
     if (site.organizationId) {
       const org = orgMap.get(site.organizationId);
       if (org && org.name) {
         const normalizedOrgName = normalizeCompanyName(org.name);
-        if (normalizedOrgName.includes(normalizedCustomer) || 
-            normalizedCustomer.includes(normalizedOrgName)) {
+        if (normalizedOrgName.includes(normalizedCustomer)
+            || normalizedCustomer.includes(normalizedOrgName)) {
           return true;
         }
       }
     }
-    
+
     // Match by base URL domain
     if (site.baseURL) {
       try {
@@ -143,24 +143,24 @@ export function matchCustomerToSites(customer, sites, organizations) {
         // Invalid URL, skip
       }
     }
-    
+
     return false;
   });
-  
+
   if (matchingSites.length > 0) {
     return {
       matched: true,
-      urls: matchingSites.map(site => site.baseURL).filter(Boolean).join(', '),
+      urls: matchingSites.map((site) => site.baseURL).filter(Boolean).join(', '),
       sites: matchingSites,
-      siteCount: matchingSites.length
+      siteCount: matchingSites.length,
     };
   }
-  
+
   return {
     matched: false,
     urls: '',
     sites: [],
-    siteCount: 0
+    siteCount: 0,
   };
 }
 
@@ -170,31 +170,31 @@ export function matchCustomerToSites(customer, sites, organizations) {
 export function matchAllCustomersToSites(customers, sites, organizations) {
   // Get unique customers (latest week entry for each company)
   const uniqueCustomers = new Map();
-  customers.forEach(customer => {
+  customers.forEach((customer) => {
     const existing = uniqueCustomers.get(customer.companyName);
     if (!existing || customer.week > existing.week) {
       uniqueCustomers.set(customer.companyName, customer);
     }
   });
-  
+
   const matches = [];
   const unmatched = [];
-  
+
   uniqueCustomers.forEach((customer) => {
     const result = matchCustomerToSites(customer, sites, organizations);
-    
+
     if (result.matched) {
       matches.push({
         companyName: customer.companyName,
         urls: result.urls,
         siteCount: result.siteCount,
-        sites: result.sites
+        sites: result.sites,
       });
     } else {
       unmatched.push(customer.companyName);
     }
   });
-  
+
   return { matches, unmatched };
 }
 
@@ -205,29 +205,29 @@ export async function fetchAndMatchSites(apiKey, customers) {
   // Fetch data from SpaceCat
   const [sitesResult, orgsResult] = await Promise.all([
     fetchAllSites(apiKey),
-    fetchAllOrganizations(apiKey)
+    fetchAllOrganizations(apiKey),
   ]);
-  
+
   if (!sitesResult.success) {
     return {
       success: false,
-      error: `Failed to fetch sites: ${sitesResult.error}`
+      error: `Failed to fetch sites: ${sitesResult.error}`,
     };
   }
-  
+
   if (!orgsResult.success) {
     return {
       success: false,
-      error: `Failed to fetch organizations: ${orgsResult.error}`
+      error: `Failed to fetch organizations: ${orgsResult.error}`,
     };
   }
-  
+
   const sites = sitesResult.data;
   const organizations = orgsResult.data;
-  
+
   // Match customers to sites
   const { matches, unmatched } = matchAllCustomersToSites(customers, sites, organizations);
-  
+
   return {
     success: true,
     sites,
@@ -239,8 +239,8 @@ export async function fetchAndMatchSites(apiKey, customers) {
       totalOrganizations: organizations.length,
       customersMatched: matches.length,
       customersUnmatched: unmatched.length,
-      matchRate: ((matches.length / (matches.length + unmatched.length)) * 100).toFixed(1)
-    }
+      matchRate: ((matches.length / (matches.length + unmatched.length)) * 100).toFixed(1),
+    },
   };
 }
 
@@ -249,16 +249,16 @@ export async function fetchAndMatchSites(apiKey, customers) {
  */
 export function applyMatchedUrls(customers, matches) {
   const matchMap = new Map();
-  matches.forEach(match => {
+  matches.forEach((match) => {
     matchMap.set(match.companyName, match.urls);
   });
-  
-  return customers.map(customer => {
+
+  return customers.map((customer) => {
     const urls = matchMap.get(customer.companyName);
     if (urls) {
       return {
         ...customer,
-        onboardedUrls: urls
+        onboardedUrls: urls,
       };
     }
     return customer;

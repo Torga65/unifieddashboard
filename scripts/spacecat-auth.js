@@ -18,7 +18,7 @@ export function getAuthToken() {
   // PRIORITY 1: .token file (like aso-spacecat-dashboard)
   try {
     const tokenPath = path.join(__dirname, '../.token');
-    
+
     if (fs.existsSync(tokenPath)) {
       const token = fs.readFileSync(tokenPath, 'utf-8').trim();
       if (token) {
@@ -29,20 +29,20 @@ export function getAuthToken() {
   } catch (error) {
     // Continue to other methods
   }
-  
+
   // PRIORITY 2: credentials.json (our format)
   try {
     const credPath = path.join(__dirname, '../credentials.json');
-    
+
     if (fs.existsSync(credPath)) {
       const credentials = JSON.parse(fs.readFileSync(credPath, 'utf-8'));
-      
+
       // Check for IMS token (preferred)
       if (credentials.spacecat && credentials.spacecat.imsToken) {
         console.log('✅ Using IMS token from credentials.json');
         return credentials.spacecat.imsToken;
       }
-      
+
       // Fall back to API key if present
       if (credentials.spacecat && credentials.spacecat.apiKey) {
         console.log('✅ Using API key from credentials.json');
@@ -52,14 +52,14 @@ export function getAuthToken() {
   } catch (error) {
     // Continue to other methods
   }
-  
+
   // PRIORITY 3: Environment variables
   const token = process.env.SPACECAT_TOKEN || process.env.SPACECAT_API_KEY;
   if (token) {
     console.log('✅ Using token from environment variable');
     return token;
   }
-  
+
   return null;
 }
 
@@ -68,11 +68,11 @@ export function getAuthToken() {
  */
 export function isValidJWT(token) {
   if (!token || typeof token !== 'string') return false;
-  
+
   // JWT format: header.payload.signature
   const parts = token.split('.');
   if (parts.length !== 3) return false;
-  
+
   try {
     // Try to decode base64
     atob(parts[1]);
@@ -89,15 +89,15 @@ export function parseTokenInfo(token) {
   if (!isValidJWT(token)) {
     return { type: 'Bearer', valid: false, message: 'Token format not recognized as JWT' };
   }
-  
+
   try {
     const parts = token.split('.');
     const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-    
+
     // Calculate expiration time - handles both standard JWT and Adobe IMS formats
     let expiresAt = null;
     let issuedAt = null;
-    
+
     // Standard JWT format (exp, iat in seconds)
     if (payload.exp) {
       expiresAt = new Date(payload.exp * 1000);
@@ -105,7 +105,7 @@ export function parseTokenInfo(token) {
     if (payload.iat) {
       issuedAt = new Date(payload.iat * 1000);
     }
-    
+
     // Adobe IMS format (created_at timestamp, expires_in duration in milliseconds)
     if (payload.created_at && payload.expires_in) {
       const createdAtMs = parseInt(payload.created_at);
@@ -113,11 +113,11 @@ export function parseTokenInfo(token) {
       issuedAt = new Date(createdAtMs);
       expiresAt = new Date(createdAtMs + expiresInMs);
     }
-    
+
     // Check if expired
     const now = new Date();
     const expired = expiresAt && expiresAt < now;
-    
+
     return {
       type: 'JWT',
       valid: !expired,
@@ -131,7 +131,7 @@ export function parseTokenInfo(token) {
       clientId: payload.client_id || null,
       scope: payload.scope || null,
       tokenType: payload.type || 'access_token',
-      permissionBasedAccess: payload.pba || null
+      permissionBasedAccess: payload.pba || null,
     };
   } catch (error) {
     return { type: 'Bearer', valid: false, message: 'Unable to parse token' };
@@ -143,11 +143,11 @@ export function parseTokenInfo(token) {
  */
 export async function authenticatedRequest(url, options = {}) {
   const token = getAuthToken();
-  
+
   if (!token) {
     throw new Error('No authentication token found. Please set up credentials.');
   }
-  
+
   // Validate token
   const tokenInfo = parseTokenInfo(token);
   if (!tokenInfo.valid) {
@@ -156,48 +156,48 @@ export async function authenticatedRequest(url, options = {}) {
     }
     throw new Error(`Invalid token: ${tokenInfo.message || 'Unknown error'}`);
   }
-  
+
   // Build headers
   const headers = {
-    'Authorization': `Bearer ${token}`,
+    Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    ...options.headers
+    Accept: 'application/json',
+    ...options.headers,
   };
-  
+
   const config = {
     ...options,
-    headers
+    headers,
   };
-  
+
   try {
     const response = await fetch(url, config);
-    
+
     // Handle non-OK responses
     if (!response.ok) {
       const errorText = await response.text();
       let errorData;
-      
+
       try {
         errorData = JSON.parse(errorText);
       } catch (e) {
         errorData = { message: errorText || `HTTP ${response.status}: ${response.statusText}` };
       }
-      
+
       const error = new Error(errorData.message || `HTTP ${response.status}`);
       error.status = response.status;
       error.statusText = response.statusText;
       error.data = errorData;
-      
+
       throw error;
     }
-    
+
     return response;
   } catch (error) {
     if (error.status) {
       throw error;
     }
-    
+
     // Network or other errors
     const networkError = new Error(error.message || 'Network error');
     networkError.originalError = error;
@@ -217,7 +217,7 @@ export async function apiGet(url) {
 export async function apiPost(url, data) {
   const response = await authenticatedRequest(url, {
     method: 'POST',
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
   return response.json();
 }
@@ -225,7 +225,7 @@ export async function apiPost(url, data) {
 export async function apiPut(url, data) {
   const response = await authenticatedRequest(url, {
     method: 'PUT',
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
   return response.json();
 }
@@ -240,7 +240,7 @@ export async function apiDelete(url) {
  */
 export function displayTokenInfo() {
   const token = getAuthToken();
-  
+
   if (!token) {
     console.log('❌ No token found');
     console.log('\nOptions to set up authentication:');
@@ -249,33 +249,33 @@ export function displayTokenInfo() {
     console.log('3. Set SPACECAT_TOKEN environment variable');
     return;
   }
-  
+
   const info = parseTokenInfo(token);
-  
+
   console.log('\n📝 Token Information:');
   console.log('  Type:', info.type);
   console.log('  Valid:', info.valid ? '✅ Yes' : '❌ No');
-  
+
   if (info.expired) {
     console.log('  Status: ⚠️ EXPIRED');
   }
-  
+
   if (info.expiresAt) {
     const now = new Date();
     const timeRemaining = info.expiresAt.getTime() - now.getTime();
     const hoursRemaining = Math.floor(timeRemaining / 3600000);
     const daysRemaining = Math.floor(timeRemaining / 86400000);
-    
+
     console.log('  Issued:', info.issuedAt?.toLocaleString());
     console.log('  Expires:', info.expiresAt?.toLocaleString());
-    
+
     if (daysRemaining > 0) {
       console.log('  Time Left:', `${daysRemaining} days`);
     } else {
       console.log('  Time Left:', `${hoursRemaining} hours`);
     }
   }
-  
+
   if (info.userId) {
     console.log('  User ID:', info.userId);
   }
@@ -285,6 +285,6 @@ export function displayTokenInfo() {
   if (info.scope) {
     console.log('  Scopes:', info.scope);
   }
-  
+
   console.log('');
 }

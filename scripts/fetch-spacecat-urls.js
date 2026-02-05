@@ -1,13 +1,13 @@
 /**
  * Fetch Onboarded URLs from SpaceCat API
- * 
+ *
  * This script queries the SpaceCat API to find sites for each customer
  * and populates the onboardedUrls field
- * 
+ *
  * Requirements:
  * - Valid SpaceCat API key or IMS authentication
  * - Access to the SpaceCat API endpoints
- * 
+ *
  * Usage:
  *   node scripts/fetch-spacecat-urls.js
  */
@@ -15,7 +15,9 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getAuthToken, parseTokenInfo, apiGet, displayTokenInfo } from './spacecat-auth.js';
+import {
+  getAuthToken, parseTokenInfo, apiGet, displayTokenInfo,
+} from './spacecat-auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,7 +58,7 @@ if (!tokenInfo.valid) {
  */
 async function fetchAllSites() {
   console.log('📡 Fetching all sites from SpaceCat API...');
-  
+
   try {
     const data = await apiGet(`${SPACECAT_API_BASE}/sites`);
     console.log(`✅ Fetched ${data.length || 0} sites from SpaceCat`);
@@ -75,7 +77,7 @@ async function fetchAllSites() {
  */
 async function fetchAllOrganizations() {
   console.log('📡 Fetching all organizations from SpaceCat API...');
-  
+
   try {
     const data = await apiGet(`${SPACECAT_API_BASE}/organizations`);
     console.log(`✅ Fetched ${data.length || 0} organizations from SpaceCat`);
@@ -106,51 +108,51 @@ function normalizeCompanyName(name) {
  */
 function matchCustomersToSites(customers, sites, organizations) {
   console.log('\n🔍 Matching customers to sites...\n');
-  
+
   const matches = [];
   const unmatched = [];
-  
+
   // Create organization lookup map
   const orgMap = new Map();
-  organizations.forEach(org => {
+  organizations.forEach((org) => {
     orgMap.set(org.id, org);
   });
-  
+
   // Get unique customers (latest week entry for each company)
   const uniqueCustomers = new Map();
-  customers.forEach(customer => {
+  customers.forEach((customer) => {
     const existing = uniqueCustomers.get(customer.companyName);
     if (!existing || customer.week > existing.week) {
       uniqueCustomers.set(customer.companyName, customer);
     }
   });
-  
+
   uniqueCustomers.forEach((customer, companyName) => {
     const normalizedCustomer = normalizeCompanyName(companyName);
-    
+
     // Find matching sites
-    const matchingSites = sites.filter(site => {
+    const matchingSites = sites.filter((site) => {
       // Match by site name
       if (site.name) {
         const normalizedSiteName = normalizeCompanyName(site.name);
-        if (normalizedSiteName.includes(normalizedCustomer) || 
-            normalizedCustomer.includes(normalizedSiteName)) {
+        if (normalizedSiteName.includes(normalizedCustomer)
+            || normalizedCustomer.includes(normalizedSiteName)) {
           return true;
         }
       }
-      
+
       // Match by organization name
       if (site.organizationId) {
         const org = orgMap.get(site.organizationId);
         if (org && org.name) {
           const normalizedOrgName = normalizeCompanyName(org.name);
-          if (normalizedOrgName.includes(normalizedCustomer) || 
-              normalizedCustomer.includes(normalizedOrgName)) {
+          if (normalizedOrgName.includes(normalizedCustomer)
+              || normalizedCustomer.includes(normalizedOrgName)) {
             return true;
           }
         }
       }
-      
+
       // Match by base URL domain
       if (site.baseURL) {
         const domain = site.baseURL.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
@@ -159,19 +161,19 @@ function matchCustomersToSites(customers, sites, organizations) {
           return true;
         }
       }
-      
+
       return false;
     });
-    
+
     if (matchingSites.length > 0) {
-      const urls = matchingSites.map(site => site.baseURL).filter(Boolean).join(', ');
+      const urls = matchingSites.map((site) => site.baseURL).filter(Boolean).join(', ');
       matches.push({
         companyName,
         urls,
         siteCount: matchingSites.length,
-        siteIds: matchingSites.map(s => s.id)
+        siteIds: matchingSites.map((s) => s.id),
       });
-      
+
       console.log(`✅ ${companyName}`);
       console.log(`   URLs: ${urls}`);
       console.log(`   Sites: ${matchingSites.length}`);
@@ -181,7 +183,7 @@ function matchCustomersToSites(customers, sites, organizations) {
       console.log(`⚠️  ${companyName} - No matching sites found`);
     }
   });
-  
+
   return { matches, unmatched };
 }
 
@@ -190,41 +192,41 @@ function matchCustomersToSites(customers, sites, organizations) {
  */
 function updateCustomersJson(customers, matches) {
   console.log('\n📝 Updating customers.json...\n');
-  
+
   // Create lookup map for matches
   const matchMap = new Map();
-  matches.forEach(match => {
+  matches.forEach((match) => {
     matchMap.set(match.companyName, match.urls);
   });
-  
+
   // Update all customer records with matching company names
   let updatedCount = 0;
-  const updatedCustomers = customers.map(customer => {
+  const updatedCustomers = customers.map((customer) => {
     const urls = matchMap.get(customer.companyName);
     if (urls) {
       updatedCount++;
       return {
         ...customer,
-        onboardedUrls: urls
+        onboardedUrls: urls,
       };
     }
     return customer;
   });
-  
+
   // Write back to file
   const data = {
     data: updatedCustomers,
     total: updatedCustomers.length,
     generated: new Date().toISOString(),
     spacecatMatches: matches.length,
-    spacecatFetchDate: new Date().toISOString()
+    spacecatFetchDate: new Date().toISOString(),
   };
-  
+
   fs.writeFileSync(CUSTOMERS_JSON_PATH, JSON.stringify(data, null, 2));
-  
+
   console.log(`✅ Updated ${updatedCount} customer records`);
   console.log(`   File: ${CUSTOMERS_JSON_PATH}`);
-  
+
   return updatedCount;
 }
 
@@ -233,7 +235,7 @@ function updateCustomersJson(customers, matches) {
  */
 function generateReport(matches, unmatched, sites) {
   const reportPath = path.join(__dirname, '../spacecat-url-report.txt');
-  
+
   const report = `
 SpaceCat URL Fetch Report
 Generated: ${new Date().toISOString()}
@@ -248,7 +250,7 @@ Match Rate: ${((matches.length / (matches.length + unmatched.length)) * 100).toF
 
 MATCHED CUSTOMERS (${matches.length})
 ${'-'.repeat(60)}
-${matches.map(m => `
+${matches.map((m) => `
 ${m.companyName}
   URLs: ${m.urls}
   Site Count: ${m.siteCount}
@@ -257,7 +259,7 @@ ${m.companyName}
 
 UNMATCHED CUSTOMERS (${unmatched.length})
 ${'-'.repeat(60)}
-${unmatched.map(name => `  - ${name}`).join('\n')}
+${unmatched.map((name) => `  - ${name}`).join('\n')}
 
 NEXT STEPS FOR UNMATCHED CUSTOMERS
 -----------------------------------
@@ -267,7 +269,7 @@ NEXT STEPS FOR UNMATCHED CUSTOMERS
 4. Add URLs manually to customers.json or Excel file
 
 `;
-  
+
   fs.writeFileSync(reportPath, report);
   console.log(`\n📊 Report generated: ${reportPath}`);
 }
@@ -279,38 +281,38 @@ async function main() {
   console.log('🚀 SpaceCat URL Fetcher\n');
   console.log('='.repeat(60));
   console.log('');
-  
+
   // Display token info
   displayTokenInfo();
-  
+
   // Load customers
   console.log('📖 Loading customers.json...');
   const customersData = JSON.parse(fs.readFileSync(CUSTOMERS_JSON_PATH, 'utf-8'));
   const customers = customersData.data || customersData;
   console.log(`✅ Loaded ${customers.length} customer records\n`);
-  
+
   // Fetch data from SpaceCat
   const [sites, organizations] = await Promise.all([
     fetchAllSites(),
-    fetchAllOrganizations()
+    fetchAllOrganizations(),
   ]);
-  
+
   if (sites.length === 0) {
     console.error('\n❌ No sites fetched. Check your API key and permissions.');
     process.exit(1);
   }
-  
+
   // Match customers to sites
   const { matches, unmatched } = matchCustomersToSites(customers, sites, organizations);
-  
+
   // Update customers.json
   const updatedCount = updateCustomersJson(customers, matches);
-  
+
   // Generate report
   generateReport(matches, unmatched, sites);
-  
+
   // Summary
-  console.log('\n' + '='.repeat(60));
+  console.log(`\n${'='.repeat(60)}`);
   console.log('✅ COMPLETE\n');
   console.log(`   Matched: ${matches.length} customers`);
   console.log(`   Unmatched: ${unmatched.length} customers`);
@@ -323,7 +325,7 @@ async function main() {
 }
 
 // Run
-main().catch(error => {
+main().catch((error) => {
   console.error('❌ Fatal error:', error);
   process.exit(1);
 });

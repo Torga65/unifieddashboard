@@ -12,18 +12,18 @@ const IMS_CONFIG = {
     'additional_info',
     'additional_info.projectedProductContext',
     'read_organizations',
-    'account_cluster.read'
+    'account_cluster.read',
   ].join(','),
   locale: 'en_US',
   environment: 'prod', // or 'stg1' for staging
-  redirect_uri: window.location.origin + '/auth-callback.html'
+  redirect_uri: `${window.location.origin}/auth-callback.html`,
 };
 
 // Storage keys
 const STORAGE_KEYS = {
   IMS_TOKEN: 'unified_dashboard_ims_token',
   IMS_PROFILE: 'unified_dashboard_ims_profile',
-  AUTH_STATE: 'unified_dashboard_auth_state'
+  AUTH_STATE: 'unified_dashboard_auth_state',
 };
 
 class IMSAuth {
@@ -59,12 +59,12 @@ class IMSAuth {
   setupIMS(resolve, reject) {
     try {
       this.adobeIMS = window.adobeIMS;
-      
+
       // Initialize IMS with configuration
       if (this.adobeIMS.initialize) {
         this.adobeIMS.initialize(IMS_CONFIG);
       }
-      
+
       this.initialized = true;
       resolve();
     } catch (error) {
@@ -116,10 +116,10 @@ class IMSAuth {
       if (parts.length !== 3) return { valid: false };
 
       const payload = JSON.parse(atob(parts[1]));
-      
+
       let expiresAt = null;
       let issuedAt = null;
-      
+
       // Standard JWT format
       if (payload.exp) {
         expiresAt = new Date(payload.exp * 1000);
@@ -127,16 +127,16 @@ class IMSAuth {
       if (payload.iat) {
         issuedAt = new Date(payload.iat * 1000);
       }
-      
+
       // Adobe IMS format
       if (payload.created_at && payload.expires_in) {
         issuedAt = new Date(parseInt(payload.created_at));
         expiresAt = new Date(parseInt(payload.created_at) + parseInt(payload.expires_in));
       }
-      
+
       const now = new Date();
       const expired = expiresAt && expiresAt < now;
-      
+
       return {
         valid: !expired,
         expired,
@@ -146,7 +146,7 @@ class IMSAuth {
         email: payload.email,
         name: payload.name,
         clientId: payload.client_id,
-        scope: payload.scope
+        scope: payload.scope,
       };
     } catch (error) {
       return { valid: false };
@@ -158,7 +158,7 @@ class IMSAuth {
    */
   async signIn() {
     await this.initialize();
-    
+
     if (this.adobeIMS && this.adobeIMS.signIn) {
       // Adobe IMS will handle the redirect
       this.adobeIMS.signIn();
@@ -173,16 +173,16 @@ class IMSAuth {
    * Build Adobe IMS authorization URL
    */
   buildAuthUrl() {
-    const baseUrl = IMS_CONFIG.environment === 'prod' 
+    const baseUrl = IMS_CONFIG.environment === 'prod'
       ? 'https://ims-na1.adobelogin.com/ims/authorize/v2'
       : 'https://ims-na1-stg1.adobelogin.com/ims/authorize/v2';
-    
+
     const params = new URLSearchParams({
       client_id: IMS_CONFIG.client_id,
       scope: IMS_CONFIG.scope,
       response_type: 'token',
       redirect_uri: IMS_CONFIG.redirect_uri,
-      locale: IMS_CONFIG.locale
+      locale: IMS_CONFIG.locale,
     });
 
     return `${baseUrl}?${params.toString()}`;
@@ -194,14 +194,14 @@ class IMSAuth {
   handleCallback() {
     const hash = window.location.hash.substring(1);
     const params = new URLSearchParams(hash);
-    
+
     const token = params.get('access_token');
-    const expiresIn = params.get('expires_in');
-    
+    const _expiresIn = params.get('expires_in');
+
     if (token) {
       // Store token
       localStorage.setItem(STORAGE_KEYS.IMS_TOKEN, token);
-      
+
       // Parse and store profile info
       const tokenInfo = this.parseToken(token);
       if (tokenInfo.valid) {
@@ -209,17 +209,17 @@ class IMSAuth {
           userId: tokenInfo.userId,
           email: tokenInfo.email,
           name: tokenInfo.name,
-          expiresAt: tokenInfo.expiresAt
+          expiresAt: tokenInfo.expiresAt,
         };
         localStorage.setItem(STORAGE_KEYS.IMS_PROFILE, JSON.stringify(profile));
       }
-      
+
       // Save to .token file (for API scripts)
       this.saveTokenToFile(token);
-      
+
       return true;
     }
-    
+
     return false;
   }
 
@@ -229,11 +229,11 @@ class IMSAuth {
   saveTokenToFile(token) {
     // Create download link to save token
     const blob = new Blob([token], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    
+    const _url = URL.createObjectURL(blob);
+
     // Store in localStorage for script access
     localStorage.setItem('spacecat_api_token', token);
-    
+
     // Also provide download option
     console.log('Token saved. To use with API scripts, run:');
     console.log(`echo "${token}" > .token`);
@@ -248,7 +248,7 @@ class IMSAuth {
     localStorage.removeItem(STORAGE_KEYS.IMS_PROFILE);
     localStorage.removeItem(STORAGE_KEYS.AUTH_STATE);
     localStorage.removeItem('spacecat_api_token');
-    
+
     // Redirect to Adobe IMS sign out
     if (this.adobeIMS && this.adobeIMS.signOut) {
       this.adobeIMS.signOut();
@@ -257,7 +257,7 @@ class IMSAuth {
       const signOutUrl = IMS_CONFIG.environment === 'prod'
         ? 'https://ims-na1.adobelogin.com/ims/logout/v1'
         : 'https://ims-na1-stg1.adobelogin.com/ims/logout/v1';
-      
+
       window.location.href = `${signOutUrl}?redirect_uri=${encodeURIComponent(window.location.origin)}`;
     }
   }
@@ -267,15 +267,15 @@ class IMSAuth {
    */
   getCurrentUser() {
     if (!this.isAuthenticated()) return null;
-    
+
     const profile = this.getStoredProfile();
     const token = this.getStoredToken();
     const tokenInfo = this.parseToken(token);
-    
+
     return {
       ...profile,
       ...tokenInfo,
-      token
+      token,
     };
   }
 
@@ -291,17 +291,16 @@ class IMSAuth {
 
     const now = new Date();
     const timeRemaining = tokenInfo.expiresAt ? tokenInfo.expiresAt.getTime() - now.getTime() : 0;
-    
+
     if (timeRemaining < 3600000) { // Less than 1 hour
       const minutes = Math.floor(timeRemaining / 60000);
       return { status: 'expiring', minutes, color: '#E68619' };
-    } else if (timeRemaining < 86400000) { // Less than 24 hours
+    } if (timeRemaining < 86400000) { // Less than 24 hours
       const hours = Math.floor(timeRemaining / 3600000);
       return { status: 'valid', hours, color: '#268E6C' };
-    } else {
-      const days = Math.floor(timeRemaining / 86400000);
-      return { status: 'valid', days, color: '#268E6C' };
     }
+    const days = Math.floor(timeRemaining / 86400000);
+    return { status: 'valid', days, color: '#268E6C' };
   }
 }
 
