@@ -12,3 +12,4 @@ helix-importer-ui
 credentials.json
 *.key
 .env
+.token
