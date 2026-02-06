@@ -106,6 +106,102 @@ footer .footer[data-block-status="loaded"] {
 
 aside.sidebar {
   position: relative;
+  display: block;
+  visibility: visible;
+  width: 240px;
+  min-width: 240px;
+  flex-shrink: 0;
+}
+
+/* Sidebar block - fixed on the right, always visible */
+aside.sidebar .sidebar.block,
+.sidebar.block {
+  width: 240px;
+  min-width: 240px;
+  height: calc(100vh - var(--nav-height, 64px));
+  background: #F8F8F8;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  right: 0;
+  top: var(--nav-height, 64px);
+  z-index: 100;
+  font-family: var(--body-font-family);
+  border-left: 1px solid #E5E5E5;
+  box-sizing: border-box;
+  visibility: visible;
+}
+
+aside.sidebar .sidebar-nav,
+.sidebar-nav {
+  flex: 1;
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.sidebar-nav-icon {
+  font-size: 1.1em;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+aside.sidebar .sidebar-nav-item,
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 18px;
+  background: transparent;
+  border: none;
+  border-radius: 24px;
+  color: #1D1D1D;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: left;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  font-family: inherit;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+aside.sidebar .sidebar-nav-item:hover,
+.sidebar-nav-item:hover {
+  background: #F5F5F5;
+  color: #1D1D1D;
+}
+
+aside.sidebar .sidebar-nav-item.active,
+.sidebar-nav-item.active {
+  background: #323232;
+  color: #FFFFFF;
+}
+
+aside.sidebar .sidebar-nav-item.active:hover,
+.sidebar-nav-item.active:hover {
+  background: #1D1D1D;
+  color: #FFFFFF;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: #D1D1D1;
+  border-radius: 2px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: #B3B3B3;
 }
 
 /* When right sidebar is present, hide top nav sections so nav is only in sidebar */

@@ -25,6 +25,12 @@
   overflow-y: auto;
 }
 
+.sidebar-nav-icon {
+  font-size: 1.1em;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 .sidebar-nav-item {
   display: flex;
   align-items: center;
