@@ -116,27 +116,36 @@ async function loadEager(doc) {
 }
 
 /**
- * Loads everything that doesn't need to be delayed.
- * @param {Element} doc The container element
+ * Loads sidebar and wraps page in llmo-spacecat-dashboard layout:
+ * .app.sidebar-layout > aside.sidebar (first, fixed left) + .main-wrapper.with-sidebar (margin-left)
  */
 async function loadSidebar(doc) {
+  const header = doc.querySelector('header');
   const main = doc.querySelector('main');
+  const footer = doc.querySelector('footer');
   if (!main) return;
 
-  const mainWrapper = document.createElement('div');
-  mainWrapper.className = 'main-wrapper main-wrapper-with-sidebar';
-  main.parentNode.insertBefore(mainWrapper, main);
-  mainWrapper.appendChild(main);
+  const app = document.createElement('div');
+  app.className = 'app sidebar-layout';
 
   const aside = document.createElement('aside');
   aside.className = 'sidebar';
   const sidebarBlock = buildBlock('sidebar', '');
   aside.appendChild(sidebarBlock);
-  mainWrapper.parentNode.insertBefore(aside, mainWrapper.nextSibling);
+
+  const mainWrapper = document.createElement('div');
+  mainWrapper.className = 'main-wrapper with-sidebar';
+  if (header) mainWrapper.appendChild(header);
+  mainWrapper.appendChild(main);
+  if (footer) mainWrapper.appendChild(footer);
+
+  app.appendChild(aside);
+  app.appendChild(mainWrapper);
+  document.body.appendChild(app);
 
   decorateBlock(sidebarBlock);
   await loadBlock(sidebarBlock);
-  document.body.classList.add('has-right-sidebar');
+  document.body.classList.add('has-sidebar');
 }
 
 async function loadLazy(doc) {
