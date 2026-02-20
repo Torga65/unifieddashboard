@@ -1,0 +1,2357 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Suggestion Lifecycle - ASO Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="description" content="Track ASO suggestion deployment, rejection rates, and lifecycle metrics"/>
+  <script src="/scripts/aem.js" type="module"></script>
+  <script src="/scripts/scripts.js" type="module"></script>
+  <link rel="stylesheet" href="/styles/styles.css"/>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+    }
+    
+    main {
+      padding: 12px;
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
+    
+    /* Header Section */
+    .page-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 14px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .page-header h1 {
+      color: white;
+      margin: 0 0 8px 0;
+      font-size: 24px;
+    }
+    
+    .page-header p {
+      color: rgb(255 255 255 / 95%);
+      margin: 0;
+      font-size: 14px;
+    }
+    
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+      background: #f8f9fa;
+      padding: 14px 16px;
+      border-radius: 8px;
+    }
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 38px;
+      flex-wrap: wrap;
+    }
+    .controls label {
+      font-weight: 600;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .controls input,
+    .controls select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      background: white;
+      min-height: 36px;
+    }
+    .controls select {
+      min-width: 220px;
+    }
+    .controls button {
+      padding: 8px 16px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .controls button:hover { background: #5568d3; }
+    .controls button:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* Token row */
+    .token-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .token-group input {
+      width: 280px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .token-group button {
+      padding: 8px 10px;
+      font-size: 12px;
+      background: #6c757d;
+    }
+    .token-group button:hover { background: #5a6268; }
+    .btn-connect {
+      background: #1473e6 !important;
+      padding: 8px 14px !important;
+      font-size: 13px !important;
+    }
+    .btn-connect:hover { background: #0d66d0 !important; }
+    .btn-connect:disabled { background: #a0b4d0 !important; cursor: not-allowed; }
+
+    /* Selector row */
+    .selector-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .selector-spinner {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #666;
+    }
+    .spinner-sm {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #e0e0e0;
+      border-top-color: #1473e6;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-text { font-size: 12px; }
+
+    /* Manual site fallback */
+    .dev-manual-toggle .btn-link {
+      font-size: 12px;
+      padding: 2px 4px;
+    }
+    #manual-site-input-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    /* Action buttons row */
+    .controls-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* View tabs */
+    .view-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 16px;
+    }
+    .view-tab {
+      padding: 8px 20px;
+      border: 1px solid #d0d5dd;
+      border-radius: 6px;
+      background: #fff;
+      color: #344054;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { background: #f2f4f7; }
+    .view-tab.active {
+      background: #1473e6;
+      color: #fff;
+      border-color: #1473e6;
+    }
+
+    /* View visibility — controlled by data-view on <body>, no inline styles needed.
+       Specificity of body[data-view] rules naturally beats simple class selectors. */
+    #portfolio-view                              { display: none; }
+    #dashboard                                   { display: none; }
+    #selector-row                                { display: none; }
+    #dev-manual-site                             { display: none; }
+
+    /* Site view: show dashboard (when data loaded) and site controls */
+    body[data-view="site"] #dashboard.has-data   { display: block; }
+    body[data-view="site"] #selector-row.visible { display: flex; }
+    body[data-view="site"] #dev-manual-site.visible { display: block; }
+
+    /* Portfolio view: show portfolio panel, hide site-only controls */
+    body[data-view="portfolio"] #portfolio-view  { display: block; }
+    body[data-view="portfolio"] .controls-actions { display: none; }
+
+    /* Portfolio view */
+    .portfolio-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .portfolio-header h2 { margin: 0; font-size: 20px; }
+    .portfolio-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .portfolio-controls label { font-weight: 600; font-size: 14px; }
+    .portfolio-controls select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      background: #fff;
+    }
+    
+    /* Global Filters Bar */
+    .global-filters-bar { margin-bottom: 16px; }
+    .global-filters {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 10px 16px;
+    }
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+    }
+    .filter-group label { font-weight: 600; color: #555; }
+    .filter-group select,
+    .filter-group input[type="date"] {
+      padding: 4px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    /* Auth Bar */
+    .auth-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 16px;
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    .auth-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .auth-divider {
+      color: #999;
+      font-size: 13px;
+    }
+    .auth-user {
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .btn-primary {
+      background: #1473e6;
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .btn-primary:hover { background: #0d66d0; }
+    .btn-primary:active { background: #0b5ab5; }
+    .btn-link {
+      background: transparent;
+      border: none;
+      color: #1473e6;
+      cursor: pointer;
+      font-size: 13px;
+      text-decoration: underline;
+      padding: 4px 8px;
+      border-radius: 4px;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-link:hover {
+      color: #0d66d0;
+      background: rgba(20, 115, 230, 0.06);
+    }
+    .btn-link:active,
+    .btn-link:focus {
+      color: #0d66d0;
+      background: transparent;
+      outline: none;
+      box-shadow: none;
+    }
+
+    /* Site Name Banner */
+    .site-name-banner {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+    .site-name-banner .site-id {
+      font-weight: 400;
+      color: #666;
+      font-size: 13px;
+      margin-left: 8px;
+    }
+
+    /* Score Cards Row */
+    .score-cards-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 900px) {
+      .score-cards-row { grid-template-columns: 1fr; }
+    }
+
+    /* Health Score Card */
+    .health-score-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    
+    .health-score-circle {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    
+    .health-score-value {
+      font-size: 32px;
+      line-height: 1;
+    }
+    
+    .health-score-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    
+    .health-excellent { background: #d4edda; color: #155724; }
+    .health-good { background: #d1ecf1; color: #0c5460; }
+    .health-fair { background: #fff3cd; color: #856404; }
+    .health-poor { background: #f8d7da; color: #721c24; }
+    .health-critical { background: #f5c6cb; color: #721c24; }
+    
+    .health-details {
+      flex: 1;
+    }
+    
+    .health-details h3 {
+      margin: 0 0 8px 0;
+      color: #333;
+    }
+    
+    .health-breakdown {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px;
+    }
+    
+    .health-metric {
+      font-size: 13px;
+    }
+    
+    .health-metric-label {
+      color: #666;
+    }
+    
+    .health-metric-value {
+      font-weight: 600;
+      color: #333;
+    }
+    
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .stat-card {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      overflow: visible;
+      transition: box-shadow 0.15s, transform 0.15s;
+    }
+    .stat-card.clickable {
+      cursor: pointer;
+    }
+    .stat-card.clickable:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      transform: translateY(-1px);
+    }
+    
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 4px;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .stat-card.deployed .stat-value { color: #28a745; }
+    .stat-card.fixed .stat-value { color: #28a745; }
+    .stat-card.pending .stat-value { color: #ffc107; }
+    .stat-card.rejected .stat-value { color: #dc3545; }
+    .stat-card.ignored .stat-value { color: #6c757d; }
+    .stat-card.noise .stat-value { color: #fd7e14; }
+    .stat-card.fixes .stat-value { color: #17a2b8; }
+    
+    /* Info Tooltip */
+    .info-bubble {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #6c757d;
+      color: white;
+      font-size: 10px;
+      line-height: 16px;
+      text-align: center;
+      cursor: help;
+      position: relative;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+    
+    .info-bubble .info-text {
+      display: none;
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 400;
+      white-space: normal;
+      width: 280px;
+      z-index: 100;
+      line-height: 1.4;
+      text-transform: none;
+      letter-spacing: normal;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    .info-bubble:hover .info-text {
+      display: block;
+    }
+    
+    /* Section Cards */
+    .section-card {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .section-card h3 {
+      margin: 0 0 12px 0;
+      color: #333;
+      font-size: 16px;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 8px;
+    }
+    
+    /* Progress Bars */
+    .progress-bar-container {
+      margin-bottom: 12px;
+    }
+    
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+    
+    .progress-bar {
+      height: 8px;
+      background: #e9ecef;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    
+    .progress-fill.deployed { background: #28a745; }
+    .progress-fill.pending { background: #ffc107; }
+    .progress-fill.new { background: #007bff; }
+    .progress-fill.rejected { background: #dc3545; }
+    .progress-fill.ignored { background: #6c757d; }
+    .progress-fill.rejected-bar { background: #e83e8c; }
+    .progress-fill.outdated { background: #fd7e14; }
+    .progress-fill.error { background: #dc3545; }
+    .progress-fill.aging { background: #fd7e14; }
+    .progress-fill.fresh { background: #28a745; }
+    .progress-fill.acceptable { background: #17a2b8; }
+    .progress-fill.warning { background: #ffc107; }
+    .progress-fill.overdue { background: #dc3545; }
+    .progress-fill.critical { background: #721c24; }
+    
+    /* Automation Grid */
+    .automation-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+    }
+    .automation-card {
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+    .automation-card.alert {
+      background: #fff3cd;
+      border-color: #ffc107;
+    }
+    .failures-by-type {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .failure-type-badge {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+    }
+
+    /* Staleness Grid */
+    .staleness-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+    }
+    .staleness-card {
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+    .staleness-card.alert {
+      background: #fff3cd;
+      border-color: #ffc107;
+    }
+    .staleness-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #333;
+    }
+    .staleness-card.alert .staleness-value { color: #856404; }
+    .staleness-label {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    /* Table Status Filter Pills */
+    .table-status-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .filter-pill {
+      padding: 4px 12px;
+      border: 1px solid #c0c7cf;
+      border-radius: 16px;
+      background: #edf0f4;
+      color: #444;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .filter-pill:hover { background: #dde2e8; }
+    .filter-pill.active {
+      background: #1473e6;
+      color: #fff;
+      border-color: #1473e6;
+    }
+
+    /* Trend Controls */
+    .trend-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .trend-controls select {
+      padding: 4px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    /* Table Header with Filter */
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .table-header h3 {
+      margin: 0;
+    }
+    .table-filter {
+      font-size: 13px;
+    }
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      color: #555;
+      user-select: none;
+    }
+    .toggle-label input[type="checkbox"] {
+      accent-color: #1473e6;
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+    }
+
+    /* Opportunities Table */
+    .opportunities-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    
+    .opportunities-table th,
+    .opportunities-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .opportunities-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #333;
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .opportunities-table th:hover {
+      background: #e9ecef;
+    }
+    
+    .sort-arrow {
+      margin-left: 4px;
+      font-size: 10px;
+      color: #999;
+    }
+    
+    .sort-arrow.active {
+      color: #667eea;
+    }
+    
+    .opportunities-table tr:hover {
+      background: #f8f9fa;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .status-NEW { background: #e7f1ff; color: #004085; }
+    .status-IN_PROGRESS { background: #fff3cd; color: #856404; }
+    .status-RESOLVED { background: #d4edda; color: #155724; }
+    .status-IGNORED { background: #e2e3e5; color: #383d41; }
+    
+    /* Age Indicators */
+    .age-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    .age-fresh { background: #d4edda; color: #155724; }
+    .age-acceptable { background: #d1ecf1; color: #0c5460; }
+    .age-warning { background: #fff3cd; color: #856404; }
+    .age-overdue { background: #f8d7da; color: #721c24; }
+    .age-critical { background: #f5c6cb; color: #721c24; }
+    
+    /* Loading and Error States */
+    .loading-message,
+    .error-message {
+      padding: 40px;
+      text-align: center;
+      color: #666;
+    }
+    
+    .error-message {
+      color: #dc3545;
+      background: #f8d7da;
+      border-radius: 8px;
+    }
+    
+    /* Demo Mode Banner */
+    .demo-banner {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #856404;
+    }
+    
+    .demo-banner strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .health-score-card {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body data-view="site">
+  <header></header>
+  <main>
+    <div class="page-header">
+      <h1>Suggestion Lifecycle</h1>
+      <p>Track ASO suggestion deployment rates, time to resolution, and overall health</p>
+    </div>
+    
+    <div id="demo-banner" class="demo-banner" style="display: none;">
+      <strong>Demo Mode</strong>
+      Using mock data. Sign in with Adobe or use developer mode for live data.
+    </div>
+
+    <!-- IMS Auth Bar -->
+    <div id="auth-bar" class="auth-bar">
+      <div id="auth-signed-out" class="auth-row">
+        <button id="ims-sign-in-btn" class="btn-primary">Sign in with Adobe</button>
+        <span class="auth-divider">or</span>
+        <button id="dev-mode-toggle" class="btn-link">Use developer mode (manual token)</button>
+      </div>
+      <div id="auth-signed-in" class="auth-row" style="display: none;">
+        <span id="auth-user-name" class="auth-user"></span>
+        <button id="ims-sign-out-btn" class="btn-link">Sign out</button>
+      </div>
+    </div>
+
+    <!-- Unified controls bar (token + customer/site selectors) -->
+    <div class="controls" id="controls" style="display: none;">
+      <!-- Row 1: API token (hidden when signed in via IMS) -->
+      <div id="token-row" class="controls-row">
+        <div class="token-group">
+          <label for="token-input">API Token:</label>
+          <input type="password" id="token-input" placeholder="Paste SpaceCat Bearer token"/>
+          <button id="token-toggle" type="button" title="Show/hide token">Show</button>
+          <button id="token-connect-btn" class="btn-connect" type="button">Connect</button>
+        </div>
+      </div>
+
+      <!-- Row 2: Customer/site selectors + loading spinner -->
+      <div id="selector-row" class="controls-row">
+        <div class="selector-group">
+          <label for="customer-select">Customer:</label>
+          <select id="customer-select"><option value="">Connect to load customers</option></select>
+        </div>
+        <div class="selector-group">
+          <label for="site-select">Site:</label>
+          <select id="site-select"><option value="">Select a customer first</option></select>
+        </div>
+        <div id="selector-spinner" class="selector-spinner" style="display: none;">
+          <span class="spinner-sm"></span>
+          <span class="spinner-text">Loading...</span>
+        </div>
+      </div>
+
+      <!-- Fallback: manual site ID (collapsed by default) -->
+      <div id="dev-manual-site" class="controls-row dev-manual-toggle">
+        <button id="manual-site-toggle" class="btn-link" type="button">Or enter a Site ID manually</button>
+        <div id="manual-site-input-row" style="display: none;">
+          <label for="site-input">Site ID:</label>
+          <input type="text" id="site-input" placeholder="Enter site ID or use demo" value="demo"/>
+        </div>
+      </div>
+
+      <!-- Row 3: Action buttons -->
+      <div class="controls-row controls-actions">
+        <button id="load-btn">Load Data</button>
+        <button id="refresh-btn" disabled>Refresh</button>
+        <button id="export-btn" disabled>Export Report</button>
+      </div>
+    </div>
+    
+    <!-- View tabs -->
+    <div id="view-tabs" class="view-tabs" style="display: none;">
+      <button class="view-tab active" data-view="site">Site View</button>
+      <button class="view-tab" data-view="portfolio">Portfolio View</button>
+    </div>
+
+    <div id="loading" class="loading-message" style="display: none;">
+      Loading suggestion lifecycle data...
+    </div>
+    
+    <div id="error" class="error-message" style="display: none;"></div>
+
+    <!-- Portfolio View (hidden by default) -->
+    <div id="portfolio-view">
+      <div class="portfolio-header">
+        <h2 id="portfolio-title">Portfolio Overview</h2>
+        <div class="portfolio-controls">
+          <label>Scope:</label>
+          <select id="portfolio-scope">
+            <option value="global" selected>All Customers</option>
+          </select>
+          <label>Range:</label>
+          <select id="portfolio-range">
+            <option value="7" selected>Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="180">Last 180 days</option>
+            <option value="365">Last year</option>
+          </select>
+          <button id="portfolio-refresh-btn" class="btn-connect" type="button">Load</button>
+        </div>
+      </div>
+      <div id="portfolio-loading" class="loading-message" style="display: none;">
+        Loading portfolio data...
+      </div>
+      <div id="portfolio-error" class="error-message" style="display: none;"></div>
+      <div id="portfolio-stats" class="stats-grid" style="display: none;"></div>
+      <div id="portfolio-chart-section" class="section-card" style="display: none;">
+        <div class="table-header">
+          <h3>Opportunity Trends</h3>
+        </div>
+        <div id="portfolio-chart" style="position:relative; height:300px;"></div>
+      </div>
+    </div>
+
+    <div id="dashboard">
+      <!-- Site/Customer Name -->
+      <div id="site-name" class="site-name-banner" style="display: none;"></div>
+
+      <!-- Global Filters -->
+      <div id="global-filters-bar" class="global-filters-bar"></div>
+
+      <!-- Score Cards Row -->
+      <div class="score-cards-row">
+        <div id="health-score" class="health-score-card"></div>
+        <div id="quality-score" class="health-score-card"></div>
+      </div>
+      
+      <!-- Key Metrics -->
+      <div id="stats-grid" class="stats-grid"></div>
+      
+      <!-- Trend Chart -->
+      <div class="section-card">
+        <div class="table-header">
+          <h3>Trends</h3>
+          <div class="trend-controls">
+            <select id="trend-metric">
+              <option value="created">Suggestions Created</option>
+              <option value="fixed">Fixed</option>
+              <option value="rejected">Rejected</option>
+              <option value="skipped">Skipped</option>
+              <option value="error">Errors</option>
+              <option value="outdated">Outdated</option>
+            </select>
+            <label class="toggle-label">
+              <input type="checkbox" id="trend-by-type" />
+              By type
+            </label>
+          </div>
+        </div>
+        <div id="trend-chart" style="position:relative; height:300px;"></div>
+      </div>
+
+      <!-- Suggestion Lifecycle Breakdown -->
+      <div class="section-card">
+        <h3>Suggestion Lifecycle Breakdown
+          <span class="info-bubble">?<span class="info-text">Distribution of all suggestions across lifecycle statuses. Each bar shows the count and % of total suggestions in that bucket.</span></span>
+        </h3>
+        <div id="lifecycle-breakdown"></div>
+      </div>
+      
+      <!-- Age Distribution -->
+      <div class="section-card">
+        <h3>Open Opportunity Age Distribution
+          <span class="info-bubble">?<span class="info-text">Shows age buckets for open opportunities only (NEW + IN_PROGRESS). Resolved and Ignored opportunities are excluded since they no longer need action.</span></span>
+        </h3>
+        <div id="age-distribution"></div>
+      </div>
+      
+      <!-- Automation vs Manual -->
+      <div class="section-card">
+        <h3>Automation vs Manual Fixes
+          <span class="info-bubble">?<span class="info-text">Distinguishes suggestions fixed via automation (linked to a COMPLETED fix) from manually fixed ones. Shows automation success rate and failures by opportunity type.</span></span>
+        </h3>
+        <div id="automation-metrics"></div>
+      </div>
+
+      <!-- Staleness & Throughput -->
+      <div class="section-card">
+        <h3>Staleness &amp; Throughput
+          <span class="info-bubble">?<span class="info-text">Identifies suggestions stuck in pending states beyond expected thresholds, plus average time-to-action and time-to-resolution.</span></span>
+        </h3>
+        <div id="staleness-metrics"></div>
+      </div>
+
+      <!-- Opportunities Detail -->
+      <div class="section-card">
+        <h3>Opportunities</h3>
+        <div id="opportunities-table"></div>
+      </div>
+    </div>
+  </main>
+  <footer></footer>
+  
+  <script type="module">
+    import { 
+      getSuggestionsForSite, 
+      getLifecycleReport,
+      clearSiteCache,
+    } from '/scripts/suggestions-manager.js';
+    import {
+      calculateAgeBucket,
+      calculateAgeCounts,
+      getHealthColor,
+      formatDuration,
+      calculateLifecycleMetrics,
+      getHealthLabel,
+    } from '/scripts/utils/suggestions-health.js';
+    import {
+      initIMS,
+      onAuthReady,
+      onAuthStateChange,
+      signIn,
+      signOut,
+      isAuthenticated,
+      getAccessToken,
+      getProfile,
+    } from '/scripts/auth/ims-auth.js';
+    import { setGlobalToken, apiGet, isApiError } from '/scripts/services/spacecat-api.js';
+    import { buildCustomerSiteTree, fetchSiteById, fetchOrgSites } from '/scripts/services/org-site-service.js';
+    import { ASO_ENDPOINTS, PORTFOLIO_ENDPOINTS } from '/scripts/constants/api.js';
+    import { renderGlobalFilters } from '/scripts/components/global-filters.js';
+    import { calculateQualityScore, getQualityLabel } from '/scripts/utils/quality-score.js';
+    import { renderTrendChart } from '/scripts/components/trend-chart.js';
+    import { getFilters, filterByDateRange, subscribe as subscribeFilters } from '/scripts/state/filter-state.js';
+
+    // ---- DOM elements ----
+    // Auth bar
+    const authBar = document.getElementById('auth-bar');
+    const authSignedOut = document.getElementById('auth-signed-out');
+    const authSignedIn = document.getElementById('auth-signed-in');
+    const authUserName = document.getElementById('auth-user-name');
+    const imsSignInBtn = document.getElementById('ims-sign-in-btn');
+    const imsSignOutBtn = document.getElementById('ims-sign-out-btn');
+    const devModeToggle = document.getElementById('dev-mode-toggle');
+    // Unified controls
+    const devControls = document.getElementById('controls');
+    const tokenRow = document.getElementById('token-row');
+    const tokenInput = document.getElementById('token-input');
+    const tokenToggle = document.getElementById('token-toggle');
+    const tokenConnectBtn = document.getElementById('token-connect-btn');
+    const selectorRow = document.getElementById('selector-row');
+    const customerSelect = document.getElementById('customer-select');
+    const siteSelect = document.getElementById('site-select');
+    const selectorSpinner = document.getElementById('selector-spinner');
+    const manualSiteToggle = document.getElementById('manual-site-toggle');
+    const manualSiteInputRow = document.getElementById('manual-site-input-row');
+    const siteInput = document.getElementById('site-input');
+    const loadBtn = document.getElementById('load-btn');
+    // Shared
+    const refreshBtn = document.getElementById('refresh-btn');
+    const exportBtn = document.getElementById('export-btn');
+    const loadingEl = document.getElementById('loading');
+    const errorEl = document.getElementById('error');
+    const dashboardEl = document.getElementById('dashboard');
+    const demoBanner = document.getElementById('demo-banner');
+    // View tabs
+    const viewTabs = document.getElementById('view-tabs');
+    const portfolioView = document.getElementById('portfolio-view');
+    const portfolioStats = document.getElementById('portfolio-stats');
+    const portfolioChartSection = document.getElementById('portfolio-chart-section');
+    const portfolioChart = document.getElementById('portfolio-chart');
+    const portfolioLoading = document.getElementById('portfolio-loading');
+    const portfolioError = document.getElementById('portfolio-error');
+    const portfolioRange = document.getElementById('portfolio-range');
+    const portfolioRefreshBtn = document.getElementById('portfolio-refresh-btn');
+    const portfolioTitle = document.getElementById('portfolio-title');
+    const portfolioScope = document.getElementById('portfolio-scope');
+    
+    let currentData = null;
+    let currentView = 'site'; // 'site' | 'portfolio'
+    // Portfolio cache — stores { scope, range, data, fetchedAt } for smart invalidation
+    let portfolioCache = null;
+    const PORTFOLIO_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+    let currentSiteId = null;
+    let customerTree = []; // populated after IMS login
+    let isDevMode = false;
+    
+    // Token show/hide toggle
+    tokenToggle.addEventListener('click', () => {
+      const isPassword = tokenInput.type === 'password';
+      tokenInput.type = isPassword ? 'text' : 'password';
+      tokenToggle.textContent = isPassword ? 'Hide' : 'Show';
+    });
+
+    // ---- Auth UI helpers ----
+    function showAuthState() {
+      // Auth bar is always visible
+      authBar.style.display = 'flex';
+
+      if (isAuthenticated()) {
+        // Signed in via IMS — hide sign-in row, show profile
+        authSignedOut.style.display = 'none';
+        authSignedIn.style.display = 'flex';
+        const profile = getProfile();
+        authUserName.textContent = profile?.email || profile?.name || 'Signed in';
+        // Show controls with token row hidden (IMS provides the token)
+        devControls.style.display = 'flex';
+        tokenRow.style.display = 'none';
+        selectorRow.classList.add('visible');
+        document.getElementById('dev-manual-site').classList.remove('visible');
+      } else if (isDevMode) {
+        // Developer mode — show sign-in option + controls with token row
+        authSignedOut.style.display = 'flex';
+        authSignedIn.style.display = 'none';
+        devControls.style.display = 'flex';
+        tokenRow.style.display = 'flex';
+        document.getElementById('dev-manual-site').classList.add('visible');
+      } else {
+        // Not signed in, not in dev mode — show sign-in options only
+        authSignedOut.style.display = 'flex';
+        authSignedIn.style.display = 'none';
+        devControls.style.display = 'none';
+        selectorRow.classList.remove('visible');
+        document.getElementById('dev-manual-site').classList.remove('visible');
+      }
+    }
+
+    async function populateCustomers(token) {
+      const effectiveToken = token || getAccessToken();
+      if (!effectiveToken) return;
+      setGlobalToken(effectiveToken);
+
+      // Show selector row + spinner
+      selectorRow.classList.add('visible');
+      selectorSpinner.style.display = 'flex';
+      customerSelect.innerHTML = '<option value="">Loading customers...</option>';
+      siteSelect.innerHTML = '<option value="">—</option>';
+
+      try {
+        customerTree = await buildCustomerSiteTree(effectiveToken);
+        if (customerTree.length === 0) {
+          customerSelect.innerHTML = '<option value="">No customers found</option>';
+          return;
+        }
+        customerSelect.innerHTML = '<option value="">Select a customer</option>'
+          + [...customerTree].sort((a, b) => (a.orgName || '').localeCompare(b.orgName || ''))
+              .map((c) => `<option value="${c.orgId}">${c.orgName}</option>`).join('');
+        siteSelect.innerHTML = '<option value="">Select a customer first</option>';
+        // Show view tabs once customers are loaded
+        viewTabs.style.display = 'flex';
+        // Keep portfolio scope dropdown in sync with available customers
+        updatePortfolioScopeOptions();
+      } catch (err) {
+        console.error('[Auth] Failed to load customers', err);
+        customerSelect.innerHTML = '<option value="">Error loading customers</option>';
+      } finally {
+        selectorSpinner.style.display = 'none';
+      }
+    }
+
+    function renderSiteOptions(sites) {
+      if (!sites || sites.length === 0) {
+        siteSelect.innerHTML = '<option value="">No sites available</option>';
+        return;
+      }
+      siteSelect.innerHTML = [...sites]
+        .sort((a, b) => {
+          const la = a.baseURL ? a.baseURL.replace(/^https?:\/\//, '').replace(/\/$/, '') : a.siteId;
+          const lb = b.baseURL ? b.baseURL.replace(/^https?:\/\//, '').replace(/\/$/, '') : b.siteId;
+          return la.localeCompare(lb);
+        })
+        .map((s) => {
+          const label = s.baseURL ? s.baseURL.replace(/^https?:\/\//, '').replace(/\/$/, '') : s.siteId;
+          return `<option value="${s.siteId}">${label}</option>`;
+        }).join('');
+    }
+
+    async function populateSites(orgId) {
+      const org = customerTree.find((c) => c.orgId === orgId);
+      if (!org) {
+        siteSelect.innerHTML = '<option value="">No sites available</option>';
+        return;
+      }
+
+      // If sites already cached on this org, render immediately
+      if (org.sites && org.sites.length > 0) {
+        renderSiteOptions(org.sites);
+        return;
+      }
+
+      // Fetch sites on demand (show spinner)
+      siteSelect.innerHTML = '<option value="">Loading sites...</option>';
+      selectorSpinner.style.display = 'flex';
+      const token = tokenInput.value.trim() || getAccessToken();
+      try {
+        const sites = await fetchOrgSites(orgId, token);
+        org.sites = sites; // cache for next time
+        renderSiteOptions(sites);
+      } catch (err) {
+        console.error(`[Sites] Failed to load sites for org ${orgId}:`, err);
+        siteSelect.innerHTML = '<option value="">Error loading sites</option>';
+      } finally {
+        selectorSpinner.style.display = 'none';
+      }
+    }
+
+    // ---- Dev mode: Connect with token → populate shared customer/site selectors ----
+    async function connectWithToken() {
+      const token = tokenInput.value.trim();
+      if (!token) {
+        showError('Please paste an API token first.');
+        return;
+      }
+      tokenConnectBtn.disabled = true;
+      tokenConnectBtn.textContent = 'Connecting...';
+
+      await populateCustomers(token);
+
+      tokenConnectBtn.disabled = false;
+      tokenConnectBtn.textContent = 'Connect';
+    }
+
+    tokenConnectBtn.addEventListener('click', connectWithToken);
+    tokenInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') connectWithToken();
+    });
+
+    customerSelect.addEventListener('change', async () => {
+      const orgId = customerSelect.value;
+      portfolioCache = null; // invalidate portfolio cache on customer change
+      if (orgId) {
+        await populateSites(orgId);
+      } else {
+        siteSelect.innerHTML = '<option value="">Select a customer first</option>';
+      }
+    });
+
+    manualSiteToggle.addEventListener('click', () => {
+      const isVisible = manualSiteInputRow.style.display !== 'none';
+      manualSiteInputRow.style.display = isVisible ? 'none' : 'flex';
+      manualSiteToggle.textContent = isVisible ? 'Or enter a Site ID manually' : 'Hide manual Site ID';
+    });
+
+    // IMS event handlers
+    imsSignInBtn.addEventListener('click', () => {
+      signIn(); // Redirects to IMS authorize endpoint via PKCE
+    });
+    imsSignOutBtn.addEventListener('click', () => {
+      signOut();
+      dashboardEl.classList.remove('has-data');
+      isDevMode = true;
+      showAuthState();
+    });
+    devModeToggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (!isDevMode) {
+        isDevMode = true;
+        showAuthState();
+      }
+      // Load demo data if nothing is loaded yet
+      if (!currentData) {
+        loadData(false);
+      }
+      // Flash the dev controls to draw attention, and focus the token input
+      devControls.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      devControls.style.transition = 'background 0.3s';
+      devControls.style.background = '#e8f0fe';
+      setTimeout(() => { devControls.style.background = ''; }, 800);
+      tokenInput.focus();
+    });
+    
+    
+    // Mock data for demo mode
+    async function loadMockData() {
+      const response = await fetch('/data/mock-suggestions.json');
+      const mockData = await response.json();
+      
+      // Transform mock data to match expected structure
+      const opportunities = mockData.opportunities.map(opp => {
+        const suggestions = opp.suggestions || [];
+        const newCount = suggestions.filter(s => s.status === 'NEW').length;
+        const approvedCount = suggestions.filter(s => s.status === 'APPROVED').length;
+        const inProgressCount = suggestions.filter(s => s.status === 'IN_PROGRESS').length;
+        const pendingValidationCount = suggestions.filter(s => s.status === 'PENDING_VALIDATION').length;
+        const fixedCount = suggestions.filter(s => s.status === 'FIXED').length;
+        const skippedCount = suggestions.filter(s => s.status === 'SKIPPED').length;
+        const rejectedRawCount = suggestions.filter(s => s.status === 'REJECTED').length;
+        const errorCount = suggestions.filter(s => s.status === 'ERROR').length;
+        const outdatedCount = suggestions.filter(s => s.status === 'OUTDATED').length;
+        const pendingCount = newCount + approvedCount + inProgressCount + pendingValidationCount;
+        const terminalCount = fixedCount + skippedCount + rejectedRawCount + errorCount + outdatedCount;
+        const counts = {
+          totalCount: suggestions.length,
+          newCount, approvedCount, inProgressCount, pendingValidationCount,
+          fixedCount, skippedCount, rejectedRawCount, errorCount, outdatedCount,
+          pendingCount, terminalCount,
+        };
+        return { ...opp, suggestionsCounts: counts };
+      });
+      
+      const metrics = calculateLifecycleMetrics(opportunities);
+      return {
+        siteId: mockData.siteId,
+        siteName: 'demo',
+        opportunities,
+        metrics,
+        healthLabel: getHealthLabel(metrics.health.score),
+        fetchedAt: new Date().toISOString(),
+      };
+    }
+    
+    // Load data — works with IMS token (global) or manual token
+    // Auto-select the customer & site matching a given siteId in the dropdowns.
+    // If the site isn't in the tree, look it up via the API, find its org, and inject it.
+    // ---- View tab switching ----
+    function switchView(view) {
+      currentView = view;
+
+      // Single source of truth — CSS rules handle all view-level visibility
+      document.body.dataset.view = view;
+
+      document.querySelectorAll('.view-tab').forEach((tab) => {
+        tab.classList.toggle('active', tab.dataset.view === view);
+      });
+
+      // Portfolio auto-load when switching to portfolio tab
+      if (view === 'portfolio') {
+        const hasToken = !!(tokenInput.value.trim() || getAccessToken());
+        const cacheValid = portfolioCache
+          && portfolioCache.scope === portfolioScope.value
+          && portfolioCache.range === portfolioRange.value
+          && (Date.now() - portfolioCache.fetchedAt) < PORTFOLIO_CACHE_TTL_MS;
+        if (hasToken && !cacheValid) {
+          loadPortfolioData();
+        } else if (cacheValid) {
+          renderPortfolioDashboard(portfolioCache.data);
+        }
+      }
+    }
+
+    // ---- Portfolio: populate scope dropdown with customers ----
+    function updatePortfolioScopeOptions() {
+      const currentVal = portfolioScope.value;
+      // Build all options as a single string to avoid O(n²) innerHTML += loop
+      let html = '<option value="global">All Customers</option>';
+      if (customerTree && customerTree.length > 0) {
+        html += [...customerTree]
+          .sort((a, b) => (a.orgName || '').localeCompare(b.orgName || ''))
+          .map((c) => `<option value="${c.orgId}">${c.orgName}</option>`)
+          .join('');
+      }
+      portfolioScope.innerHTML = html;
+      // Restore previous selection if it still exists
+      if (currentVal && portfolioScope.querySelector(`option[value="${currentVal}"]`)) {
+        portfolioScope.value = currentVal;
+      }
+    }
+
+    // ---- Portfolio data loading ----
+    async function loadPortfolioData() {
+      const token = tokenInput.value.trim() || getAccessToken();
+      if (!token) {
+        portfolioError.textContent = 'An API token is required. Paste one in developer mode or sign in with Adobe.';
+        portfolioError.style.display = 'block';
+        return;
+      }
+
+      const scopeValue = portfolioScope.value; // 'global' or an orgId
+
+      // Compute date range from the dropdown
+      const rangeDays = parseInt(portfolioRange.value, 10);
+      const to = new Date();
+      const from = new Date();
+      from.setDate(from.getDate() - rangeDays);
+      const fromStr = from.toISOString().slice(0, 10);
+      const toStr = to.toISOString().slice(0, 10);
+
+      portfolioLoading.textContent = scopeValue === 'global'
+        ? 'Loading portfolio data across all customers... this may take a minute.'
+        : 'Loading portfolio data...';
+      portfolioLoading.style.display = 'block';
+      portfolioError.style.display = 'none';
+      portfolioStats.style.display = 'none';
+      portfolioChartSection.style.display = 'none';
+
+      // Update title
+      if (scopeValue === 'global') {
+        portfolioTitle.textContent = 'Portfolio: All Customers';
+      } else {
+        const opt = portfolioScope.options[portfolioScope.selectedIndex];
+        portfolioTitle.textContent = `Portfolio: ${opt?.text || scopeValue}`;
+      }
+
+      try {
+        const params = new URLSearchParams({ from: fromStr, to: toStr });
+        if (scopeValue === 'global') {
+          params.set('siteScope', 'global');
+        } else {
+          params.set('orgId', scopeValue);
+        }
+
+        const url = `${PORTFOLIO_ENDPOINTS.OPPORTUNITY_METRICS()}?${params.toString()}`;
+        const startTime = Date.now();
+
+        // Elapsed-time ticker so the user sees progress
+        const ticker = setInterval(() => {
+          const elapsed = Math.round((Date.now() - startTime) / 1000);
+          portfolioLoading.textContent = scopeValue === 'global'
+            ? `Loading portfolio data across all customers... ${elapsed}s elapsed`
+            : `Loading portfolio data... ${elapsed}s elapsed`;
+        }, 1000);
+
+        // 5-minute timeout for global, 2-minute for single org
+        const timeoutMs = scopeValue === 'global' ? 300_000 : 120_000;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+        let res;
+        try {
+          res = await fetch(url, {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: controller.signal,
+          });
+        } finally {
+          clearTimeout(timeoutId);
+          clearInterval(ticker);
+        }
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: res.statusText }));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        portfolioCache = { data, scope: scopeValue, range: String(rangeDays), fetchedAt: Date.now() };
+        // Only render if still on portfolio view (user may have switched away)
+        if (currentView === 'portfolio') {
+          renderPortfolioDashboard(data);
+        }
+      } catch (err) {
+        console.error('[Portfolio] Load failed:', err);
+        const msg = err.name === 'AbortError'
+          ? 'Request timed out. The server may still be processing — try again in a moment, or select a specific customer for faster results.'
+          : `Failed to load portfolio data: ${err.message}`;
+        portfolioError.textContent = msg;
+        portfolioError.style.display = 'block';
+      } finally {
+        portfolioLoading.style.display = 'none';
+      }
+    }
+
+    // ---- Portfolio rendering ----
+    function renderPortfolioDashboard(data) {
+      const { buckets, totalCounts, siteCount, summary, statusChangeBuckets, snapshotDate, source } = data;
+
+      const sm = summary || {};
+      const totalAvailable = sm.totalAvailable || 0;
+      const createdInPeriod = sm.createdInPeriod || 0;
+      const fixedInPeriod = sm.fixedInPeriod || 0;
+      const outdatedInPeriod = sm.outdatedInPeriod || 0;
+      const createdTotal = Object.values(totalCounts || {}).reduce((a, b) => a + b, 0);
+
+      // Stat cards — primary summary metrics
+      portfolioStats.innerHTML = `
+        <div class="stat-card" style="border-left: 4px solid #8b5cf6;">
+          <div class="stat-value">${totalAvailable.toLocaleString()}</div>
+          <div class="stat-label">Total Available</div>
+          <div class="stat-detail">Open or created in period</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid #3b82f6;">
+          <div class="stat-value">${createdInPeriod.toLocaleString()}</div>
+          <div class="stat-label">Created in Period</div>
+          <div class="stat-detail">${siteCount || '?'} sites</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid #10b981;">
+          <div class="stat-value">${fixedInPeriod.toLocaleString()}</div>
+          <div class="stat-label">Fixed in Period</div>
+          <div class="stat-detail">Resolved during range</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid #6b7280;">
+          <div class="stat-value">${outdatedInPeriod.toLocaleString()}</div>
+          <div class="stat-label">Ignored in Period</div>
+          <div class="stat-detail">Closed without fix</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${(totalCounts?.NEW || 0).toLocaleString()}</div>
+          <div class="stat-label">New (current)</div>
+          <div class="stat-detail">${createdTotal > 0 ? ((totalCounts.NEW || 0) / createdTotal * 100).toFixed(1) : 0}%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${(totalCounts?.IN_PROGRESS || 0).toLocaleString()}</div>
+          <div class="stat-label">In Progress (current)</div>
+          <div class="stat-detail">${createdTotal > 0 ? ((totalCounts.IN_PROGRESS || 0) / createdTotal * 100).toFixed(1) : 0}%</div>
+        </div>
+      `;
+      // Data source indicator
+      if (snapshotDate || source) {
+        const sourceLabel = source === 'snapshot' ? `Data from snapshot (${snapshotDate})`
+          : source === 'snapshot+live' ? `Snapshot ${snapshotDate} + live delta`
+          : 'Live data';
+        portfolioStats.innerHTML += `
+          <div class="stat-card" style="background: #f9fafb; border: 1px dashed #d0d5dd;">
+            <div class="stat-value" style="font-size: 14px; color: #667085;">${sourceLabel}</div>
+            <div class="stat-label">Data Source</div>
+          </div>
+        `;
+      }
+      portfolioStats.style.display = 'grid';
+
+      // Trend chart — show both creation trend and status-change trend
+      const statuses = [
+        { key: 'NEW', label: 'New', color: '#3b82f6' },
+        { key: 'IN_PROGRESS', label: 'In Progress', color: '#f59e0b' },
+        { key: 'RESOLVED', label: 'Resolved', color: '#10b981' },
+        { key: 'IGNORED', label: 'Ignored', color: '#6b7280' },
+      ];
+      renderPortfolioChart(buckets, statuses);
+      portfolioChartSection.style.display = 'block';
+    }
+
+    async function renderPortfolioChart(buckets, statuses) {
+      // Dynamically load Chart.js if not already loaded
+      if (typeof Chart === 'undefined') {
+        try {
+          await new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js';
+            s.onload = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+          });
+        } catch {
+          portfolioChart.innerHTML = '<p style="color:#999;">Could not load Chart.js</p>';
+          return;
+        }
+      }
+
+      // Destroy previous chart instance if any
+      const existing = Chart.getChart(portfolioChart);
+      if (existing) existing.destroy();
+
+      const labels = buckets.map((b) => b.date);
+      const datasets = statuses.map((s) => ({
+        label: s.label,
+        data: buckets.map((b) => b.counts[s.key] || 0),
+        backgroundColor: s.color + '33',
+        borderColor: s.color,
+        borderWidth: 2,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 2,
+      }));
+
+      new Chart(portfolioChart, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            x: {
+              title: { display: true, text: 'Date' },
+              ticks: { maxTicksLimit: 15 },
+            },
+            y: {
+              title: { display: true, text: 'Opportunities' },
+              beginAtZero: true,
+              ticks: { precision: 0 },
+            },
+          },
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: { mode: 'index' },
+          },
+        },
+      });
+    }
+
+    async function syncDropdownsToSiteId(siteId, token) {
+      if (!siteId || siteId === 'demo') return;
+
+      const effectiveToken = token || tokenInput.value.trim() || getAccessToken();
+      if (!effectiveToken) return;
+
+      // First: try to find the site in already-loaded org caches
+      if (customerTree && customerTree.length > 0) {
+        for (const org of customerTree) {
+          if (org.sites && org.sites.length > 0) {
+            const match = org.sites.find((s) => s.siteId === siteId);
+            if (match) {
+              if (customerSelect.value !== org.orgId) {
+                customerSelect.value = org.orgId;
+                await populateSites(org.orgId);
+              }
+              siteSelect.value = siteId;
+              return;
+            }
+          }
+        }
+      }
+
+      // Not found in cached sites — look up the site directly to find its org
+      const siteInfo = await fetchSiteById(siteId, effectiveToken);
+      if (!siteInfo || !siteInfo.organizationId) {
+        console.warn(`[Sync] Could not resolve org for site ${siteId}`);
+        return;
+      }
+
+      // Fetch the org details to get its name
+      const orgUrl = ASO_ENDPOINTS.ORGANIZATION(siteInfo.organizationId);
+      const orgResponse = await apiGet(orgUrl, effectiveToken);
+      const orgName = (!isApiError(orgResponse) && (orgResponse.name || orgResponse.orgName)) || siteInfo.organizationId;
+
+      // Fetch all sites for this org
+      const orgSites = await fetchOrgSites(siteInfo.organizationId, effectiveToken);
+
+      // Inject/update the org in the tree
+      const newOrg = {
+        orgId: siteInfo.organizationId,
+        orgName,
+        imsOrgId: orgResponse?.imsOrgId || null,
+        sites: orgSites,
+      };
+
+      if (!customerTree) customerTree = [];
+      const existingIdx = customerTree.findIndex((o) => o.orgId === newOrg.orgId);
+      if (existingIdx >= 0) {
+        customerTree[existingIdx] = newOrg;
+      } else {
+        customerTree.push(newOrg);
+      }
+
+      // Ensure selector row is visible and repopulate dropdowns
+      selectorRow.classList.add('visible');
+      customerSelect.innerHTML = '<option value="">Select a customer</option>'
+        + [...customerTree].sort((a, b) => (a.orgName || '').localeCompare(b.orgName || ''))
+            .map((c) => `<option value="${c.orgId}">${c.orgName}</option>`).join('');
+      customerSelect.value = newOrg.orgId;
+      renderSiteOptions(newOrg.sites); // sites already fetched above
+      siteSelect.value = siteId;
+    }
+
+    async function loadData(forceRefresh = false) {
+      // Resolve site ID from: shared site selector → manual site input
+      const siteId = siteSelect?.value || siteInput.value.trim() || '';
+      if (!siteId) {
+        showError('Please select a site or enter a site ID');
+        return;
+      }
+      
+      currentSiteId = siteId;
+      // Sync dropdowns in background (don't block data loading)
+      syncDropdownsToSiteId(siteId).catch((err) => console.warn('[Sync] dropdown sync failed:', err));
+      showLoading();
+      
+      try {
+        let data;
+        
+        if (siteId === 'demo') {
+          demoBanner.style.display = 'block';
+          data = await loadMockData();
+        } else {
+          demoBanner.style.display = 'none';
+          // Use explicit token from input, or IMS global token, or fail
+          const manualToken = tokenInput.value.trim() || null;
+          const imsToken = getAccessToken();
+          const token = manualToken || imsToken || null;
+          if (!token) {
+            showError('A valid API token is required for live data. Sign in with Adobe or paste a bearer token in developer mode.');
+            return;
+          }
+          // Ensure global token is set for downstream calls
+          if (!manualToken && imsToken) {
+            setGlobalToken(imsToken);
+          }
+          data = await getSuggestionsForSite(siteId, token, forceRefresh);
+        }
+        
+        currentData = data;
+        renderDashboard(data);
+        
+        // Enable refresh/export on whichever set of controls is visible
+        refreshBtn.disabled = false;
+        exportBtn.disabled = false;
+        
+      } catch (error) {
+        console.error('Error loading data:', error);
+        showError(`Failed to load data: ${error.message}`);
+      }
+    }
+    
+    // Render dashboard
+    function renderDashboard(data) {
+      hideLoading();
+      dashboardEl.classList.add('has-data');
+
+      // Show site/customer name
+      const siteNameEl = document.getElementById('site-name');
+      const rawName = data.siteName || data.siteId || currentSiteId;
+      const displayName = rawName ? rawName.replace(/^https?:\/\//, '').replace(/\/$/, '') : '';
+      if (displayName && displayName !== 'demo') {
+        siteNameEl.innerHTML = `${displayName}<span class="site-id">(${data.siteId || currentSiteId})</span>`;
+        siteNameEl.style.display = 'block';
+      } else if (displayName === 'demo') {
+        siteNameEl.innerHTML = 'Demo Site';
+        siteNameEl.style.display = 'block';
+      } else {
+        siteNameEl.style.display = 'none';
+      }
+
+      // Render global filter bar (date range only — customer is already selected via top controls)
+      renderGlobalFilters(document.getElementById('global-filters-bar'), {
+        customers: [],
+        onFilterChange: () => { if (currentData) renderDashboard(currentData); },
+      });
+
+      // Apply date filter to opportunities for metrics
+      // Skip date filtering for demo data (it has hardcoded historical dates)
+      const isDemo = currentSiteId === 'demo';
+      const filteredOpps = isDemo ? data.opportunities : filterByDateRange(data.opportunities);
+      const filteredMetrics = calculateLifecycleMetrics(filteredOpps);
+      const filteredHealthLabel = getHealthLabel(filteredMetrics.health.score);
+
+      renderHealthScore(filteredMetrics.health, filteredHealthLabel);
+      renderQualityScore(filteredMetrics);
+      renderStatsGrid(filteredMetrics);
+      // Trends always receives ALL opportunities — the chart applies its own date range
+      renderTrends(data.opportunities);
+      renderLifecycleBreakdown(filteredMetrics.suggestions);
+      renderAgeDistribution(filteredOpps);
+      renderAutomation(filteredMetrics.automation);
+      renderStaleness(filteredMetrics.staleness);
+      renderOpportunitiesTable(filteredOpps);
+    }
+    
+    // Render health score card
+    function renderHealthScore(health, label) {
+      const container = document.getElementById('health-score');
+      const colorClass = getHealthColor(health.score);
+      const m = health.metrics;
+      
+      container.innerHTML = `
+        <div class="health-score-circle ${colorClass}">
+          <div class="health-score-value">${health.score}</div>
+          <div class="health-score-label">${label}</div>
+        </div>
+        <div class="health-details">
+          <h3>Health Score Breakdown
+            <span class="info-bubble">?<span class="info-text">Weighted composite of 4 factors: Resolution Rate (35%), Aging Rate (25%), Speed of Resolution (25%), Skip Rate (15%). Each factor is scored 0-100 based on target thresholds, then combined.</span></span>
+          </h3>
+          <div class="health-breakdown">
+            <div class="health-metric">
+              <span class="health-metric-label">Resolution Rate:
+                <span class="info-bubble">?<span class="info-text">FIXED / total suggestions. ${m.fixedCount} of ${m.totalSuggestions} fixed. Target: 80%.</span></span>
+              </span>
+              <span class="health-metric-value">${m.resolutionRate}%</span>
+            </div>
+            <div class="health-metric">
+              <span class="health-metric-label">Aging Rate:
+                <span class="info-bubble">?<span class="info-text">Opportunities older than 30 days / total. ${m.agingCount} of ${m.totalOpportunities} aging. Target: below 10%.</span></span>
+              </span>
+              <span class="health-metric-value">${m.agingRate}%</span>
+            </div>
+            <div class="health-metric">
+              <span class="health-metric-label">Avg Time to Fix:
+                <span class="info-bubble">?<span class="info-text">Average days from suggestion creation to FIXED. Only counts resolved suggestions. Target: 14 days.</span></span>
+              </span>
+              <span class="health-metric-value">${formatDuration(m.avgDaysToFix)}</span>
+            </div>
+            <div class="health-metric">
+              <span class="health-metric-label">Skip Rate:
+                <span class="info-bubble">?<span class="info-text">Customer-skipped (SKIPPED) / terminal suggestions. ${m.skippedCount} of ${m.terminalCount} terminal. Target: below 5%.</span></span>
+              </span>
+              <span class="health-metric-value">${m.skipRate}%</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Render quality score card
+    function renderQualityScore(metrics) {
+      const container = document.getElementById('quality-score');
+      const qs = calculateQualityScore(
+        {
+          totalCount: metrics.suggestions.total,
+          rejectedRawCount: metrics.suggestions.rejectedRawCount,
+          outdatedCount: metrics.suggestions.outdatedCount,
+        },
+        metrics.fixes,
+      );
+      const label = getQualityLabel(qs.score);
+      const colorClass = getHealthColor(qs.score); // reuse same color fn
+      const m = qs.metrics;
+
+      container.innerHTML = `
+        <div class="health-score-circle ${colorClass}">
+          <div class="health-score-value">${qs.score}</div>
+          <div class="health-score-label">${label}</div>
+        </div>
+        <div class="health-details">
+          <h3>Quality Score Breakdown
+            <span class="info-bubble">?<span class="info-text">Measures ASO signal quality. Weighted: Rejection Rate (40%), Outdated Rate (30%), Fix Error Rate (30%). Higher is better — low rejection + low staleness + reliable automation.</span></span>
+          </h3>
+          <div class="health-breakdown">
+            <div class="health-metric">
+              <span class="health-metric-label">Rejection Rate:
+                <span class="info-bubble">?<span class="info-text">REJECTED / total suggestions. ${m.rejectedCount} of ${m.totalSuggestions} rejected by ESE. Target: ≤3%.</span></span>
+              </span>
+              <span class="health-metric-value">${m.rejectionRate}%</span>
+            </div>
+            <div class="health-metric">
+              <span class="health-metric-label">Outdated Rate:
+                <span class="info-bubble">?<span class="info-text">OUTDATED / total suggestions. ${m.outdatedCount} of ${m.totalSuggestions} became stale. Target: ≤10%.</span></span>
+              </span>
+              <span class="health-metric-value">${m.outdatedRate}%</span>
+            </div>
+            <div class="health-metric">
+              <span class="health-metric-label">Fix Error Rate:
+                <span class="info-bubble">?<span class="info-text">FAILED / (COMPLETED + FAILED) from /fixes. ${m.fixFailedCount} failed of ${m.fixCompletedCount + m.fixFailedCount} attempted. Target: ≤5%.</span></span>
+              </span>
+              <span class="health-metric-value">${m.fixErrorRate}%</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Render stats grid
+    function renderStatsGrid(metrics) {
+      const container = document.getElementById('stats-grid');
+      const { suggestions, fixes, opportunities, lifecycle } = metrics;
+      
+      const stats = [
+        { label: 'Total Opportunities', value: opportunities.total, class: '', tip: 'All opportunities regardless of status.', drill: 'all' },
+        { label: 'Open Opportunities', value: lifecycle.activeOpportunities, class: '', tip: 'Opportunities with status NEW or IN_PROGRESS.', drill: 'open' },
+        { label: 'Total Suggestions', value: suggestions.total, class: '', tip: '', drill: 'all' },
+        { label: 'Fixed', value: suggestions.fixedCount, class: 'fixed', tip: 'Suggestions with FIXED status.', drill: 'FIXED' },
+        { label: 'Pending', value: suggestions.pendingCount, class: 'pending', tip: 'NEW + APPROVED + IN_PROGRESS + PENDING_VALIDATION.', drill: 'pending' },
+      ];
+      // Pending sub-breakdown (only if pending > 0)
+      if (suggestions.pendingCount > 0) {
+        if (suggestions.pendingValidationCount > 0) {
+          stats.push({ label: 'Pending Validation', value: suggestions.pendingValidationCount, class: 'pending', tip: 'PENDING_VALIDATION — awaiting ESE review. Internal only; hidden from customers in ASO UI.', drill: 'PENDING_VALIDATION' });
+        }
+        if (suggestions.awaitingActionCount > 0) {
+          stats.push({ label: 'Awaiting Action', value: suggestions.awaitingActionCount, class: 'pending', tip: 'NEW + APPROVED — ready for customer to act on.', drill: 'NEW' });
+        }
+        if (suggestions.inProgressCount > 0) {
+          stats.push({ label: 'In Progress', value: suggestions.inProgressCount, class: 'pending', tip: 'IN_PROGRESS — work underway.', drill: 'IN_PROGRESS' });
+        }
+      }
+      stats.push(
+        { label: 'Skipped / Ignored', value: suggestions.skippedCount, class: 'ignored', tip: 'SKIPPED — customer chose to skip/ignore this suggestion.', drill: 'SKIPPED' },
+        { label: 'Rejected', value: suggestions.rejectedRawCount, class: 'rejected', tip: 'REJECTED — ESE manually flagged as false positive. Quality metric.', drill: 'REJECTED' },
+        { label: 'Outdated', value: suggestions.outdatedCount, class: 'noise', tip: 'OUTDATED — suggestion became irrelevant (page changed, newer suggestion, etc.).', drill: 'OUTDATED' },
+        { label: 'Resolution Rate', value: `${suggestions.resolutionRate}%`, class: 'fixed', tip: 'FIXED / total suggestions.' },
+      );
+      // Conditional cards
+      if ((suggestions.errorCount || 0) > 0) {
+        stats.splice(stats.length - 1, 0, { label: 'Errors', value: suggestions.errorCount, class: 'rejected', tip: 'ERROR — autofix attempt failed.', drill: 'ERROR' });
+      }
+      // Fix metrics
+      if ((fixes.totalFixes || 0) > 0) {
+        stats.push({ label: 'Deployed Fixes', value: fixes.completedFixes, class: 'fixes', tip: `Fix operations with COMPLETED status. ${fixes.completedFixes} of ${fixes.totalFixes} total.` });
+        if (fixes.autoFixSuccessRate >= 0) {
+          stats.push({ label: 'Auto-fix Success', value: `${fixes.autoFixSuccessRate}%`, class: 'fixes', tip: `COMPLETED / (COMPLETED + FAILED). ${fixes.completedFixes} succeeded, ${fixes.failedFixes} failed.` });
+        }
+      }
+      
+      container.innerHTML = stats.map(stat => `
+        <div class="stat-card ${stat.class}${stat.drill ? ' clickable' : ''}" ${stat.drill ? `data-drill="${stat.drill}"` : ''}>
+          <div class="stat-value">${stat.value}</div>
+          <div class="stat-label">${stat.label}${stat.tip ? ` <span class="info-bubble">?<span class="info-text">${stat.tip}</span></span>` : ''}</div>
+        </div>
+      `).join('');
+
+      // Attach drill-down click handlers
+      container.querySelectorAll('.stat-card[data-drill]').forEach((card) => {
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.info-bubble')) return; // don't drill on tooltip click
+          tableStatusFilter = card.dataset.drill;
+          renderOpportunitiesTable();
+          // Scroll to table
+          document.getElementById('opportunities-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+    }
+    
+    // Render trend chart
+    let _trendOpps = [];
+    function renderTrends(opportunities) {
+      _trendOpps = opportunities;
+      const metric = document.getElementById('trend-metric').value;
+      const byType = document.getElementById('trend-by-type').checked;
+      const filters = getFilters();
+      // Use the filter date range; if "all time" (no bounds), derive from the data
+      let dateRange = filters.dateRange;
+      if (!dateRange.start && !dateRange.end && opportunities.length > 0) {
+        const allDates = opportunities.flatMap(o => (o.suggestions || []).map(s => new Date(s.createdAt || o.createdAt)));
+        if (allDates.length > 0) {
+          dateRange = {
+            start: new Date(Math.min(...allDates)),
+            end: new Date(Math.max(...allDates.map(d => d.getTime() + 86400000))),
+          };
+        }
+      }
+      renderTrendChart(document.getElementById('trend-chart'), {
+        opportunities,
+        metric,
+        dateRange,
+        byType,
+      });
+    }
+    document.getElementById('trend-metric').addEventListener('change', () => renderTrends(_trendOpps));
+    document.getElementById('trend-by-type').addEventListener('change', () => renderTrends(_trendOpps));
+
+    // Render suggestion lifecycle breakdown bars
+    function renderLifecycleBreakdown(suggestions) {
+      const container = document.getElementById('lifecycle-breakdown');
+      const total = suggestions.total || 1;
+      
+      function pct(v) { return parseFloat(((v / total) * 100).toFixed(1)); }
+      
+      const bars = [
+        { label: 'Fixed', value: suggestions.fixedCount, percent: pct(suggestions.fixedCount), class: 'deployed' },
+        { label: 'Pending', value: suggestions.pendingCount, percent: pct(suggestions.pendingCount), class: 'pending' },
+        { label: 'Skipped / Ignored', value: suggestions.skippedCount, percent: pct(suggestions.skippedCount), class: 'ignored' },
+        { label: 'Rejected', value: suggestions.rejectedRawCount, percent: pct(suggestions.rejectedRawCount), class: 'rejected-bar' },
+        { label: 'Outdated', value: suggestions.outdatedCount, percent: pct(suggestions.outdatedCount), class: 'outdated' },
+      ];
+      if ((suggestions.errorCount || 0) > 0) {
+        bars.push({ label: 'Error', value: suggestions.errorCount, percent: pct(suggestions.errorCount), class: 'error' });
+      }
+      
+      container.innerHTML = bars.map(bar => `
+        <div class="progress-bar-container">
+          <div class="progress-label">
+            <span>${bar.label}</span>
+            <span>${bar.value} (${bar.percent}%)</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill ${bar.class}" style="width: ${Math.max(bar.percent, bar.value > 0 ? 1 : 0)}%"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    // Render age distribution — only active (NEW + IN_PROGRESS) opportunities
+    function renderAgeDistribution(opportunities) {
+      const container = document.getElementById('age-distribution');
+      const activeOpps = opportunities.filter(
+        opp => opp.status === 'NEW' || opp.status === 'IN_PROGRESS',
+      );
+      const ageCounts = calculateAgeCounts(activeOpps);
+
+      const total = (ageCounts.fresh || 0) + (ageCounts.acceptable || 0) + (ageCounts.warning || 0) + (ageCounts.overdue || 0) + (ageCounts.critical || 0);
+      const denominator = total || 1;
+      
+      const buckets = [
+        { label: 'Fresh (0-7 days)', value: ageCounts.fresh, colorClass: 'fresh' },
+        { label: 'Acceptable (8-14 days)', value: ageCounts.acceptable, colorClass: 'acceptable' },
+        { label: 'Warning (15-30 days)', value: ageCounts.warning, colorClass: 'warning' },
+        { label: 'Overdue (31-60 days)', value: ageCounts.overdue, colorClass: 'overdue' },
+        { label: 'Critical (60+ days)', value: ageCounts.critical, colorClass: 'critical' },
+      ];
+      
+      container.innerHTML = (activeOpps.length === 0
+        ? '<p style="color:#666; font-size:13px;">No open opportunities.</p>'
+        : buckets.map(bucket => {
+            const percent = Math.round((bucket.value / denominator) * 100);
+            return `
+              <div class="progress-bar-container">
+                <div class="progress-label">
+                  <span>${bucket.label}</span>
+                  <span>${bucket.value} (${percent}%)</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill ${bucket.colorClass}" style="width: ${percent}%"></div>
+                </div>
+              </div>
+            `;
+          }).join('')
+      );
+    }
+    
+    // Render automation vs manual metrics
+    function renderAutomation(automation) {
+      const container = document.getElementById('automation-metrics');
+      if (!automation || (automation.autoFixedCount === 0 && automation.manualFixedCount === 0 && automation.failedFixCount === 0)) {
+        container.innerHTML = '<p style="color:#999; font-size:13px;">No fix data available. Automation metrics require /fixes API data.</p>';
+        return;
+      }
+
+      const totalFixed = automation.autoFixedCount + automation.manualFixedCount;
+      const autoPct = totalFixed > 0 ? ((automation.autoFixedCount / totalFixed) * 100).toFixed(1) : 0;
+      const manualPct = totalFixed > 0 ? ((automation.manualFixedCount / totalFixed) * 100).toFixed(1) : 0;
+
+      const failureRows = Object.entries(automation.failuresByType || {}).sort((a, b) => b[1] - a[1]);
+
+      container.innerHTML = `
+        <div class="automation-grid">
+          <div class="automation-card">
+            <div class="staleness-value" style="color:#28a745">${automation.autoFixedCount}</div>
+            <div class="staleness-label">Auto-fixed (${autoPct}%)</div>
+          </div>
+          <div class="automation-card">
+            <div class="staleness-value" style="color:#1473e6">${automation.manualFixedCount}</div>
+            <div class="staleness-label">Manual (${manualPct}%)</div>
+          </div>
+          <div class="automation-card">
+            <div class="staleness-value" style="color:${automation.automationSuccessRate >= 90 ? '#28a745' : automation.automationSuccessRate >= 70 ? '#ffc107' : '#dc3545'}">${automation.automationSuccessRate >= 0 ? automation.automationSuccessRate + '%' : 'N/A'}</div>
+            <div class="staleness-label">Automation Success Rate
+              <span class="info-bubble">?<span class="info-text">COMPLETED / (COMPLETED + FAILED) from /fixes. ${automation.completedFixCount} completed, ${automation.failedFixCount} failed.</span></span>
+            </div>
+          </div>
+          <div class="automation-card${automation.failedFixCount > 0 ? ' alert' : ''}">
+            <div class="staleness-value">${automation.failedFixCount}</div>
+            <div class="staleness-label">Failed Fixes</div>
+          </div>
+        </div>
+        ${failureRows.length > 0 ? `
+          <div style="margin-top:12px;">
+            <strong style="font-size:13px; color:#555;">Failures by Type:</strong>
+            <div class="failures-by-type">
+              ${failureRows.map(([type, count]) => `
+                <span class="failure-type-badge">${type}: ${count}</span>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      `;
+    }
+
+    // Render staleness & throughput metrics
+    function renderStaleness(staleness) {
+      const container = document.getElementById('staleness-metrics');
+      if (!staleness) { container.innerHTML = ''; return; }
+
+      const items = [
+        { label: 'Stale Pending Validation', value: staleness.stalePendingValidation, tip: `PENDING_VALIDATION suggestions older than 7 days.`, alert: staleness.stalePendingValidation > 0 },
+        { label: 'Stale New', value: staleness.staleNew, tip: `NEW suggestions older than 14 days.`, alert: staleness.staleNew > 0 },
+        { label: 'Stale In Progress', value: staleness.staleInProgress, tip: `IN_PROGRESS suggestions older than 21 days.`, alert: staleness.staleInProgress > 0 },
+        { label: 'Total Stale', value: staleness.totalStale, tip: 'Sum of all stale suggestions.', alert: staleness.totalStale > 0 },
+        { label: 'Avg Time to Action', value: staleness.avgTimeToAction >= 0 ? `${staleness.avgTimeToAction}d` : 'N/A', tip: 'Average days from suggestion creation to first status change beyond NEW/PENDING_VALIDATION.' },
+        { label: 'Avg Time to Resolution', value: staleness.avgTimeToResolution >= 0 ? `${staleness.avgTimeToResolution}d` : 'N/A', tip: 'Average days from creation to a terminal status (FIXED, SKIPPED, REJECTED, ERROR, OUTDATED).' },
+      ];
+
+      container.innerHTML = `
+        <div class="staleness-grid">
+          ${items.map(item => `
+            <div class="staleness-card${item.alert ? ' alert' : ''}">
+              <div class="staleness-value">${item.value}</div>
+              <div class="staleness-label">${item.label}
+                <span class="info-bubble">?<span class="info-text">${item.tip}</span></span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    // Table state
+    let sortColumn = 'type';
+    let sortDirection = 'asc';
+    let allOpportunities = []; // full list for filter toggle
+    let tableStatusFilter = 'open'; // default: show open (NEW + IN_PROGRESS) opportunities
+    
+    function getFilteredOpportunities() {
+      const opps = allOpportunities;
+
+      switch (tableStatusFilter) {
+        case 'open':
+          // Only NEW / IN_PROGRESS opportunity status
+          return opps.filter(opp => opp.status === 'NEW' || opp.status === 'IN_PROGRESS');
+        case 'resolved':
+          return opps.filter(opp => opp.status === 'RESOLVED' || opp.status === 'IGNORED');
+        case 'all':
+          // Everything — no filter
+          return opps;
+        case 'pending':
+          return opps.filter(opp => (opp.suggestionsCounts?.pendingCount || 0) > 0);
+        default: {
+          // Suggestion-status filter (FIXED, SKIPPED, etc.)
+          const statusKey = {
+            FIXED: 'fixedCount', SKIPPED: 'skippedCount', REJECTED: 'rejectedRawCount',
+            ERROR: 'errorCount', OUTDATED: 'outdatedCount', NEW: 'newCount',
+            IN_PROGRESS: 'inProgressCount', PENDING_VALIDATION: 'pendingValidationCount',
+          }[tableStatusFilter];
+          if (statusKey) {
+            return opps.filter(opp => (opp.suggestionsCounts?.[statusKey] || 0) > 0);
+          }
+          return opps;
+        }
+      }
+    }
+    
+    function sortOpportunities(opportunities, column, direction) {
+      return [...opportunities].sort((a, b) => {
+        let valA, valB;
+        switch (column) {
+          case 'type':
+            valA = (a.type || '').toLowerCase();
+            valB = (b.type || '').toLowerCase();
+            break;
+          case 'status':
+            valA = a.status || '';
+            valB = b.status || '';
+            break;
+          case 'age':
+            valA = new Date(a.createdAt || 0).getTime();
+            valB = new Date(b.createdAt || 0).getTime();
+            break;
+          case 'total':
+            valA = a.suggestionsCounts?.totalCount || 0;
+            valB = b.suggestionsCounts?.totalCount || 0;
+            break;
+          case 'fixed':
+            valA = a.suggestionsCounts?.fixedCount || 0;
+            valB = b.suggestionsCounts?.fixedCount || 0;
+            break;
+          case 'pending':
+            valA = a.suggestionsCounts?.pendingCount || 0;
+            valB = b.suggestionsCounts?.pendingCount || 0;
+            break;
+          case 'rejected':
+            valA = a.suggestionsCounts?.rejectedRawCount || 0;
+            valB = b.suggestionsCounts?.rejectedRawCount || 0;
+            break;
+          case 'errors':
+            valA = a.suggestionsCounts?.errorCount || 0;
+            valB = b.suggestionsCounts?.errorCount || 0;
+            break;
+          case 'outdated':
+            valA = a.suggestionsCounts?.outdatedCount || 0;
+            valB = b.suggestionsCounts?.outdatedCount || 0;
+            break;
+          case 'created':
+            valA = new Date(a.createdAt || 0).getTime();
+            valB = new Date(b.createdAt || 0).getTime();
+            break;
+          default:
+            return 0;
+        }
+        if (valA < valB) return direction === 'asc' ? -1 : 1;
+        if (valA > valB) return direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    
+    // Render opportunities table
+    function renderOpportunitiesTable(opportunities) {
+      // Store full list on first call (from renderDashboard)
+      if (opportunities) {
+        allOpportunities = opportunities;
+      }
+      const container = document.getElementById('opportunities-table');
+
+      // Render status filter pills
+      const statuses = ['open', 'all', 'resolved', 'FIXED', 'pending', 'SKIPPED', 'REJECTED', 'OUTDATED', 'ERROR'];
+      const statusLabels = { open: 'Open', all: 'All', resolved: 'Resolved / Ignored', FIXED: 'Fixed', pending: 'Pending', SKIPPED: 'Skipped', REJECTED: 'Rejected', OUTDATED: 'Outdated', ERROR: 'Errors' };
+      const pillsHtml = statuses.map(s =>
+        `<button class="filter-pill${tableStatusFilter === s ? ' active' : ''}" data-status="${s}">${statusLabels[s] || s}</button>`
+      ).join('');
+
+      const filtered = getFilteredOpportunities();
+      
+      if (!filtered || filtered.length === 0) {
+        const msg = tableStatusFilter === 'open'
+          ? 'No open opportunities. Try "All" to see resolved &amp; ignored.'
+          : 'No opportunities match this filter.';
+        container.innerHTML = `<div class="table-status-filter">${pillsHtml}</div>`
+          + `<p style="color:#666; font-size:13px;">${msg}</p>`;
+        attachPillHandlers(container);
+        return;
+      }
+      
+      const sorted = sortOpportunities(filtered, sortColumn, sortDirection);
+      
+      function arrow(col) {
+        if (col !== sortColumn) return '<span class="sort-arrow">&#x25B4;&#x25BE;</span>';
+        return sortDirection === 'asc' 
+          ? '<span class="sort-arrow active">&#x25B4;</span>' 
+          : '<span class="sort-arrow active">&#x25BE;</span>';
+      }
+      
+      const rows = sorted.map(opp => {
+        const ageBucket = calculateAgeBucket(opp.createdAt, opp.updatedAt, opp.status, 'opportunity');
+        const counts = opp.suggestionsCounts || {};
+        const total = counts.totalCount || 0;
+        const totalDisplay = total === 0 ? '<span style="color:#999">0</span>' : total;
+        // Build ASO deep link (best-effort)
+        const deepLink = `https://experience.adobe.com/aem/sites/optimizer/opportunity/${opp.id || ''}`;
+        
+        return `
+          <tr class="opp-row" data-link="${deepLink}">
+            <td><strong>${opp.type || 'Unknown'}</strong></td>
+            <td><span class="status-badge status-${opp.status}">${opp.status}</span></td>
+            <td><span class="age-badge age-${ageBucket}">${ageBucket}</span></td>
+            <td>${totalDisplay}</td>
+            <td>${counts.fixedCount || 0}</td>
+            <td>${counts.pendingCount || 0}</td>
+            <td>${counts.rejectedRawCount || 0}</td>
+            <td>${counts.errorCount || 0}</td>
+            <td>${counts.outdatedCount || 0}</td>
+            <td>${new Date(opp.createdAt).toLocaleDateString()}</td>
+          </tr>
+        `;
+      });
+      
+      container.innerHTML = `
+        <div class="table-status-filter">${pillsHtml}</div>
+        <table class="opportunities-table">
+          <thead>
+            <tr>
+              <th data-sort="type">Type ${arrow('type')}</th>
+              <th data-sort="status">Status ${arrow('status')}</th>
+              <th data-sort="age">Age ${arrow('age')}</th>
+              <th data-sort="total">Total ${arrow('total')}</th>
+              <th data-sort="fixed">Fixed ${arrow('fixed')}</th>
+              <th data-sort="pending" title="NEW + APPROVED + IN_PROGRESS + PENDING_VALIDATION">Pending ${arrow('pending')}</th>
+              <th data-sort="rejected">Rejected ${arrow('rejected')}</th>
+              <th data-sort="errors">Errors ${arrow('errors')}</th>
+              <th data-sort="outdated">Outdated ${arrow('outdated')}</th>
+              <th data-sort="created">Created ${arrow('created')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.join('')}
+          </tbody>
+        </table>
+      `;
+      
+      // Attach sort handlers
+      container.querySelectorAll('th[data-sort]').forEach(th => {
+        th.addEventListener('click', () => {
+          const col = th.dataset.sort;
+          if (sortColumn === col) {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+          } else {
+            sortColumn = col;
+            sortDirection = 'asc';
+          }
+          renderOpportunitiesTable();
+        });
+      });
+
+      // Row click → deep link
+      container.querySelectorAll('.opp-row').forEach(row => {
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', () => {
+          const link = row.dataset.link;
+          if (link) window.open(link, '_blank');
+        });
+      });
+
+      attachPillHandlers(container);
+    }
+
+    function attachPillHandlers(container) {
+      container.querySelectorAll('.filter-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          tableStatusFilter = pill.dataset.status;
+          renderOpportunitiesTable();
+        });
+      });
+    }
+    
+    // Export report
+    async function exportReport() {
+      if (!currentData) return;
+      
+      const token = tokenInput.value.trim() || getAccessToken() || null;
+      const report = await getLifecycleReport(currentSiteId, token);
+      
+      const json = JSON.stringify(report, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `suggestion-lifecycle-${currentSiteId}-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    
+    // UI helpers
+    function showLoading() {
+      loadingEl.style.display = 'block';
+      errorEl.style.display = 'none';
+      dashboardEl.classList.remove('has-data');
+    }
+    
+    function hideLoading() {
+      loadingEl.style.display = 'none';
+    }
+    
+    function showError(message) {
+      hideLoading();
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+      dashboardEl.classList.remove('has-data');
+    }
+    
+    // ---- View tab listeners ----
+    document.querySelectorAll('.view-tab').forEach((tab) => {
+      tab.addEventListener('click', () => switchView(tab.dataset.view));
+    });
+    portfolioRefreshBtn.addEventListener('click', () => {
+      portfolioCache = null; // force refresh
+      loadPortfolioData();
+    });
+    portfolioRange.addEventListener('change', () => {
+      portfolioCache = null;
+      loadPortfolioData();
+    });
+    portfolioScope.addEventListener('change', () => {
+      portfolioCache = null;
+      loadPortfolioData();
+    });
+
+    // Event listeners
+    loadBtn.addEventListener('click', () => loadData(false));
+    refreshBtn.addEventListener('click', () => {
+      if (currentSiteId) {
+        clearSiteCache(currentSiteId);
+        loadData(true);
+      }
+    });
+    exportBtn.addEventListener('click', exportReport);
+    
+    
+    siteInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        loadData(false);
+      }
+    });
+    
+    // ---- Initialization ----
+
+    // Listen for auth state changes (e.g. token refresh)
+    onAuthStateChange(async (profile) => {
+      if (profile && isAuthenticated()) {
+        isDevMode = false;
+        showAuthState();
+        await populateCustomers();
+      }
+    });
+
+    // Check stored token (synchronous check + possible async refresh)
+    await initIMS();
+
+    if (isAuthenticated()) {
+      // User has a valid IMS session
+      isDevMode = false;
+      showAuthState();
+      await populateCustomers();
+    } else {
+      // No IMS session — start in dev mode with demo data
+      isDevMode = true;
+      showAuthState();
+      loadData(false);
+    }
+  </script>
+</body>
+</html>

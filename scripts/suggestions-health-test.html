@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Suggestions Health Utilities - Test Suite</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    
+    h1 {
+      color: #333;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+    
+    h2 {
+      color: #667eea;
+      margin-top: 30px;
+    }
+    
+    .test-section {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .test-result {
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    
+    .test-pass {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+      color: #155724;
+    }
+    
+    .test-fail {
+      background: #f8d7da;
+      border-left: 4px solid #dc3545;
+      color: #721c24;
+    }
+    
+    .test-info {
+      background: #e7f1ff;
+      border-left: 4px solid #667eea;
+      color: #004085;
+    }
+    
+    .summary {
+      font-size: 18px;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    
+    .summary.all-pass {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .summary.has-failures {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    
+    button:hover {
+      background: #5568d3;
+    }
+    
+    pre {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Suggestions Health Utilities - Test Suite</h1>
+  
+  <div>
+    <button onclick="runAllTests()">Run All Tests</button>
+    <button onclick="clearResults()">Clear Results</button>
+  </div>
+  
+  <div id="results"></div>
+  
+  <script type="module">
+    import {
+      AGE_THRESHOLDS,
+      calculateAgeDays,
+      calculateAgeBucket,
+      groupByStatus,
+      groupByAge,
+      calculateStatusCounts,
+      calculateAgeCounts,
+      aggregateSuggestionsAcrossOpportunities,
+      calculateAvgTimeToFix,
+      calculateHealthScore,
+      calculateLifecycleMetrics,
+      getHealthLabel,
+      getHealthColor,
+      formatDuration,
+    } from './utils/suggestions-health.js';
+    
+    import { OPPORTUNITY_STATUS, SUGGESTION_STATUS } from './constants/api.js';
+    
+    // Test utilities
+    let testResults = [];
+    
+    function assert(condition, testName, details = '') {
+      const result = { 
+        name: testName, 
+        passed: condition, 
+        details 
+      };
+      testResults.push(result);
+      return condition;
+    }
+    
+    function assertEqual(actual, expected, testName) {
+      const passed = actual === expected;
+      const details = passed ? '' : `Expected: ${expected}, Got: ${actual}`;
+      return assert(passed, testName, details);
+    }
+    
+    function assertRange(value, min, max, testName) {
+      const passed = value >= min && value <= max;
+      const details = passed ? '' : `Value ${value} not in range [${min}, ${max}]`;
+      return assert(passed, testName, details);
+    }
+    
+    // Test data generators
+    function createOpportunity(overrides = {}) {
+      return {
+        id: `opp-${Math.random().toString(36).substr(2, 9)}`,
+        type: 'broken-backlinks',
+        status: OPPORTUNITY_STATUS.NEW,
+        createdAt: new Date().toISOString(),
+        suggestions: [],
+        suggestionsCounts: {
+          totalCount: 0, fixedCount: 0, newCount: 0, approvedCount: 0,
+          inProgressCount: 0, pendingValidationCount: 0, skippedCount: 0,
+          rejectedRawCount: 0, errorCount: 0, outdatedCount: 0,
+          pendingCount: 0, terminalCount: 0,
+        },
+        ...overrides,
+      };
+    }
+    
+    function createSuggestion(overrides = {}) {
+      return {
+        id: `sug-${Math.random().toString(36).substr(2, 9)}`,
+        status: SUGGESTION_STATUS.NEW,
+        createdAt: new Date().toISOString(),
+        ...overrides,
+      };
+    }
+    
+    // Test: calculateAgeDays
+    function testCalculateAgeDays() {
+      const section = document.createElement('div');
+      section.className = 'test-section';
+      section.innerHTML = '<h2>calculateAgeDays()</h2>';
+      
+      // Test with today
+      const today = new Date().toISOString();
+      assertEqual(calculateAgeDays(today), 0, 'Today should return 0 days');
+      
+      // Test with yesterday
+      const yesterday = new Date(Date.now() - 24*60*60*1000).toISOString();
+      assertEqual(calculateAgeDays(yesterday), 1, 'Yesterday should return 1 day');
+      
+      // Test with 30 days ago
+      const thirtyDaysAgo = new Date(Date.now() - 30*24*60*60*1000).toISOString();
+      assertEqual(calculateAgeDays(thirtyDaysAgo), 30, '30 days ago should return 30');
+      
+      // Test with invalid date
+      assertEqual(calculateAgeDays(null), -1, 'Null date should return -1');
+      assertEqual(calculateAgeDays('invalid'), -1, 'Invalid date should return -1');
+      
+      return section;
+    }
+    
+    // Test: calculateAgeBucket
+    function testCalculateAgeBucket() {
+      const section = document.createElement('div');
+      section.className = 'test-section';
+      section.innerHTML = '<h2>calculateAgeBucket()</h2>';
+      
+      const today = new Date();
+      
+      // Fresh (0-7 days)
+      assertEqual(calculateAgeBucket(today.toISOString()), 'fresh', 'Today should be fresh');
+      const fiveDaysAgo = new Date(today - 5*24*60*60*1000);
+      assertEqual(calculateAgeBucket(fiveDaysAgo.toISOString()), 'fresh', '5 days should be fresh');
+      
+      // Acceptable (8-14 days)
+      const tenDaysAgo = new Date(today - 10*24*60*60*1000);
+      assertEqual(calculateAgeBucket(tenDaysAgo.toISOString()), 'acceptable', '10 days should be acceptable');
+      
+      // Warning (15-30 days)
+      const twentyDaysAgo = new Date(today - 20*24*60*60*1000);
+      assertEqual(calculateAgeBucket(twentyDaysAgo.toISOString()), 'warning', '20 days should be warning');
+      
+      // Overdue (31-60 days)
+      const fortyFiveDaysAgo = new Date(today - 45*24*60*60*1000);
+      assertEqual(calculateAgeBucket(fortyFiveDaysAgo.toISOString()), 'overdue', '45 days should be overdue');
+      
+      // Critical (>60 days)
+      const ninetyDaysAgo = new Date(today - 90*24*60*60*1000);
+      assertEqual(calculateAgeBucket(ninetyDaysAgo.toISOString()), 'critical', '90 days should be critical');
+      
+      // Unknown
+      assertEqual(calculateAgeBucket(null), 'unknown', 'Null should be unknown');
+      
+      return section;
+    }
+    
+    // Test: calculateStatusCounts
+    function testCalculateStatusCounts() {
+      const section = document.createElement('div');
+      section.className = 'test-section';
+      section.innerHTML = '<h2>calculateStatusCounts()</h2>';
+      
+      const opportunities = [
+        createOpportunity({ status: OPPORTUNITY_STATUS.NEW }),
+        createOpportunity({ status: OPPORTUNITY_STATUS.NEW }),
+        createOpportunity({ status: OPPORTUNITY_STATUS.IN_PROGRESS }),
+        createOpportunity({ status: OPPORTUNITY_STATUS.RESOLVED }),
+        createOpportunity({ status: OPPORTUNITY_STATUS.IGNORED }),
+      ];
+      
+      const counts = calculateStatusCounts(opportunities);
+      
+      assertEqual(counts.total, 5, 'Total should be 5');
+      assertEqual(counts.new, 2, 'New count should be 2');
+      assertEqual(counts.inProgress, 1, 'In progress count should be 1');
+      assertEqual(counts.resolved, 1, 'Resolved count should be 1');
+      assertEqual(counts.ignored, 1, 'Ignored count should be 1');
+      
+      // Test empty array
+      const emptyCounts = calculateStatusCounts([]);
+      assertEqual(emptyCounts.total, 0, 'Empty array total should be 0');
+      
+      return section;
+    }
+    
+    // Test: calculateAgeCounts
+    function testCalculateAgeCounts() {
+      const section = document.createElement('div');
+      section.className = 'test-section';
+      section.innerHTML = '<h2>calculateAgeCounts()</h2>';
+      
+      const today = new Date();
+      const opportunities = [
+        createOpportunity({ createdAt: today.toISOString() }), // fresh
+        createOpportunity({ createdAt: new Date(today - 10*24*60*60*1000).toISOString() }), // acceptable
+        createOpportunity({ createdAt: new Date(today - 25*24*60*60*1000).toISOString() }), // warning
+        createOpportunity({ createdAt: new Date(today - 50*24*60*60*1000).toISOString() }), // overdue
+        createOpportunity({ createdAt: new Date(today - 100*24*60*60*1000).toISOString() }), // critical
+      ];
+      
+      const counts = calculateAgeCounts(opportunities);
+      
+      assertEqual(counts.fresh, 1, 'Fresh count should be 1');
+      assertEqual(counts.acceptable, 1, 'Acceptable count should be 1');
+      assertEqual(counts.warning, 1, 'Warning count should be 1');
+      assertEqual(counts.overdue, 1, 'Overdue count should be 1');
+      assertEqual(counts.critical, 1, 'Critical count should be 1');
+      assertEqual(counts.aging, 3, 'Aging (warning+overdue+critical) should be 3');
+      
+      return section;
+    }
+    
+    // Test: aggregateSuggestionsAcrossOpportunities
+    function testAggregateSuggestions() {
+      const section = document.createElement('div');
+      section.className = 'test-section';
+      section.innerHTML = '<h2>aggregateSuggestionsAcrossOpportunities()</h2>';
+      
+      const opportunities = [
+        createOpportunity({ 
+          suggestionsCounts: { totalCount: 10, fixedCount: 5, newCount: 3, skippedCount: 2, rejectedRawCount: 0, errorCount: 0, outdatedCount: 0, approvedCount: 0, inProgressCount: 0, pendingValidationCount: 0 }
+        }),
+        createOpportunity({ 
+          suggestionsCounts: { totalCount: 5, fixedCount: 2, newCount: 2, skippedCount: 1, rejectedRawCount: 0, errorCount: 0, outdatedCount: 0, approvedCount: 0, inProgressCount: 0, pendingValidationCount: 0 }
+        }),
+        createOpportunity({ 
+          suggestionsCounts: { totalCount: 0 }
+        }),
+      ];
+      
+      const totals = aggregateSuggestionsAcrossOpportunities(opportunities);
+      
+      assertEqual(totals.totalCount, 15, 'Total suggestions should be 15');
+      assertEqual(totals.fixedCount, 7, 'Fixed count should be 7');
+      assertEqual(totals.newCount, 5, 'New count should be 5');
+      assertEqual(totals.skippedCount, 3, 'Skipped count should be 3');
+      assertEqual(totals.pendingCount, 5, 'Pending count (derived) should be 5');
+      assertEqual(totals.terminalCount, 10, 'Terminal count should be 10 (7 fixed + 3 skipped)');
+      assertEqual(totals.opportunitiesWithSuggestions, 2, 'Opportunities with suggestions should be 2');
+      
+      return section;
+    }
+    
+    // Test: calculateHealthScore
+    function testCalculateHealthScore() {
+      const section = document.createElement('div');
+      section.className = 'test-section';
+      section.innerHTML = '<h2>calculateHealthScore()</h2>';
+      
+      // Excellent health scenario
+      const excellentStatus = { total: 10, new: 1, inProgress: 1, resolved: 7, ignored: 1 };
+      const excellentAge = { fresh: 2, acceptable: 0, warning: 0, overdue: 0, critical: 0, aging: 0 };
+      const excellentOptions = { 
+        avgDaysToFix: 7, 
+        suggestionCounts: { totalCount: 100, fixedCount: 85, skippedCount: 2, rejectedRawCount: 0, errorCount: 0, outdatedCount: 3, terminalCount: 90 }
+      };
+      
+      const excellentHealth = calculateHealthScore(excellentStatus, excellentAge, excellentOptions);
+      assertRange(excellentHealth.score, 70, 100, 'Excellent health should score 70-100');
+      
+      // Poor health scenario
+      const poorStatus = { total: 10, new: 5, inProgress: 3, resolved: 1, ignored: 1 };
+      const poorAge = { fresh: 0, acceptable: 1, warning: 3, overdue: 2, critical: 2, aging: 7 };
+      const poorOptions = { 
+        avgDaysToFix: 45, 
+        suggestionCounts: { totalCount: 50, fixedCount: 5, skippedCount: 15, rejectedRawCount: 0, errorCount: 0, outdatedCount: 5, terminalCount: 25 }
+      };
+      
+      const poorHealth = calculateHealthScore(poorStatus, poorAge, poorOptions);
+      assertRange(poorHealth.score, 0, 40, 'Poor health should score 0-40');
+      
+      // Verify score is bounded
+      assert(excellentHealth.score >= 0 && excellentHealth.score <= 100, 'Score should be 0-100');
+      
+      return section;
+    }
+    
+    // Test: getHealthLabel
+    function testGetHealthLabel() {
+      const section = document.createElement('div');
+      section.className = 'test-section';
+      section.innerHTML = '<h2>getHealthLabel()</h2>';
+      
+      assertEqual(getHealthLabel(90), 'excellent', '90 should be excellent');
+      assertEqual(getHealthLabel(80), 'excellent', '80 should be excellent');
+      assertEqual(getHealthLabel(70), 'good', '70 should be good');
+      assertEqual(getHealthLabel(50), 'fair', '50 should be fair');
+      assertEqual(getHealthLabel(30), 'poor', '30 should be poor');
+      assertEqual(getHealthLabel(10), 'critical', '10 should be critical');
+      
+      return section;
+    }
+    
+    // Test: formatDuration
+    function testFormatDuration() {
+      const section = document.createElement('div');
+      section.className = 'test-section';
+      section.innerHTML = '<h2>formatDuration()</h2>';
+      
+      assertEqual(formatDuration(-1), 'N/A', '-1 should be N/A');
+      assertEqual(formatDuration(0), 'Today', '0 should be Today');
+      assertEqual(formatDuration(1), '1 day', '1 should be 1 day');
+      assertEqual(formatDuration(5), '5 days', '5 should be 5 days');
+      assertEqual(formatDuration(14), '2 weeks', '14 should be 2 weeks');
+      assertEqual(formatDuration(45), '1 months', '45 should be 1 months');
+      assertEqual(formatDuration(400), '1 years', '400 should be 1 years');
+      
+      return section;
+    }
+    
+    // Test: calculateLifecycleMetrics (integration test)
+    function testCalculateLifecycleMetrics() {
+      const section = document.createElement('div');
+      section.className = 'test-section';
+      section.innerHTML = '<h2>calculateLifecycleMetrics() - Integration</h2>';
+      
+      const today = new Date();
+      const opportunities = [
+        createOpportunity({ 
+          status: OPPORTUNITY_STATUS.RESOLVED,
+          createdAt: new Date(today - 30*24*60*60*1000).toISOString(),
+          suggestions: [
+            createSuggestion({ 
+              status: SUGGESTION_STATUS.FIXED,
+              createdAt: new Date(today - 30*24*60*60*1000).toISOString(),
+              updatedAt: new Date(today - 20*24*60*60*1000).toISOString(),
+            })
+          ],
+          suggestionsCounts: { totalCount: 5, fixedCount: 4, newCount: 1, skippedCount: 0, rejectedRawCount: 0, errorCount: 0, outdatedCount: 0, pendingCount: 1, terminalCount: 4, approvedCount: 0, inProgressCount: 0, pendingValidationCount: 0 }
+        }),
+        createOpportunity({ 
+          status: OPPORTUNITY_STATUS.IN_PROGRESS,
+          createdAt: new Date(today - 15*24*60*60*1000).toISOString(),
+          suggestionsCounts: { totalCount: 10, fixedCount: 3, newCount: 5, skippedCount: 2, rejectedRawCount: 0, errorCount: 0, outdatedCount: 0, pendingCount: 5, terminalCount: 5, approvedCount: 0, inProgressCount: 0, pendingValidationCount: 0 }
+        }),
+      ];
+      
+      const metrics = calculateLifecycleMetrics(opportunities);
+      
+      // Verify structure
+      assert(metrics.opportunities !== undefined, 'Should have opportunities section');
+      assert(metrics.suggestions !== undefined, 'Should have suggestions section');
+      assert(metrics.lifecycle !== undefined, 'Should have lifecycle section');
+      assert(metrics.health !== undefined, 'Should have health section');
+      assert(metrics.calculatedAt !== undefined, 'Should have timestamp');
+      
+      // Verify calculations
+      assertEqual(metrics.opportunities.total, 2, 'Should have 2 opportunities');
+      assertEqual(metrics.suggestions.total, 15, 'Should have 15 total suggestions');
+      assertEqual(metrics.suggestions.fixedCount, 7, 'Should have 7 fixed suggestions');
+      assertEqual(metrics.suggestions.pendingCount, 6, 'Should have 6 pending suggestions');
+      assertEqual(metrics.suggestions.skippedCount, 2, 'Should have 2 skipped suggestions');
+      assert(metrics.suggestions.skipRate !== undefined, 'Should have skipRate');
+      assert(metrics.fixes !== undefined, 'Should have fixes section');
+      assertRange(metrics.health.score, 0, 100, 'Health score should be 0-100');
+      
+      // Display results
+      const pre = document.createElement('pre');
+      pre.textContent = JSON.stringify(metrics, null, 2);
+      section.appendChild(pre);
+      
+      return section;
+    }
+    
+    // Run all tests
+    window.runAllTests = function() {
+      testResults = [];
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '';
+      
+      // Run test suites
+      const testSuites = [
+        testCalculateAgeDays,
+        testCalculateAgeBucket,
+        testCalculateStatusCounts,
+        testCalculateAgeCounts,
+        testAggregateSuggestions,
+        testCalculateHealthScore,
+        testGetHealthLabel,
+        testFormatDuration,
+        testCalculateLifecycleMetrics,
+      ];
+      
+      testSuites.forEach(testFn => {
+        const section = testFn();
+        
+        // Add results to section
+        testResults.forEach(result => {
+          const div = document.createElement('div');
+          div.className = `test-result ${result.passed ? 'test-pass' : 'test-fail'}`;
+          div.innerHTML = `${result.passed ? '✓' : '✗'} ${result.name}${result.details ? ' - ' + result.details : ''}`;
+          section.appendChild(div);
+        });
+        
+        resultsDiv.appendChild(section);
+        testResults = [];
+      });
+      
+      // Summary
+      const allResults = document.querySelectorAll('.test-result');
+      const passCount = document.querySelectorAll('.test-pass').length;
+      const failCount = document.querySelectorAll('.test-fail').length;
+      
+      const summary = document.createElement('div');
+      summary.className = `summary ${failCount === 0 ? 'all-pass' : 'has-failures'}`;
+      summary.innerHTML = `<strong>Test Summary:</strong> ${passCount} passed, ${failCount} failed out of ${passCount + failCount} tests`;
+      resultsDiv.insertBefore(summary, resultsDiv.firstChild);
+    };
+    
+    window.clearResults = function() {
+      document.getElementById('results').innerHTML = '';
+    };
+    
+    // Auto-run tests on load
+    window.runAllTests();
+  </script>
+</body>
+</html>
