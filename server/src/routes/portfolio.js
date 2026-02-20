@@ -2,7 +2,7 @@ import { Router } from 'express';
 import axios from 'axios';
 import { aggregateOpportunities } from '../aggregation.js';
 import { cacheGet, cacheSet } from '../cache.js';
-import { getSnapshot, getSnapshotDate } from '../snapshot-reader.js';
+import { getSnapshot } from '../snapshot-reader.js';
 
 const router = Router();
 
