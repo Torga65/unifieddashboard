@@ -38,12 +38,17 @@ app.get('/api/health', (_req, res) => {
 
 // Reload snapshot from disk (call after running the snapshot script)
 app.post('/api/snapshot/reload', (_req, res) => {
-  const snap = reloadSnapshot();
-  if (snap) {
-    res.json({ status: 'reloaded', date: snap.snapshotDate, opportunities: snap.opportunityCount });
-  } else {
-    res.json({ status: 'no_snapshot' });
+  try {
+    const snap = reloadSnapshot();
+    if (snap) {
+      return res.json({ status: 'reloaded', date: snap.snapshotDate, opportunities: snap.opportunityCount });
+    }
+    return res.status(404).json({ status: 'error', error: 'No snapshot found on disk' });
+  } catch (err) {
+    console.error('[ASO Server] Snapshot reload failed:', err);
+    return res.status(500).json({ status: 'error', error: 'Reload failed' });
   }
+});
 });
 
 // Portfolio routes
