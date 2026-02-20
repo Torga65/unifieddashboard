@@ -18,8 +18,8 @@ export const QUALITY_CONFIG = {
   },
   targets: {
     maxRejectionRate: 0.03, // ≤3% is excellent
-    maxOutdatedRate: 0.10,  // ≤10% is excellent
-    maxFixErrorRate: 0.05,  // ≤5% is excellent
+    maxOutdatedRate: 0.10, // ≤10% is excellent
+    maxFixErrorRate: 0.05, // ≤5% is excellent
   },
 };
 

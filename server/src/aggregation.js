@@ -34,7 +34,7 @@ export function aggregateOpportunities(opportunities, from, to) {
   // ---- Smart summary metrics ----
   let totalAvailable = 0;
   let createdInPeriod = 0;
-  let fixedInPeriod = 0;    // RESOLVED during the period
+  let fixedInPeriod = 0; // RESOLVED during the period
   let outdatedInPeriod = 0; // IGNORED during the period
 
   // ---- Status-change buckets (by updatedAt) ----

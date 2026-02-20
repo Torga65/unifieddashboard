@@ -107,7 +107,8 @@ export function buildTrendSeries(opportunities, metric, dateRange = {}, bucket =
   const sortedKeys = [...buckets.keys()].sort();
   if (sortedKeys.length > 0) {
     let startDate = dateRange.start ? new Date(dateRange.start) : new Date(sortedKeys[0]);
-    const endDate = dateRange.end ? new Date(dateRange.end) : new Date(sortedKeys[sortedKeys.length - 1]);
+    const lastKey = sortedKeys[sortedKeys.length - 1];
+    const endDate = dateRange.end ? new Date(dateRange.end) : new Date(lastKey);
     const stepMs = bucket === 'week' ? 7 * 86400000 : 86400000;
 
     // For weekly buckets, align start to Monday so keys match groupByTimeBucket

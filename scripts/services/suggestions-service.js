@@ -1,25 +1,24 @@
 /**
  * Suggestions Service
- * 
+ *
  * Service layer for fetching and managing ASO suggestions from SpaceCat API.
  * Handles opportunities, suggestions, and fixes lifecycle tracking.
- * 
+ *
  * Adapted from llmo-spacecat-dashboard/src/services/llmoService.js
  */
 
-import { 
-  ASO_ENDPOINTS, 
-  SUGGESTION_STATUS, 
+import {
+  ASO_ENDPOINTS,
+  SUGGESTION_STATUS,
   OPPORTUNITY_STATUS,
   FIX_STATUS,
   PAGINATION,
   ASO_OPPORTUNITY_TYPES,
 } from '../constants/api.js';
-import { 
-  apiGet, 
-  apiPost, 
-  apiPatch, 
-  isApiError, 
+import {
+  apiGet,
+  apiPatch,
+  isApiError,
   batchRequests,
   buildUrl,
 } from './spacecat-api.js';
@@ -57,12 +56,12 @@ export function normalizeUrl(url) {
 export async function fetchSiteInfo(siteId, token = null) {
   const url = ASO_ENDPOINTS.SITE(siteId);
   const response = await apiGet(url, token);
-  
+
   if (isApiError(response)) {
     console.warn('Failed to fetch site info:', response.message);
     return null;
   }
-  
+
   return response;
 }
 
@@ -78,15 +77,15 @@ export async function fetchSiteOpportunities(siteId, token = null, filters = {})
     pageSize: filters.pageSize || PAGINATION.DEFAULT_PAGE_SIZE,
     ...filters,
   };
-  
+
   const url = buildUrl(ASO_ENDPOINTS.SITE_OPPORTUNITIES(siteId), params);
   const response = await apiGet(url, token);
-  
+
   if (isApiError(response)) {
     console.error('Failed to fetch opportunities:', response.message);
     return [];
   }
-  
+
   // Handle paginated response
   return response.opportunities || response.data || response || [];
 }
@@ -101,12 +100,12 @@ export async function fetchSiteOpportunities(siteId, token = null, filters = {})
 export async function fetchOpportunitySuggestions(siteId, opportunityId, token = null) {
   const url = ASO_ENDPOINTS.OPPORTUNITY_SUGGESTIONS(siteId, opportunityId);
   const response = await apiGet(url, token);
-  
+
   if (isApiError(response)) {
     console.error(`Failed to fetch suggestions for opportunity ${opportunityId}:`, response.message);
     return [];
   }
-  
+
   return response.suggestions || response.data || response || [];
 }
 
@@ -120,12 +119,12 @@ export async function fetchOpportunitySuggestions(siteId, opportunityId, token =
 export async function fetchOpportunityFixes(siteId, opportunityId, token = null) {
   const url = ASO_ENDPOINTS.OPPORTUNITY_FIXES(siteId, opportunityId);
   const response = await apiGet(url, token);
-  
+
   if (isApiError(response)) {
     console.error(`Failed to fetch fixes for opportunity ${opportunityId}:`, response.message);
     return [];
   }
-  
+
   return response.fixes || response.data || response || [];
 }
 
@@ -290,22 +289,20 @@ export function aggregateSuggestionCounts(suggestions) {
   });
 
   // Derived totals
-  counts.pendingCount =
-    counts.newCount +
-    counts.approvedCount +
-    counts.inProgressCount +
-    counts.pendingValidationCount;
+  counts.pendingCount = counts.newCount
+    + counts.approvedCount
+    + counts.inProgressCount
+    + counts.pendingValidationCount;
 
   // Skipped/Ignored = customer chose to skip (SKIPPED status)
   // Rejected = ESE flagged as false positive (REJECTED status)
   // These are tracked separately — no longer lumped together
 
-  counts.terminalCount =
-    counts.fixedCount +
-    counts.skippedCount +
-    counts.rejectedRawCount +
-    counts.errorCount +
-    counts.outdatedCount;
+  counts.terminalCount = counts.fixedCount
+    + counts.skippedCount
+    + counts.rejectedRawCount
+    + counts.errorCount
+    + counts.outdatedCount;
 
   return counts;
 }
@@ -320,23 +317,23 @@ export function aggregateSuggestionCounts(suggestions) {
  * @returns {Promise<Map>} Map of opportunityId -> suggestion counts
  */
 export async function fetchSuggestionsForOpportunities(
-  siteId, 
-  opportunities, 
-  token = null, 
-  batchSize = 20, 
-  delayMs = 50
+  siteId,
+  opportunities,
+  token = null,
+  batchSize = 20,
+  delayMs = 50,
 ) {
   const suggestionsMap = new Map();
-  
-  const requests = opportunities.map(opp => async () => {
+
+  const requests = opportunities.map((opp) => async () => {
     const suggestions = await fetchOpportunitySuggestions(siteId, opp.id, token);
     const counts = aggregateSuggestionCounts(suggestions);
     return { id: opp.id, suggestions, counts };
   });
-  
+
   const results = await batchRequests(requests, batchSize, delayMs);
-  
-  results.forEach(result => {
+
+  results.forEach((result) => {
     if (result && result.id) {
       suggestionsMap.set(result.id, {
         suggestions: result.suggestions,
@@ -344,7 +341,7 @@ export async function fetchSuggestionsForOpportunities(
       });
     }
   });
-  
+
   return suggestionsMap;
 }
 
@@ -357,15 +354,16 @@ export async function fetchSuggestionsForOpportunities(
  * @param {string|null} token - Auth token
  * @returns {Promise<Object|null>} Updated suggestion or null on error
  */
+// eslint-disable-next-line max-len
 export async function updateSuggestionStatus(siteId, opportunityId, suggestionId, status, token = null) {
   const url = ASO_ENDPOINTS.SUGGESTION(siteId, opportunityId, suggestionId);
   const response = await apiPatch(url, { status }, token);
-  
+
   if (isApiError(response)) {
     console.error(`Failed to update suggestion ${suggestionId}:`, response.message);
     return null;
   }
-  
+
   return response;
 }
 
@@ -380,12 +378,12 @@ export async function updateSuggestionStatus(siteId, opportunityId, suggestionId
 export async function updateOpportunityStatus(siteId, opportunityId, status, token = null) {
   const url = ASO_ENDPOINTS.OPPORTUNITY(siteId, opportunityId);
   const response = await apiPatch(url, { status }, token);
-  
+
   if (isApiError(response)) {
     console.error(`Failed to update opportunity ${opportunityId}:`, response.message);
     return null;
   }
-  
+
   return response;
 }
 
@@ -397,11 +395,12 @@ export async function updateOpportunityStatus(siteId, opportunityId, status, tok
  * @param {boolean} includeFixes - Whether to also fetch /fixes data
  * @returns {Promise<Array>} Opportunities with suggestionsCounts (and fixesCounts) properties
  */
+// eslint-disable-next-line max-len
 export async function enrichOpportunitiesWithSuggestions(siteId, opportunities, token = null, includeFixes = true) {
   const suggestionsMap = await fetchSuggestionsForOpportunities(siteId, opportunities, token);
 
   // First pass: attach suggestion data so fixedCount is available
-  let enriched = opportunities.map(opp => {
+  let enriched = opportunities.map((opp) => {
     const suggestionData = suggestionsMap.get(opp.id) || { suggestions: [], counts: {} };
     return {
       ...opp,
@@ -414,7 +413,7 @@ export async function enrichOpportunitiesWithSuggestions(siteId, opportunities, 
   if (includeFixes) {
     try {
       const fixesMap = await fetchFixesForOpportunities(siteId, enriched, token);
-      enriched = enriched.map(opp => {
+      enriched = enriched.map((opp) => {
         const fixData = fixesMap.get(opp.id);
         if (!fixData) return opp;
 
@@ -437,7 +436,7 @@ export async function enrichOpportunitiesWithSuggestions(siteId, opportunities, 
         });
 
         // Group failures by opportunity type
-        const failedFixes = (fixData.fixes || []).filter(f => f.status === 'FAILED');
+        const failedFixes = (fixData.fixes || []).filter((f) => f.status === 'FAILED');
 
         return {
           ...opp,
@@ -472,21 +471,21 @@ export async function getSiteLifecycleData(siteId, token = null, options = {}) {
     includeResolved = true,
     includeIgnored = false,
   } = options;
-  
+
   // Build filters
   const filters = {};
   if (!includeResolved && !includeIgnored) {
     filters.status = `${OPPORTUNITY_STATUS.NEW},${OPPORTUNITY_STATUS.IN_PROGRESS}`;
   }
-  
+
   // Fetch site info and opportunities in parallel
   const [siteInfo, opportunities] = await Promise.all([
     fetchSiteInfo(siteId, token),
     fetchSiteOpportunities(siteId, token, filters),
   ]);
-  
+
   const siteName = siteInfo?.baseURL || siteInfo?.deliveryType || null;
-  
+
   if (opportunities.length === 0) {
     return {
       siteId,
@@ -497,25 +496,25 @@ export async function getSiteLifecycleData(siteId, token = null, options = {}) {
       fetchedAt: new Date().toISOString(),
     };
   }
-  
+
   // Enrich with suggestions
   const enrichedOpportunities = await enrichOpportunitiesWithSuggestions(
-    siteId, 
-    opportunities, 
-    token
+    siteId,
+    opportunities,
+    token,
   );
-  
+
   // Only keep opportunities that have at least one suggestion
   const withSuggestions = enrichedOpportunities.filter(
-    opp => (opp.suggestionsCounts?.totalCount || 0) > 0,
+    (opp) => (opp.suggestionsCounts?.totalCount || 0) > 0,
   );
-  
+
   // Calculate totals
   const totalSuggestions = withSuggestions.reduce(
-    (sum, opp) => sum + (opp.suggestionsCounts?.totalCount || 0), 
-    0
+    (sum, opp) => sum + (opp.suggestionsCounts?.totalCount || 0),
+    0,
   );
-  
+
   return {
     siteId,
     siteName,

@@ -1,9 +1,9 @@
 /**
  * Suggestions Manager
- * 
+ *
  * State management and caching layer for ASO suggestion lifecycle data.
  * Follows the pattern from customer-data-manager.js for localStorage caching.
- * 
+ *
  * This is the main entry point for UI components to access suggestion data.
  */
 
@@ -97,10 +97,10 @@ function pruneCache(data, maxEntries) {
  */
 export function isCacheValid(cacheEntry) {
   if (!cacheEntry || !cacheEntry.lastFetched) return false;
-  
+
   const lastFetched = new Date(cacheEntry.lastFetched).getTime();
   const now = Date.now();
-  
+
   return (now - lastFetched) < TTL_MS;
 }
 
@@ -111,11 +111,11 @@ export function isCacheValid(cacheEntry) {
  */
 export function getCachedSiteData(siteId) {
   const cache = memoryCache[siteId] || loadCachedData()[siteId];
-  
+
   if (cache && isCacheValid(cache)) {
     return cache;
   }
-  
+
   return null;
 }
 
@@ -136,7 +136,7 @@ function updateSiteCache(siteId, data) {
 /**
  * Get suggestions lifecycle data for a site
  * Primary entry point for UI components
- * 
+ *
  * @param {string} siteId - Site ID
  * @param {string|null} token - Auth token
  * @param {boolean} forceRefresh - Force fresh fetch ignoring cache
@@ -153,20 +153,20 @@ export async function getSuggestionsForSite(siteId, token = null, forceRefresh =
 
   // Fetch fresh data
   const lifecycleData = await getSiteLifecycleData(siteId, token);
-  
+
   // Calculate metrics
   const metrics = calculateLifecycleMetrics(lifecycleData.opportunities);
-  
+
   // Combine data and metrics
   const result = {
     ...lifecycleData,
     metrics,
     healthLabel: getHealthLabel(metrics.health.score),
   };
-  
+
   // Update cache
   updateSiteCache(siteId, result);
-  
+
   return result;
 }
 
@@ -183,23 +183,23 @@ export function getSuggestionMetrics(siteId) {
 /**
  * Generate a lifecycle report for a site
  * Returns a structured report suitable for display
- * 
+ *
  * @param {string} siteId - Site ID
  * @param {string|null} token - Auth token
  * @returns {Promise<Object>} Formatted report object
  */
 export async function getLifecycleReport(siteId, token = null) {
   const data = await getSuggestionsForSite(siteId, token);
-  
+
   if (!data || !data.metrics) {
     return {
       error: true,
       message: 'Unable to generate report - no data available',
     };
   }
-  
+
   const { metrics, opportunities } = data;
-  
+
   return {
     siteId,
     generatedAt: new Date().toISOString(),
@@ -240,7 +240,7 @@ export async function getLifecycleReport(siteId, token = null) {
     },
     healthBreakdown: metrics.health.achievements,
     // Include raw opportunities for detailed views
-    opportunitiesDetail: opportunities.map(opp => ({
+    opportunitiesDetail: opportunities.map((opp) => ({
       id: opp.id,
       type: opp.type,
       status: opp.status,
@@ -259,19 +259,19 @@ export async function getLifecycleReport(siteId, token = null) {
  */
 export async function getSuggestionsForSites(siteIds, token = null) {
   const results = new Map();
-  
+
   // Fetch all sites in parallel
   const promises = siteIds.map(async (siteId) => {
     const data = await getSuggestionsForSite(siteId, token);
     return { siteId, data };
   });
-  
+
   const responses = await Promise.all(promises);
-  
+
   responses.forEach(({ siteId, data }) => {
     results.set(siteId, data);
   });
-  
+
   return results;
 }
 
@@ -310,18 +310,18 @@ export function clearSiteCache(siteId) {
 export function getCacheStats() {
   const cache = loadCachedData();
   const siteIds = Object.keys(cache);
-  
+
   let validCount = 0;
   let expiredCount = 0;
-  
-  siteIds.forEach(siteId => {
+
+  siteIds.forEach((siteId) => {
     if (isCacheValid(cache[siteId])) {
       validCount++;
     } else {
       expiredCount++;
     }
   });
-  
+
   return {
     totalSites: siteIds.length,
     validEntries: validCount,

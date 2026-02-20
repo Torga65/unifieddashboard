@@ -21,8 +21,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SNAPSHOTS_DIR = join(__dirname, '..', 'data', 'snapshots');
 
 const SPACECAT_BASE = process.env.SPACECAT_API_BASE || 'https://spacecat.experiencecloud.live/api/v1';
-const BATCH_SIZE = 10;       // higher concurrency for offline script
-const BATCH_DELAY_MS = 80;   // slightly gentler than real-time but still fast
+const BATCH_SIZE = 10; // higher concurrency for offline script
+const BATCH_DELAY_MS = 80; // slightly gentler than real-time but still fast
 
 // ---- Helpers ----
 
@@ -103,7 +103,7 @@ async function run() {
       console.log(`[Snapshot] ${processed}/${siteIds.length} sites (${pct}%) — ${allOpps.length} opps`);
     }
     if (i + BATCH_SIZE < siteIds.length) {
-      await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
+      await new Promise((r) => { setTimeout(r, BATCH_DELAY_MS); });
     }
   }
 
@@ -132,7 +132,8 @@ async function run() {
 
   // 4. Write latest pointer
   const latestPath = join(SNAPSHOTS_DIR, 'latest.json');
-  writeFileSync(latestPath, JSON.stringify({ file: filename, date: today, generatedAt: snapshot.generatedAt }));
+  const latestData = { file: filename, date: today, generatedAt: snapshot.generatedAt };
+  writeFileSync(latestPath, JSON.stringify(latestData));
   console.log(`[Snapshot] Updated ${latestPath}`);
   console.log('[Snapshot] Done!');
 }

@@ -1,9 +1,9 @@
 /**
  * Suggestions Health Utilities
- * 
+ *
  * Calculates lifecycle metrics, health scores, and aggregations for
  * ASO opportunities and suggestions.
- * 
+ *
  * Adapted from llmo-spacecat-dashboard/src/utils/opportunitiesHealth.js
  */
 
@@ -13,10 +13,10 @@ import { SUGGESTION_STATUS, OPPORTUNITY_STATUS } from '../constants/api.js';
  * Age thresholds in days for categorizing opportunity/suggestion age
  */
 export const AGE_THRESHOLDS = {
-  fresh: 7,       // 0-7 days
+  fresh: 7, // 0-7 days
   acceptable: 14, // 8-14 days
-  warning: 30,    // 15-30 days
-  overdue: 60,    // 31-60 days
+  warning: 30, // 15-30 days
+  overdue: 60, // 31-60 days
   // > 60 days is critical
 };
 
@@ -33,10 +33,10 @@ export const HEALTH_CONFIG = {
   },
   // Target values for 100% achievement
   targets: {
-    resolutionRate: 0.8,      // 80% resolved is excellent
-    maxAgingRate: 0.1,        // Less than 10% aging is excellent
-    avgDaysToFix: 14,         // 14 days average is excellent
-    maxRejectionRate: 0.05,   // Less than 5% rejected is excellent
+    resolutionRate: 0.8, // 80% resolved is excellent
+    maxAgingRate: 0.1, // Less than 10% aging is excellent
+    avgDaysToFix: 14, // 14 days average is excellent
+    maxRejectionRate: 0.05, // Less than 5% rejected is excellent
   },
 };
 
@@ -62,15 +62,15 @@ const TERMINAL_SUG_STATUSES = new Set([
  * @param {string|Date} createdAt - Creation date
  * @param {string|Date} [updatedAt] - Last update date (used for terminal-state items)
  * @param {string} [status] - Current status of the item
- * @param {'opportunity'|'suggestion'} [itemType='opportunity'] - Type of item for terminal status lookup
+ * @param {'opportunity'|'suggestion'} [itemType='opportunity'] - Type of item
  * @returns {number} Age in days, or -1 if invalid
  */
 export function calculateAgeDays(createdAt, updatedAt = null, status = null, itemType = 'opportunity') {
   if (!createdAt) return -1;
-  
+
   try {
     const created = new Date(createdAt);
-    
+
     // For terminal-state items, measure time-to-resolution (updatedAt - createdAt)
     const terminalSet = itemType === 'suggestion' ? TERMINAL_SUG_STATUSES : TERMINAL_OPP_STATUSES;
     if (status && terminalSet.has(status) && updatedAt) {
@@ -78,7 +78,7 @@ export function calculateAgeDays(createdAt, updatedAt = null, status = null, ite
       const diffDays = Math.floor((updated - created) / (1000 * 60 * 60 * 24));
       return diffDays >= 0 ? diffDays : -1;
     }
-    
+
     // For active items, measure time since creation
     const now = new Date();
     const diffMs = now - created;
@@ -98,11 +98,12 @@ export function calculateAgeDays(createdAt, updatedAt = null, status = null, ite
  * @param {string|Date} [updatedAt] - Last update date
  * @param {string} [status] - Current status
  * @param {'opportunity'|'suggestion'} [itemType='opportunity'] - Type of item
- * @returns {string} Age bucket: 'fresh', 'acceptable', 'warning', 'overdue', 'critical', or 'unknown'
+ * @returns {string} Age bucket: 'fresh', 'acceptable', 'warning',
+ *   'overdue', 'critical', or 'unknown'
  */
 export function calculateAgeBucket(createdAt, updatedAt = null, status = null, itemType = 'opportunity') {
   const days = calculateAgeDays(createdAt, updatedAt, status, itemType);
-  
+
   if (days < 0) return 'unknown';
   if (days <= AGE_THRESHOLDS.fresh) return 'fresh';
   if (days <= AGE_THRESHOLDS.acceptable) return 'acceptable';
@@ -119,14 +120,14 @@ export function calculateAgeBucket(createdAt, updatedAt = null, status = null, i
  */
 export function groupByStatus(items, statusEnum = OPPORTUNITY_STATUS) {
   const groups = {};
-  
+
   // Initialize groups for all known statuses
-  Object.values(statusEnum).forEach(status => {
+  Object.values(statusEnum).forEach((status) => {
     groups[status] = [];
   });
   groups.UNKNOWN = [];
-  
-  items.forEach(item => {
+
+  items.forEach((item) => {
     const status = item.status || 'UNKNOWN';
     if (groups[status]) {
       groups[status].push(item);
@@ -134,7 +135,7 @@ export function groupByStatus(items, statusEnum = OPPORTUNITY_STATUS) {
       groups.UNKNOWN.push(item);
     }
   });
-  
+
   return groups;
 }
 
@@ -154,12 +155,12 @@ export function groupByAge(items, itemType = 'opportunity') {
     critical: [],
     unknown: [],
   };
-  
-  items.forEach(item => {
+
+  items.forEach((item) => {
     const bucket = calculateAgeBucket(item.createdAt, item.updatedAt, item.status, itemType);
     groups[bucket].push(item);
   });
-  
+
   return groups;
 }
 
@@ -176,8 +177,8 @@ export function calculateStatusCounts(opportunities) {
     ignored: 0,
     total: opportunities.length,
   };
-  
-  opportunities.forEach(opp => {
+
+  opportunities.forEach((opp) => {
     const status = opp.status || OPPORTUNITY_STATUS.NEW;
     switch (status) {
       case OPPORTUNITY_STATUS.NEW:
@@ -196,7 +197,7 @@ export function calculateStatusCounts(opportunities) {
         counts.new++;
     }
   });
-  
+
   return counts;
 }
 
@@ -208,7 +209,7 @@ export function calculateStatusCounts(opportunities) {
  */
 export function calculateAgeCounts(items, itemType = 'opportunity') {
   const groups = groupByAge(items, itemType);
-  
+
   return {
     fresh: groups.fresh.length,
     acceptable: groups.acceptable.length,
@@ -234,8 +235,8 @@ export function aggregateSuggestionsAcrossOpportunities(opportunities) {
     inProgressCount: 0,
     pendingValidationCount: 0,
     fixedCount: 0,
-    skippedCount: 0,       // SKIPPED — customer chose to skip/ignore
-    rejectedRawCount: 0,   // REJECTED — ESE flagged as false positive
+    skippedCount: 0, // SKIPPED — customer chose to skip/ignore
+    rejectedRawCount: 0, // REJECTED — ESE flagged as false positive
     errorCount: 0,
     outdatedCount: 0,
     totalCount: 0,
@@ -248,8 +249,8 @@ export function aggregateSuggestionsAcrossOpportunities(opportunities) {
     completedFixes: 0,
     failedFixes: 0,
   };
-  
-  opportunities.forEach(opp => {
+
+  opportunities.forEach((opp) => {
     const counts = opp.suggestionsCounts || {};
     totals.newCount += counts.newCount || 0;
     totals.approvedCount += counts.approvedCount || 0;
@@ -267,25 +268,23 @@ export function aggregateSuggestionsAcrossOpportunities(opportunities) {
     totals.totalFixes += fc.totalFixes || 0;
     totals.completedFixes += fc.completedFixes || 0;
     totals.failedFixes += fc.failedFixes || 0;
-    
+
     if ((counts.totalCount || 0) > 0) {
       totals.opportunitiesWithSuggestions++;
     }
   });
 
   // Derived totals
-  totals.pendingCount =
-    totals.newCount +
-    totals.approvedCount +
-    totals.inProgressCount +
-    totals.pendingValidationCount;
+  totals.pendingCount = totals.newCount
+    + totals.approvedCount
+    + totals.inProgressCount
+    + totals.pendingValidationCount;
 
-  totals.terminalCount =
-    totals.fixedCount +
-    totals.skippedCount +
-    totals.rejectedRawCount +
-    totals.errorCount +
-    totals.outdatedCount;
+  totals.terminalCount = totals.fixedCount
+    + totals.skippedCount
+    + totals.rejectedRawCount
+    + totals.errorCount
+    + totals.outdatedCount;
 
   return totals;
 }
@@ -298,10 +297,10 @@ export function aggregateSuggestionsAcrossOpportunities(opportunities) {
 export function calculateAvgTimeToFix(opportunities) {
   let totalDays = 0;
   let fixedCount = 0;
-  
-  opportunities.forEach(opp => {
+
+  opportunities.forEach((opp) => {
     const suggestions = opp.suggestions || [];
-    suggestions.forEach(sug => {
+    suggestions.forEach((sug) => {
       if (sug.status === SUGGESTION_STATUS.FIXED && sug.createdAt && sug.updatedAt) {
         const created = new Date(sug.createdAt);
         const updated = new Date(sug.updatedAt);
@@ -313,7 +312,7 @@ export function calculateAvgTimeToFix(opportunities) {
       }
     });
   });
-  
+
   return fixedCount > 0 ? Math.round(totalDays / fixedCount) : -1;
 }
 
@@ -325,18 +324,19 @@ export function calculateAvgTimeToFix(opportunities) {
  * @param {Object} config - Health configuration
  * @returns {Object} Health score and breakdown
  */
+// eslint-disable-next-line max-len
 export function calculateHealthScore(statusCounts, ageCounts, options = {}, config = HEALTH_CONFIG) {
   const { weights, targets } = config;
   const { avgDaysToFix = -1, suggestionCounts = {} } = options;
-  
+
   const oppTotal = statusCounts.total || 1;
   const totalSuggestions = suggestionCounts.totalCount || 0;
   const fixedCount = suggestionCounts.fixedCount || 0;
-  const skippedCount = suggestionCounts.skippedCount || 0;       // SKIPPED — customer action
+  const skippedCount = suggestionCounts.skippedCount || 0; // SKIPPED — customer action
   const rejectedRawCount = suggestionCounts.rejectedRawCount || 0; // REJECTED — ESE quality
   const outdatedCount = suggestionCounts.outdatedCount || 0;
   const terminalCount = suggestionCounts.terminalCount || 0;
-  
+
   const achievements = {};
 
   // --- 1. Resolution Rate (35%) — FIXED / total suggestions ---
@@ -376,12 +376,12 @@ export function calculateHealthScore(statusCounts, ageCounts, options = {}, conf
 
   // Weighted composite
   const score = Math.round(
-    achievements.resolutionRate * weights.resolutionRate +
-    achievements.agingRate * weights.agingRate +
-    achievements.speedOfResolution * weights.speedOfResolution +
-    achievements.rejectionRate * weights.rejectionRate,
+    achievements.resolutionRate * weights.resolutionRate
+    + achievements.agingRate * weights.agingRate
+    + achievements.speedOfResolution * weights.speedOfResolution
+    + achievements.rejectionRate * weights.rejectionRate,
   );
-  
+
   return {
     score: Math.min(100, Math.max(0, score)),
     achievements,
@@ -411,19 +411,19 @@ export function calculateLifecycleMetrics(opportunities) {
   // Calculate status and age counts for opportunities
   const statusCounts = calculateStatusCounts(opportunities);
   const ageCounts = calculateAgeCounts(opportunities);
-  
+
   // Aggregate suggestion counts
   const suggestionCounts = aggregateSuggestionsAcrossOpportunities(opportunities);
-  
+
   // Calculate average time to fix
   const avgTimeToFix = calculateAvgTimeToFix(opportunities);
-  
+
   // Calculate health score
   const health = calculateHealthScore(statusCounts, ageCounts, {
     avgDaysToFix: avgTimeToFix,
     suggestionCounts,
   });
-  
+
   // Derived rates with 1-decimal precision
   const totalSuggestions = suggestionCounts.totalCount || 0;
   const {
@@ -432,9 +432,9 @@ export function calculateLifecycleMetrics(opportunities) {
     newCount, approvedCount, inProgressCount, pendingValidationCount,
   } = suggestionCounts;
 
-  const rate = (numerator) => totalSuggestions > 0
+  const rate = (numerator) => (totalSuggestions > 0
     ? parseFloat(((numerator / totalSuggestions) * 100).toFixed(1))
-    : 0;
+    : 0);
 
   // Fix metrics
   const completedFixes = suggestionCounts.completedFixes || 0;
@@ -461,8 +461,8 @@ export function calculateLifecycleMetrics(opportunities) {
       pendingValidationCount: pendingValidationCount || 0,
       awaitingActionCount: (newCount || 0) + (approvedCount || 0),
       inProgressCount: inProgressCount || 0,
-      skippedCount,        // SKIPPED — customer chose to skip/ignore
-      rejectedRawCount,    // REJECTED — ESE flagged as false positive
+      skippedCount, // SKIPPED — customer chose to skip/ignore
+      rejectedRawCount, // REJECTED — ESE flagged as false positive
       errorCount,
       outdatedCount,
       terminalCount,
@@ -499,9 +499,9 @@ export function calculateLifecycleMetrics(opportunities) {
  * Staleness thresholds (days)
  */
 export const STALENESS_THRESHOLDS = {
-  PENDING_VALIDATION: 7,   // PV older than 7 days is stale
-  NEW: 14,                 // NEW older than 14 days is stale
-  IN_PROGRESS: 21,         // IN_PROGRESS older than 21 days is stale
+  PENDING_VALIDATION: 7, // PV older than 7 days is stale
+  NEW: 14, // NEW older than 14 days is stale
+  IN_PROGRESS: 21, // IN_PROGRESS older than 21 days is stale
 };
 
 /**
@@ -519,7 +519,7 @@ export function calculateStalenessMetrics(opportunities, thresholds = STALENESS_
   let staleNew = 0;
   let staleIP = 0;
 
-  // Time-to-action: createdAt → first non-NEW/PV status (approximated via updatedAt for active items)
+  // Time-to-action: createdAt → first non-NEW/PV status (approx via updatedAt)
   const actionTimes = [];
   // Time-to-resolution: createdAt → terminal status (for terminal items)
   const resTimes = [];
@@ -558,7 +558,10 @@ export function calculateStalenessMetrics(opportunities, thresholds = STALENESS_
     }
   });
 
-  const avg = (arr) => arr.length > 0 ? parseFloat((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1)) : -1;
+  const avg = (arr) => {
+    if (arr.length === 0) return -1;
+    return parseFloat((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1));
+  };
 
   return {
     stalePendingValidation: stalePV,

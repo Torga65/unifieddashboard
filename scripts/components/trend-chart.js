@@ -9,7 +9,6 @@ import { buildTrendSeries, buildTrendByType } from '../utils/trend-data.js';
 
 let Chart = null;
 let chartInstance = null;
-let _useTimeScale = false; // whether chartjs-adapter loaded successfully
 
 const CHART_COLORS = [
   '#1473e6', '#28a745', '#ffc107', '#dc3545', '#6c757d',
@@ -41,7 +40,7 @@ async function loadChartJS() {
     // Try loading the date adapter for time-scale support
     try {
       await loadScript('https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js');
-      _useTimeScale = true;
+      // date adapter loaded — time-scale available
     } catch {
       console.warn('[TrendChart] Date adapter unavailable — using category scale');
     }
@@ -60,7 +59,9 @@ async function loadChartJS() {
  * @param {Object} options.dateRange — { start, end }
  * @param {boolean} [options.byType=false] — break down by opportunity type
  */
-export async function renderTrendChart(container, { opportunities, metric, dateRange, byType = false }) {
+export async function renderTrendChart(container, {
+  opportunities, metric, dateRange, byType = false,
+}) {
   await loadChartJS();
   if (!Chart) {
     container.innerHTML = '<p style="color:#999;">Chart library unavailable.</p>';
@@ -88,7 +89,7 @@ export async function renderTrendChart(container, { opportunities, metric, dateR
 
   // Build datasets and collect all labels (dates)
   const datasets = [];
-  let allLabels = new Set();
+  const allLabels = new Set();
 
   if (byType) {
     const byTypeData = buildTrendByType(opportunities, metric, dateRange, bucket);
@@ -100,7 +101,7 @@ export async function renderTrendChart(container, { opportunities, metric, dateR
         label: type,
         data: series.map((p) => p.value),
         borderColor: CHART_COLORS[colorIdx % CHART_COLORS.length],
-        backgroundColor: CHART_COLORS[colorIdx % CHART_COLORS.length] + '33',
+        backgroundColor: `${CHART_COLORS[colorIdx % CHART_COLORS.length]}33`,
         tension: 0.3,
         fill: false,
         pointRadius: 2,
@@ -114,7 +115,7 @@ export async function renderTrendChart(container, { opportunities, metric, dateR
       label: metric.charAt(0).toUpperCase() + metric.slice(1),
       data: series.map((p) => p.value),
       borderColor: CHART_COLORS[0],
-      backgroundColor: CHART_COLORS[0] + '33',
+      backgroundColor: `${CHART_COLORS[0]}33`,
       tension: 0.3,
       fill: true,
       pointRadius: 2,

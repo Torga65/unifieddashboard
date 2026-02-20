@@ -23,7 +23,8 @@ export async function fetchSpaceCatOrgs(token) {
       return [];
     }
 
-    const orgs = Array.isArray(response) ? response : (response.organizations || response.data || []);
+    const raw = response.organizations || response.data || [];
+    const orgs = Array.isArray(response) ? response : raw;
     return orgs.map((org) => ({
       orgId: org.id,
       imsOrgId: org.imsOrgId || null,
@@ -102,11 +103,12 @@ async function fetchAllSitesGrouped(token) {
       return null;
     }
 
-    const sites = Array.isArray(response) ? response : (response.sites || response.data || []);
+    const raw2 = response.sites || response.data || [];
+    const sites = Array.isArray(response) ? response : raw2;
     const grouped = new Map();
-    for (const site of sites) {
+    sites.forEach((site) => {
       const orgId = site.organizationId;
-      if (!orgId) continue;
+      if (!orgId) return;
       if (!grouped.has(orgId)) grouped.set(orgId, []);
       grouped.get(orgId).push({
         siteId: site.id,
@@ -114,7 +116,7 @@ async function fetchAllSitesGrouped(token) {
         deliveryType: site.deliveryType || '',
         isLive: site.isLive ?? true,
       });
-    }
+    });
     return grouped;
   } catch (err) {
     console.warn('[OrgSite] Sites list call failed:', err.message);
@@ -138,14 +140,12 @@ export async function buildCustomerSiteTree(token) {
 
   if (sitesMap) {
     // Join: only include orgs that have sites, and pre-populate their sites
-    const orgs = [];
-    for (const sc of spacecatOrgs) {
-      const sites = sitesMap.get(sc.orgId);
-      if (sites && sites.length > 0) {
-        orgs.push({ ...sc, sites });
-      }
-    }
-    return orgs;
+    return spacecatOrgs
+      .filter((sc) => {
+        const sites = sitesMap.get(sc.orgId);
+        return sites && sites.length > 0;
+      })
+      .map((sc) => ({ ...sc, sites: sitesMap.get(sc.orgId) }));
   }
 
   // Fallback if /sites failed — return all orgs, lazy-load sites later

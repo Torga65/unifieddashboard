@@ -1,9 +1,9 @@
 /**
  * SpaceCat API Client
- * 
+ *
  * Base API client for making authenticated requests to the SpaceCat API.
  * Adapted from llmo-spacecat-dashboard patterns for vanilla JavaScript usage.
- * 
+ *
  * All functions accept an optional token parameter for authentication.
  * When no token is provided, requests are made without authentication headers.
  */
@@ -13,7 +13,7 @@
  */
 const DEFAULT_HEADERS = {
   'Content-Type': 'application/json',
-  'Accept': 'application/json',
+  Accept: 'application/json',
 };
 
 /**
@@ -48,7 +48,7 @@ function buildHeaders(token = null) {
   const effectiveToken = token || _globalToken;
   const headers = { ...DEFAULT_HEADERS };
   if (effectiveToken) {
-    headers['Authorization'] = `Bearer ${effectiveToken}`;
+    headers.Authorization = `Bearer ${effectiveToken}`;
   }
   return headers;
 }
@@ -94,7 +94,7 @@ export async function apiRequest(url, options = {}, token = null, timeoutMs = 30
     if (!response.ok) {
       const errorMessage = await parseErrorMessage(response);
       console.error(`API Error [${config.method || 'GET'}] ${url}:`, errorMessage);
-      
+
       // Return structured error for handling
       return {
         error: true,
@@ -129,7 +129,7 @@ export async function apiRequest(url, options = {}, token = null, timeoutMs = 30
  * @param {number} [timeoutMs] - Optional request timeout in milliseconds
  * @returns {Promise<Object|null>} Parsed JSON response
  */
-export async function apiGet(url, token = null, timeoutMs) {
+export async function apiGet(url, token = null, timeoutMs = undefined) {
   return apiRequest(url, { method: 'GET' }, token, timeoutMs);
 }
 
@@ -147,7 +147,7 @@ export async function apiPost(url, data, token = null) {
       method: 'POST',
       body: JSON.stringify(data),
     },
-    token
+    token,
   );
 }
 
@@ -165,7 +165,7 @@ export async function apiPut(url, data, token = null) {
       method: 'PUT',
       body: JSON.stringify(data),
     },
-    token
+    token,
   );
 }
 
@@ -183,7 +183,7 @@ export async function apiPatch(url, data, token = null) {
       method: 'PATCH',
       body: JSON.stringify(data),
     },
-    token
+    token,
   );
 }
 
@@ -215,18 +215,20 @@ export function isApiError(response) {
  */
 export async function batchRequests(requests, batchSize = 10, delayMs = 100) {
   const results = [];
-  
+  const delay = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
+
+  /* eslint-disable no-await-in-loop */
   for (let i = 0; i < requests.length; i += batchSize) {
     const batch = requests.slice(i, i + batchSize);
-    const batchResults = await Promise.all(batch.map(fn => fn()));
+    const batchResults = await Promise.all(batch.map((fn) => fn()));
     results.push(...batchResults);
-    
-    // Add delay between batches to avoid rate limiting
+
     if (i + batchSize < requests.length && delayMs > 0) {
-      await new Promise(resolve => setTimeout(resolve, delayMs));
+      await delay(delayMs);
     }
   }
-  
+  /* eslint-enable no-await-in-loop */
+
   return results;
 }
 
@@ -238,12 +240,12 @@ export async function batchRequests(requests, batchSize = 10, delayMs = 100) {
  */
 export function buildUrl(baseUrl, params = {}) {
   const url = new URL(baseUrl, window.location.origin);
-  
+
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
       url.searchParams.append(key, String(value));
     }
   });
-  
+
   return url.toString();
 }

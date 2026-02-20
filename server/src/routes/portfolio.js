@@ -7,8 +7,8 @@ import { getSnapshot } from '../snapshot-reader.js';
 const router = Router();
 
 const SPACECAT_BASE = process.env.SPACECAT_API_BASE || 'https://spacecat.experiencecloud.live/api/v1';
-const BATCH_SIZE = 8;           // concurrent SpaceCat calls per batch
-const BATCH_DELAY_MS = 100;     // delay between batches to avoid 503
+const BATCH_SIZE = 8; // concurrent SpaceCat calls per batch
+const BATCH_DELAY_MS = 100; // delay between batches to avoid 503
 
 // ---- Helpers ----
 
@@ -99,7 +99,7 @@ async function fetchOpportunitiesForSites(siteIds, token) {
 
     // Delay between batches to be gentle on SpaceCat
     if (i + BATCH_SIZE < total) {
-      await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
+      await new Promise((r) => { setTimeout(r, BATCH_DELAY_MS); });
     }
   }
 
@@ -126,7 +126,9 @@ router.get('/opportunity-metrics', async (req, res) => {
     return res.status(401).json({ error: 'Authorization token required' });
   }
 
-  const { orgId, siteIds: siteIdsParam, siteScope, from, to } = req.query;
+  const {
+    orgId, siteIds: siteIdsParam, siteScope, from, to,
+  } = req.query;
 
   if (!from || !to) {
     return res.status(400).json({ error: '`from` and `to` query params are required (YYYY-MM-DD)' });
@@ -190,7 +192,7 @@ router.get('/opportunity-metrics', async (req, res) => {
   if (snapshot) {
     // Use snapshot data — no live SpaceCat calls needed for the historical portion.
     // If the requested range extends beyond the snapshot date, fetch a live delta.
-    const snapshotDate = snapshot.snapshotDate; // 'YYYY-MM-DD'
+    const { snapshotDate } = snapshot; // 'YYYY-MM-DD'
     const startTime = Date.now();
 
     let allOpps = snapshot.opportunities;

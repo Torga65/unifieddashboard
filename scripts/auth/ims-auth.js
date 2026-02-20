@@ -415,7 +415,7 @@ export function signOut(imsLogout = false) {
   if (imsLogout) {
     const env = getIMSEnvironment();
     const baseURL = getIMSBaseURL(env);
-    const logoutURL = `${baseURL}/ims/logout/v1?client_id=${IMS_CLIENT_ID}&redirect_uri=${encodeURIComponent(window.location.origin + '/suggestion-lifecycle.html')}`;
+    const logoutURL = `${baseURL}/ims/logout/v1?client_id=${IMS_CLIENT_ID}&redirect_uri=${encodeURIComponent(`${window.location.origin}/suggestion-lifecycle.html`)}`;
     window.location.href = logoutURL;
   }
 }

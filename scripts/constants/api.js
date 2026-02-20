@@ -1,6 +1,6 @@
 /**
  * SpaceCat API Constants for ASO Suggestion Lifecycle
- * 
+ *
  * Defines endpoints and status constants for interacting with the SpaceCat API
  * to track ASO suggestions, opportunities, and fixes.
  */
@@ -16,26 +16,22 @@ export const ASO_ENDPOINTS = {
   ORGANIZATIONS: () => `${SPACECAT_API_BASE}/organizations`,
   ORGANIZATION: (orgId) => `${SPACECAT_API_BASE}/organizations/${orgId}`,
   ORGANIZATION_SITES: (orgId) => `${SPACECAT_API_BASE}/organizations/${orgId}/sites`,
-  
+
   // Sites
   SITES: () => `${SPACECAT_API_BASE}/sites`,
   SITE: (siteId) => `${SPACECAT_API_BASE}/sites/${siteId}`,
-  
+
   // Opportunities (per site)
   SITE_OPPORTUNITIES: (siteId) => `${SPACECAT_API_BASE}/sites/${siteId}/opportunities`,
   OPPORTUNITY: (siteId, oppId) => `${SPACECAT_API_BASE}/sites/${siteId}/opportunities/${oppId}`,
-  
+
   // Suggestions (per opportunity)
-  OPPORTUNITY_SUGGESTIONS: (siteId, oppId) => 
-    `${SPACECAT_API_BASE}/sites/${siteId}/opportunities/${oppId}/suggestions`,
-  SUGGESTION: (siteId, oppId, sugId) => 
-    `${SPACECAT_API_BASE}/sites/${siteId}/opportunities/${oppId}/suggestions/${sugId}`,
-  
+  OPPORTUNITY_SUGGESTIONS: (siteId, oppId) => `${SPACECAT_API_BASE}/sites/${siteId}/opportunities/${oppId}/suggestions`,
+  SUGGESTION: (siteId, oppId, sugId) => `${SPACECAT_API_BASE}/sites/${siteId}/opportunities/${oppId}/suggestions/${sugId}`,
+
   // Fixes (per opportunity)
-  OPPORTUNITY_FIXES: (siteId, oppId) => 
-    `${SPACECAT_API_BASE}/sites/${siteId}/opportunities/${oppId}/fixes`,
-  FIX: (siteId, oppId, fixId) => 
-    `${SPACECAT_API_BASE}/sites/${siteId}/opportunities/${oppId}/fixes/${fixId}`,
+  OPPORTUNITY_FIXES: (siteId, oppId) => `${SPACECAT_API_BASE}/sites/${siteId}/opportunities/${oppId}/fixes`,
+  FIX: (siteId, oppId, fixId) => `${SPACECAT_API_BASE}/sites/${siteId}/opportunities/${oppId}/fixes/${fixId}`,
 };
 
 /**
@@ -45,15 +41,15 @@ export const ASO_ENDPOINTS = {
  *            "IN_PROGRESS" | "OUTDATED" | "PENDING_VALIDATION" | "REJECTED"
  */
 export const SUGGESTION_STATUS = {
-  NEW: 'NEW',                              // Newly created, not yet triaged
-  APPROVED: 'APPROVED',                    // Accepted by customer, awaiting fix
-  IN_PROGRESS: 'IN_PROGRESS',              // Fix is underway
+  NEW: 'NEW', // Newly created, not yet triaged
+  APPROVED: 'APPROVED', // Accepted by customer, awaiting fix
+  IN_PROGRESS: 'IN_PROGRESS', // Fix is underway
   PENDING_VALIDATION: 'PENDING_VALIDATION', // Fix applied, awaiting confirmation
-  FIXED: 'FIXED',                          // Fix deployed and confirmed
-  SKIPPED: 'SKIPPED',                      // Customer chose not to act (UI: "Rejected")
-  REJECTED: 'REJECTED',                    // Explicitly rejected (UI: "Rejected")
-  ERROR: 'ERROR',                          // Autofix attempt failed
-  OUTDATED: 'OUTDATED',                    // No longer relevant
+  FIXED: 'FIXED', // Fix deployed and confirmed
+  SKIPPED: 'SKIPPED', // Customer chose not to act (UI: "Rejected")
+  REJECTED: 'REJECTED', // Explicitly rejected (UI: "Rejected")
+  ERROR: 'ERROR', // Autofix attempt failed
+  OUTDATED: 'OUTDATED', // No longer relevant
 };
 
 /**
@@ -104,7 +100,7 @@ export const PAGINATION = {
  * Cache configuration
  */
 export const CACHE_CONFIG = {
-  TTL_MS: 5 * 60 * 1000,  // 5 minutes
+  TTL_MS: 5 * 60 * 1000, // 5 minutes
   STORAGE_KEY: 'asoSuggestionsCache',
 };
 

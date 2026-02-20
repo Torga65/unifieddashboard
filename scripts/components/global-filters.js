@@ -9,8 +9,6 @@ import {
   getFilters,
   setDateRange,
   setCustomer,
-  setSite,
-  subscribe,
 } from '../state/filter-state.js';
 
 /**
@@ -29,14 +27,14 @@ export function renderGlobalFilters(container, { customers = [], onFilterChange 
       <div class="filter-group">
         <label for="gf-date-range">Date Range:</label>
         <select id="gf-date-range">
-          <option value="7d"  ${filters.dateRange.preset === '7d'  ? 'selected' : ''}>Last 7 days</option>
+          <option value="7d"  ${filters.dateRange.preset === '7d' ? 'selected' : ''}>Last 7 days</option>
           <option value="30d" ${filters.dateRange.preset === '30d' ? 'selected' : ''}>Last 30 days</option>
           <option value="90d" ${filters.dateRange.preset === '90d' ? 'selected' : ''}>Last 90 days</option>
           <option value="all" ${filters.dateRange.preset === 'all' ? 'selected' : ''}>All time</option>
           <option value="custom" ${filters.dateRange.preset === 'custom' ? 'selected' : ''}>Custom</option>
         </select>
         <input type="date" id="gf-date-from" class="gf-custom-date" value="${filters.dateRange.start ? filters.dateRange.start.toISOString().slice(0, 10) : ''}" style="display:${filters.dateRange.preset === 'custom' ? 'inline-block' : 'none'}"/>
-        <input type="date" id="gf-date-to"   class="gf-custom-date" value="${filters.dateRange.end   ? filters.dateRange.end.toISOString().slice(0, 10) : ''}" style="display:${filters.dateRange.preset === 'custom' ? 'inline-block' : 'none'}"/>
+        <input type="date" id="gf-date-to"   class="gf-custom-date" value="${filters.dateRange.end ? filters.dateRange.end.toISOString().slice(0, 10) : ''}" style="display:${filters.dateRange.preset === 'custom' ? 'inline-block' : 'none'}"/>
       </div>
       ${customers.length > 1 ? `
       <div class="filter-group">
@@ -59,7 +57,7 @@ export function renderGlobalFilters(container, { customers = [], onFilterChange 
   dateSelect.addEventListener('change', () => {
     const preset = dateSelect.value;
     dateFrom.style.display = preset === 'custom' ? 'inline-block' : 'none';
-    dateTo.style.display   = preset === 'custom' ? 'inline-block' : 'none';
+    dateTo.style.display = preset === 'custom' ? 'inline-block' : 'none';
     if (preset !== 'custom') {
       setDateRange(preset);
       if (onFilterChange) onFilterChange(getFilters());

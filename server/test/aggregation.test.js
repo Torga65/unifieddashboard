@@ -11,7 +11,7 @@ describe('aggregateOpportunities', () => {
     { status: 'IGNORED', createdAt: '2025-01-02T09:00:00Z', updatedAt: '2025-01-02T11:00:00Z' },
     { status: 'NEW', createdAt: '2025-01-03T10:00:00Z' },
     { status: 'RESOLVED', createdAt: '2025-01-05T10:00:00Z', updatedAt: '2025-01-05T12:00:00Z' }, // outside range
-    { status: 'NEW', createdAt: '2024-12-31T23:59:00Z' },       // before range
+    { status: 'NEW', createdAt: '2024-12-31T23:59:00Z' }, // before range
   ];
 
   it('should bucket opportunities by date and status within the range', () => {
@@ -57,9 +57,9 @@ describe('aggregateOpportunities', () => {
 
   it('should skip opportunities without createdAt or status', () => {
     const badOpps = [
-      { status: 'NEW' },           // no createdAt
+      { status: 'NEW' }, // no createdAt
       { createdAt: '2025-01-01' }, // no status
-      {},                          // neither
+      {}, // neither
       { status: 'NEW', createdAt: '2025-01-01T00:00:00Z' }, // valid
     ];
 

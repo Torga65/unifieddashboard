@@ -49,7 +49,6 @@ app.post('/api/snapshot/reload', (_req, res) => {
     return res.status(500).json({ status: 'error', error: 'Reload failed' });
   }
 });
-});
 
 // Portfolio routes
 app.use('/api/portfolio', portfolioRoutes);
@@ -59,11 +58,11 @@ reloadSnapshot();
 
 app.listen(PORT, () => {
   console.log(`[ASO Server] Running on http://localhost:${PORT}`);
-  console.log(`[ASO Server] Portfolio endpoint: GET /api/portfolio/opportunity-metrics`);
+  console.log('[ASO Server] Portfolio endpoint: GET /api/portfolio/opportunity-metrics');
   if (hasSnapshot()) {
     console.log(`[ASO Server] Snapshot loaded: ${getSnapshotDate()}`);
   } else {
-    console.log(`[ASO Server] No snapshot found — run: node scripts/snapshot.js --token <TOKEN>`);
+    console.log('[ASO Server] No snapshot found — run: node scripts/snapshot.js --token <TOKEN>');
   }
 });
 

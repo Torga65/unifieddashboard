@@ -17,7 +17,8 @@ let cachedSnapshotFile = null;
  * Load the latest snapshot from disk. Caches in memory so the file
  * is only read once per server process (call reload() to refresh).
  *
- * @returns {{ snapshotDate: string, siteCount: number, opportunityCount: number, opportunities: Array } | null}
+ * @returns {{ snapshotDate: string, siteCount: number,
+ *   opportunityCount: number, opportunities: Array } | null}
  */
 export function getSnapshot() {
   if (cachedSnapshot) return cachedSnapshot;

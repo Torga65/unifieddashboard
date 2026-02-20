@@ -1,6 +1,8 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { cacheGet, cacheSet, cacheClear, cacheSize } from '../src/cache.js';
+import {
+  cacheGet, cacheSet, cacheClear, cacheSize,
+} from '../src/cache.js';
 
 describe('cache', () => {
   beforeEach(() => {
@@ -21,7 +23,7 @@ describe('cache', () => {
     assert.equal(cacheGet('short-lived'), 'value');
 
     // Wait for expiry
-    await new Promise((r) => setTimeout(r, 80));
+    await new Promise((r) => { setTimeout(r, 80); });
     assert.equal(cacheGet('short-lived'), null);
   });
 

@@ -14,11 +14,11 @@ const _listeners = new Set();
 const _state = {
   dateRange: {
     preset: '30d', // '7d' | '30d' | '90d' | 'all' | 'custom'
-    start: null,   // Date | null  (set when preset or custom)
-    end: null,     // Date | null
+    start: null, // Date | null  (set when preset or custom)
+    end: null, // Date | null
   },
   customerId: 'all', // orgId string or 'all'
-  siteId: 'all',     // siteId string or 'all'
+  siteId: 'all', // siteId string or 'all'
 };
 
 /* ------------------------------------------------------------------ */
@@ -29,11 +29,11 @@ function presetToDates(preset) {
   const end = new Date();
   let start = null;
   switch (preset) {
-    case '7d':  start = new Date(end - 7 * 86400000); break;
+    case '7d': start = new Date(end - 7 * 86400000); break;
     case '30d': start = new Date(end - 30 * 86400000); break;
     case '90d': start = new Date(end - 90 * 86400000); break;
     case 'all': start = null; break;
-    default:    start = null; // custom handled externally
+    default: start = null; // custom handled externally
   }
   return { start, end: preset === 'all' ? null : end };
 }
