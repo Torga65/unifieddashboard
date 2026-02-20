@@ -464,14 +464,13 @@ export async function enrichOpportunitiesWithSuggestions(siteId, opportunities, 
  * Fetches opportunities, enriches with suggestions, and returns structured data
  * @param {string} siteId - Site ID
  * @param {string|null} token - Auth token
- * @param {Object} options - Options for filtering and batching
+ * @param {Object} options - Options for filtering
  * @returns {Promise<Object>} Lifecycle data object
  */
 export async function getSiteLifecycleData(siteId, token = null, options = {}) {
   const {
     includeResolved = true,
     includeIgnored = false,
-    batchSize = 20,
   } = options;
   
   // Build filters
