@@ -29,7 +29,7 @@ export const QUALITY_CONFIG = {
  * @param {Object} suggestionCounts — from aggregateSuggestionsAcrossOpportunities
  *   { totalCount, rejectedRawCount, outdatedCount }
  * @param {Object} fixCounts — { completedFixes, failedFixes, totalFixes }
- * @returns {{ score: number, components: Object, label: string }}
+ * @returns {{ score: number, achievements: Object, metrics: Object }}
  */
 export function calculateQualityScore(
   suggestionCounts = {},
