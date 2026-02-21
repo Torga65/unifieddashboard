@@ -11,8 +11,26 @@ module.exports = {
     requireConfigFile: false,
   },
   rules: {
-    'import/extensions': ['error', { js: 'always' }], // require js file extensions in imports
-    'linebreak-style': ['error', 'unix'], // enforce unix linebreaks
-    'no-param-reassign': [2, { props: false }], // allow modifying properties of param
+    'import/extensions': ['error', { js: 'always' }],
+    'linebreak-style': ['error', 'unix'],
+    'no-param-reassign': [2, { props: false }],
+    'no-plusplus': 'off',
+    'no-underscore-dangle': 'off',
+    'no-use-before-define': ['error', { functions: false, classes: false }],
+    'import/prefer-default-export': 'off',
   },
+  overrides: [
+    {
+      files: ['server/**/*.js'],
+      env: { node: true, browser: false },
+      rules: {
+        'no-console': 'off',
+        'no-restricted-syntax': 'off',
+        'no-continue': 'off',
+        'no-await-in-loop': 'off',
+        'import/no-unresolved': 'off',
+        'import/extensions': 'off',
+      },
+    },
+  ],
 };

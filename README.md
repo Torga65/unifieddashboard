@@ -145,6 +145,29 @@ Heading 2: AI Insights
 [AI Summary block table]
 ```
 
+## Adding New Pages
+
+For standalone pages (e.g. Customer Historical Analysis, Suggestion Lifecycle) that use inline scripts and styles rather than blocks from SharePoint:
+
+1. **Add a new HTML file** in the project root, for example `suggestion-lifecycle.html`.
+2. **Follow existing page pattern**: Use the same structure as `customer-history.html` or `suggestion-lifecycle.html`:
+   - `<!DOCTYPE html>`, `<header></header>`, `<main>...</main>`, `<footer></footer>`
+   - Scripts: `/scripts/aem.js`, `/scripts/scripts.js` (type="module")
+   - Styles: `/styles/styles.css`
+   - Page-specific `<style>` and `<script type="module">` as needed
+3. **Add the page to the navigation**: Edit the **nav document** in your content source (SharePoint folder per `fstab.yaml`). Add a link in the same format as the other nav items (e.g. Home, Customer Insights Table, Customer Historical Analysis). For example, add an entry for "Suggestion Lifecycle" with URL `/suggestion-lifecycle.html`. The header loads the nav from the `/nav` fragment; all nav items are defined in that document.
+
+Current nav items (defined in the nav document):
+
+| Label | URL |
+|-------|-----|
+| Home | / |
+| Customer Insights Table | /engagement-live.html |
+| Customer Historical Analysis | /customer-history.html |
+| Suggestion Lifecycle | /suggestion-lifecycle.html |
+
+4. **Optional**: Add a Quick Link card on `index.html` pointing to the new page.
+
 ## Project Structure
 
 ```
