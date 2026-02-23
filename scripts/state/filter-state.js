@@ -148,8 +148,11 @@ export function subscribe(fn) {
 
 /**
  * Filter an array of items by the current date range.
- * Items must have a `createdAt` field (ISO string or Date).
- * @param {Array} items
+ * Uses item.createdAt only (opportunity-level filtering: "created in range").
+ * For suggestion-level counts by state (e.g. rejected in range), use getTrendTotals
+ * in trend-data.js instead.
+ *
+ * @param {Array} items - e.g. opportunities; must have createdAt (ISO string or Date)
  * @returns {Array}
  */
 export function filterByDateRange(items) {
@@ -157,6 +160,7 @@ export function filterByDateRange(items) {
   if (!start && !end) return items;
   return items.filter((item) => {
     const d = new Date(item.createdAt);
+    if (Number.isNaN(d.getTime())) return false;
     if (start && d < start) return false;
     if (end && d > end) return false;
     return true;

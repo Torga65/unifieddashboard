@@ -104,7 +104,9 @@ export async function renderTrendChart(container, {
         backgroundColor: `${CHART_COLORS[colorIdx % CHART_COLORS.length]}33`,
         tension: 0.3,
         fill: false,
-        pointRadius: 2,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        pointBackgroundColor: CHART_COLORS[colorIdx % CHART_COLORS.length],
       });
       colorIdx++;
     });
@@ -118,7 +120,9 @@ export async function renderTrendChart(container, {
       backgroundColor: `${CHART_COLORS[0]}33`,
       tension: 0.3,
       fill: true,
-      pointRadius: 2,
+      pointRadius: 3,
+      pointHoverRadius: 5,
+      pointBackgroundColor: CHART_COLORS[0],
     });
   }
 

@@ -333,6 +333,22 @@
       margin-left: 8px;
     }
 
+    /* Section label */
+    .section-label {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6c757d;
+      margin-bottom: 8px;
+    }
+    .section-label .label-muted {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      color: #999;
+    }
+
     /* Score Cards Row */
     .score-cards-row {
       display: grid;
@@ -414,10 +430,12 @@
     
     /* Stats Grid */
     .stats-grid {
+      margin-bottom: 16px;
+    }
+    .stats-grid-inner {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 12px;
-      margin-bottom: 16px;
     }
     
     .stat-card {
@@ -789,7 +807,7 @@
         text-align: center;
       }
       
-      .stats-grid {
+      .stats-grid-inner {
         grid-template-columns: repeat(2, 1fr);
       }
     }
@@ -915,15 +933,16 @@
       <!-- Site/Customer Name -->
       <div id="site-name" class="site-name-banner" style="display: none;"></div>
 
-      <!-- Global Filters -->
-      <div id="global-filters-bar" class="global-filters-bar"></div>
-
       <!-- Score Cards Row -->
+      <div class="section-label">Overall Health <span class="label-muted">(all time)</span></div>
       <div class="score-cards-row">
         <div id="health-score" class="health-score-card"></div>
         <div id="quality-score" class="health-score-card"></div>
       </div>
       
+      <!-- Date Range Filter -->
+      <div id="global-filters-bar" class="global-filters-bar"></div>
+
       <!-- Key Metrics -->
       <div id="stats-grid" class="stats-grid"></div>
       
@@ -1020,6 +1039,7 @@
     import { renderGlobalFilters } from '/scripts/components/global-filters.js';
     import { calculateQualityScore, getQualityLabel } from '/scripts/utils/quality-score.js';
     import { renderTrendChart } from '/scripts/components/trend-chart.js';
+    import { getTrendTotals, getDateFilteredCounts } from '/scripts/utils/trend-data.js';
     import { getFilters, filterByDateRange, subscribe as subscribeFilters } from '/scripts/state/filter-state.js';
 
     // ---- DOM elements ----
@@ -1703,23 +1723,41 @@
         onFilterChange: () => { if (currentData) renderDashboard(currentData); },
       });
 
-      // Apply date filter to opportunities for metrics
-      // Skip date filtering for demo data (it has hardcoded historical dates)
-      const isDemo = currentSiteId === 'demo';
-      const filteredOpps = isDemo ? data.opportunities : filterByDateRange(data.opportunities);
-      const filteredMetrics = calculateLifecycleMetrics(filteredOpps);
-      const filteredHealthLabel = getHealthLabel(filteredMetrics.health.score);
+      // All-time metrics from ALL opportunities — used for snapshot cards
+      // (totals, pending, health, quality, breakdown, age, automation, staleness)
+      const allMetrics = calculateLifecycleMetrics(data.opportunities);
+      const allHealthLabel = getHealthLabel(allMetrics.health.score);
 
-      renderHealthScore(filteredMetrics.health, filteredHealthLabel);
-      renderQualityScore(filteredMetrics);
-      renderStatsGrid(filteredMetrics);
-      // Trends always receives ALL opportunities — the chart applies its own date range
+      // Trend totals: suggestion-level date filtering (same as chart)
+      // used for activity cards (Fixed, Rejected, Skipped, Outdated, Errors)
+      const dateRange = getFilters().dateRange;
+      const trendTotals = getTrendTotals(data.opportunities, dateRange);
+      if (window.__DEBUG_LIFECYCLE_FILTERS) {
+        console.log('[Suggestion Lifecycle] Date filter applied (client-side only, no API call)', {
+          dateRange: {
+            preset: dateRange.preset,
+            start: dateRange.start?.toISOString?.() ?? dateRange.start,
+            end: dateRange.end?.toISOString?.() ?? dateRange.end,
+          },
+          trendTotals,
+          allMetricsSuggestions: allMetrics.suggestions,
+        });
+      }
+
+      renderHealthScore(allMetrics.health, allHealthLabel);
+      renderQualityScore(allMetrics);
+      renderStatsGrid(allMetrics, trendTotals);
       renderTrends(data.opportunities);
-      renderLifecycleBreakdown(filteredMetrics.suggestions);
-      renderAgeDistribution(filteredOpps);
-      renderAutomation(filteredMetrics.automation);
-      renderStaleness(filteredMetrics.staleness);
-      renderOpportunitiesTable(filteredOpps);
+      renderLifecycleBreakdown(allMetrics.suggestions);
+      renderAgeDistribution(data.opportunities);
+      renderAutomation(allMetrics.automation);
+      renderStaleness(allMetrics.staleness);
+      // Table receives ALL opportunities with date-filtered counts so pills/columns match the cards
+      const oppsWithDateCounts = data.opportunities.map(opp => ({
+        ...opp,
+        dateFilteredCounts: getDateFilteredCounts(opp, dateRange),
+      }));
+      renderOpportunitiesTable(oppsWithDateCounts);
     }
     
     // Render health score card
@@ -1816,53 +1854,77 @@
     }
 
     // Render stats grid
-    function renderStatsGrid(metrics) {
+    // metrics: all-time snapshot (from ALL opportunities) for totals, pending, etc.
+    // trendTotals: suggestion-level date filtering (matches chart) for activity cards
+    function renderStatsGrid(metrics, trendTotals) {
       const container = document.getElementById('stats-grid');
       const { suggestions, fixes, opportunities, lifecycle } = metrics;
-      
-      const stats = [
+      const t = trendTotals || {};
+
+      // Activity cards: from trendTotals (suggestion updatedAt in range) so they match the chart
+      const fixedCount = t.fixed ?? suggestions.fixedCount;
+      const skippedCount = t.skipped ?? suggestions.skippedCount;
+      const rejectedRawCount = t.rejected ?? suggestions.rejectedRawCount;
+      const outdatedCount = t.outdated ?? suggestions.outdatedCount;
+      const errorCount = t.error ?? (suggestions.errorCount || 0);
+      const terminalInRange = fixedCount + skippedCount + rejectedRawCount + outdatedCount + errorCount;
+      const resolutionRateInRange = terminalInRange > 0 ? Math.round((fixedCount / terminalInRange) * 100) : suggestions.resolutionRate;
+
+      // Date range label for the activity section
+      const filters = getFilters();
+      const rangeLabels = { '7d': 'Last 7 days', '30d': 'Last 30 days', '90d': 'Last 90 days', 'all': 'All time' };
+      const rangeLabel = rangeLabels[filters.dateRange.preset] || 'Custom range';
+
+      // Snapshot cards: always all-time
+      const snapshotStats = [
         { label: 'Total Opportunities', value: opportunities.total, class: '', tip: 'All opportunities regardless of status.', drill: 'all' },
         { label: 'Open Opportunities', value: lifecycle.activeOpportunities, class: '', tip: 'Opportunities with status NEW or IN_PROGRESS.', drill: 'open' },
-        { label: 'Total Suggestions', value: suggestions.total, class: '', tip: '', drill: 'all' },
-        { label: 'Fixed', value: suggestions.fixedCount, class: 'fixed', tip: 'Suggestions with FIXED status.', drill: 'FIXED' },
+        { label: 'Total Suggestions', value: suggestions.total, class: '', tip: 'All suggestions across all opportunities.', drill: 'all' },
         { label: 'Pending', value: suggestions.pendingCount, class: 'pending', tip: 'NEW + APPROVED + IN_PROGRESS + PENDING_VALIDATION.', drill: 'pending' },
       ];
-      // Pending sub-breakdown (only if pending > 0)
       if (suggestions.pendingCount > 0) {
         if (suggestions.pendingValidationCount > 0) {
-          stats.push({ label: 'Pending Validation', value: suggestions.pendingValidationCount, class: 'pending', tip: 'PENDING_VALIDATION — awaiting ESE review. Internal only; hidden from customers in ASO UI.', drill: 'PENDING_VALIDATION' });
+          snapshotStats.push({ label: 'Pending Validation', value: suggestions.pendingValidationCount, class: 'pending', tip: 'PENDING_VALIDATION — awaiting ESE review.', drill: 'PENDING_VALIDATION' });
         }
         if (suggestions.awaitingActionCount > 0) {
-          stats.push({ label: 'Awaiting Action', value: suggestions.awaitingActionCount, class: 'pending', tip: 'NEW + APPROVED — ready for customer to act on.', drill: 'NEW' });
+          snapshotStats.push({ label: 'Awaiting Action', value: suggestions.awaitingActionCount, class: 'pending', tip: 'NEW + APPROVED — ready for customer to act on.', drill: 'NEW' });
         }
         if (suggestions.inProgressCount > 0) {
-          stats.push({ label: 'In Progress', value: suggestions.inProgressCount, class: 'pending', tip: 'IN_PROGRESS — work underway.', drill: 'IN_PROGRESS' });
+          snapshotStats.push({ label: 'In Progress', value: suggestions.inProgressCount, class: 'pending', tip: 'IN_PROGRESS — work underway.', drill: 'IN_PROGRESS' });
         }
       }
-      stats.push(
-        { label: 'Skipped / Ignored', value: suggestions.skippedCount, class: 'ignored', tip: 'SKIPPED — customer chose to skip/ignore this suggestion.', drill: 'SKIPPED' },
-        { label: 'Rejected', value: suggestions.rejectedRawCount, class: 'rejected', tip: 'REJECTED — ESE manually flagged as false positive. Quality metric.', drill: 'REJECTED' },
-        { label: 'Outdated', value: suggestions.outdatedCount, class: 'noise', tip: 'OUTDATED — suggestion became irrelevant (page changed, newer suggestion, etc.).', drill: 'OUTDATED' },
-        { label: 'Resolution Rate', value: `${suggestions.resolutionRate}%`, class: 'fixed', tip: 'FIXED / total suggestions.' },
-      );
-      // Conditional cards
-      if ((suggestions.errorCount || 0) > 0) {
-        stats.splice(stats.length - 1, 0, { label: 'Errors', value: suggestions.errorCount, class: 'rejected', tip: 'ERROR — autofix attempt failed.', drill: 'ERROR' });
+
+      // Activity cards: date-filtered to match chart
+      const activityStats = [
+        { label: 'Fixed', value: fixedCount, class: 'fixed', tip: 'Suggestions fixed in this period.', drill: 'FIXED' },
+        { label: 'Skipped / Ignored', value: skippedCount, class: 'ignored', tip: 'SKIPPED — customer chose to skip/ignore.', drill: 'SKIPPED' },
+        { label: 'Rejected', value: rejectedRawCount, class: 'rejected', tip: 'REJECTED — ESE flagged as false positive.', drill: 'REJECTED' },
+        { label: 'Outdated', value: outdatedCount, class: 'noise', tip: 'OUTDATED — suggestion became irrelevant.', drill: 'OUTDATED' },
+        { label: 'Resolution Rate', value: `${resolutionRateInRange}%`, class: 'fixed', tip: 'FIXED / terminal suggestions in this period.' },
+      ];
+      if (errorCount > 0) {
+        activityStats.splice(activityStats.length - 1, 0, { label: 'Errors', value: errorCount, class: 'rejected', tip: 'ERROR — autofix attempt failed.', drill: 'ERROR' });
       }
-      // Fix metrics
       if ((fixes.totalFixes || 0) > 0) {
-        stats.push({ label: 'Deployed Fixes', value: fixes.completedFixes, class: 'fixes', tip: `Fix operations with COMPLETED status. ${fixes.completedFixes} of ${fixes.totalFixes} total.` });
+        activityStats.push({ label: 'Deployed Fixes', value: fixes.completedFixes, class: 'fixes', tip: `Fix operations with COMPLETED status. ${fixes.completedFixes} of ${fixes.totalFixes} total.` });
         if (fixes.autoFixSuccessRate >= 0) {
-          stats.push({ label: 'Auto-fix Success', value: `${fixes.autoFixSuccessRate}%`, class: 'fixes', tip: `COMPLETED / (COMPLETED + FAILED). ${fixes.completedFixes} succeeded, ${fixes.failedFixes} failed.` });
+          activityStats.push({ label: 'Auto-fix Success', value: `${fixes.autoFixSuccessRate}%`, class: 'fixes', tip: `COMPLETED / (COMPLETED + FAILED). ${fixes.completedFixes} succeeded, ${fixes.failedFixes} failed.` });
         }
       }
-      
-      container.innerHTML = stats.map(stat => `
+
+      const renderCards = (stats) => stats.map(stat => `
         <div class="stat-card ${stat.class}${stat.drill ? ' clickable' : ''}" ${stat.drill ? `data-drill="${stat.drill}"` : ''}>
           <div class="stat-value">${stat.value}</div>
           <div class="stat-label">${stat.label}${stat.tip ? ` <span class="info-bubble">?<span class="info-text">${stat.tip}</span></span>` : ''}</div>
         </div>
       `).join('');
+
+      container.innerHTML = `
+        <div class="section-label">Current State</div>
+        <div class="stats-grid-inner">${renderCards(snapshotStats)}</div>
+        <div class="section-label" style="margin-top:20px;">Activity <span class="label-muted">(${rangeLabel})</span></div>
+        <div class="stats-grid-inner">${renderCards(activityStats)}</div>
+      `;
 
       // Attach drill-down click handlers
       container.querySelectorAll('.stat-card[data-drill]').forEach((card) => {
@@ -1883,17 +1945,9 @@
       const metric = document.getElementById('trend-metric').value;
       const byType = document.getElementById('trend-by-type').checked;
       const filters = getFilters();
-      // Use the filter date range; if "all time" (no bounds), derive from the data
-      let dateRange = filters.dateRange;
-      if (!dateRange.start && !dateRange.end && opportunities.length > 0) {
-        const allDates = opportunities.flatMap(o => (o.suggestions || []).map(s => new Date(s.createdAt || o.createdAt)));
-        if (allDates.length > 0) {
-          dateRange = {
-            start: new Date(Math.min(...allDates)),
-            end: new Date(Math.max(...allDates.map(d => d.getTime() + 86400000))),
-          };
-        }
-      }
+      // Use the filter date range as-is. Do NOT derive for "all time" so we don't filter
+      // by a derived range (e.g. createdAt) and drop items whose metric date (e.g. updatedAt) falls outside it.
+      const dateRange = filters.dateRange;
       renderTrendChart(document.getElementById('trend-chart'), {
         opportunities,
         metric,
@@ -2057,27 +2111,26 @@
     
     function getFilteredOpportunities() {
       const opps = allOpportunities;
+      // Use date-filtered counts when available so pills match the cards/chart
+      const counts = (opp) => opp.dateFilteredCounts || opp.suggestionsCounts || {};
 
       switch (tableStatusFilter) {
         case 'open':
-          // Only NEW / IN_PROGRESS opportunity status
           return opps.filter(opp => opp.status === 'NEW' || opp.status === 'IN_PROGRESS');
         case 'resolved':
           return opps.filter(opp => opp.status === 'RESOLVED' || opp.status === 'IGNORED');
         case 'all':
-          // Everything — no filter
           return opps;
         case 'pending':
-          return opps.filter(opp => (opp.suggestionsCounts?.pendingCount || 0) > 0);
+          return opps.filter(opp => (counts(opp).pendingCount || 0) > 0);
         default: {
-          // Suggestion-status filter (FIXED, SKIPPED, etc.)
           const statusKey = {
             FIXED: 'fixedCount', SKIPPED: 'skippedCount', REJECTED: 'rejectedRawCount',
             ERROR: 'errorCount', OUTDATED: 'outdatedCount', NEW: 'newCount',
             IN_PROGRESS: 'inProgressCount', PENDING_VALIDATION: 'pendingValidationCount',
           }[tableStatusFilter];
           if (statusKey) {
-            return opps.filter(opp => (opp.suggestionsCounts?.[statusKey] || 0) > 0);
+            return opps.filter(opp => (counts(opp)[statusKey] || 0) > 0);
           }
           return opps;
         }
@@ -2086,6 +2139,8 @@
     
     function sortOpportunities(opportunities, column, direction) {
       return [...opportunities].sort((a, b) => {
+        const ca = a.dateFilteredCounts || a.suggestionsCounts || {};
+        const cb = b.dateFilteredCounts || b.suggestionsCounts || {};
         let valA, valB;
         switch (column) {
           case 'type':
@@ -2101,28 +2156,28 @@
             valB = new Date(b.createdAt || 0).getTime();
             break;
           case 'total':
-            valA = a.suggestionsCounts?.totalCount || 0;
-            valB = b.suggestionsCounts?.totalCount || 0;
+            valA = ca.totalCount || 0;
+            valB = cb.totalCount || 0;
             break;
           case 'fixed':
-            valA = a.suggestionsCounts?.fixedCount || 0;
-            valB = b.suggestionsCounts?.fixedCount || 0;
+            valA = ca.fixedCount || 0;
+            valB = cb.fixedCount || 0;
             break;
           case 'pending':
-            valA = a.suggestionsCounts?.pendingCount || 0;
-            valB = b.suggestionsCounts?.pendingCount || 0;
+            valA = ca.pendingCount || 0;
+            valB = cb.pendingCount || 0;
             break;
           case 'rejected':
-            valA = a.suggestionsCounts?.rejectedRawCount || 0;
-            valB = b.suggestionsCounts?.rejectedRawCount || 0;
+            valA = ca.rejectedRawCount || 0;
+            valB = cb.rejectedRawCount || 0;
             break;
           case 'errors':
-            valA = a.suggestionsCounts?.errorCount || 0;
-            valB = b.suggestionsCounts?.errorCount || 0;
+            valA = ca.errorCount || 0;
+            valB = cb.errorCount || 0;
             break;
           case 'outdated':
-            valA = a.suggestionsCounts?.outdatedCount || 0;
-            valB = b.suggestionsCounts?.outdatedCount || 0;
+            valA = ca.outdatedCount || 0;
+            valB = cb.outdatedCount || 0;
             break;
           case 'created':
             valA = new Date(a.createdAt || 0).getTime();
@@ -2173,19 +2228,27 @@
           : '<span class="sort-arrow active">&#x25BE;</span>';
       }
       
+      const showAge = tableStatusFilter === 'open';
+      // Look up org ID for deep links (SpaceCat UUID, not IMS @AdobeOrg format)
+      const selectedOrg = customerTree.find(c => c.orgId === customerSelect?.value);
+      const deepLinkOrgId = selectedOrg?.orgId || '';
+      const siteId = currentSiteId || '';
       const rows = sorted.map(opp => {
-        const ageBucket = calculateAgeBucket(opp.createdAt, opp.updatedAt, opp.status, 'opportunity');
-        const counts = opp.suggestionsCounts || {};
+        const counts = opp.dateFilteredCounts || opp.suggestionsCounts || {};
         const total = counts.totalCount || 0;
         const totalDisplay = total === 0 ? '<span style="color:#999">0</span>' : total;
-        // Build ASO deep link (best-effort)
-        const deepLink = `https://experience.adobe.com/aem/sites/optimizer/opportunity/${opp.id || ''}`;
+        const deepLink = deepLinkOrgId
+          ? `https://experience.adobe.com/?organizationId=${deepLinkOrgId}#/@sitesinternal/sites-optimizer/sites/${opp.siteId || siteId}/opportunities/${opp.id || ''}`
+          : `https://experience.adobe.com/#/@sitesinternal/sites-optimizer/sites/${opp.siteId || siteId}/opportunities/${opp.id || ''}`;
+        const ageTd = showAge
+          ? `<td><span class="age-badge age-${calculateAgeBucket(opp.createdAt, opp.updatedAt, opp.status, 'opportunity')}">${calculateAgeBucket(opp.createdAt, opp.updatedAt, opp.status, 'opportunity')}</span></td>`
+          : '';
         
         return `
           <tr class="opp-row" data-link="${deepLink}">
             <td><strong>${opp.type || 'Unknown'}</strong></td>
             <td><span class="status-badge status-${opp.status}">${opp.status}</span></td>
-            <td><span class="age-badge age-${ageBucket}">${ageBucket}</span></td>
+            ${ageTd}
             <td>${totalDisplay}</td>
             <td>${counts.fixedCount || 0}</td>
             <td>${counts.pendingCount || 0}</td>
@@ -2204,7 +2267,7 @@
             <tr>
               <th data-sort="type">Type ${arrow('type')}</th>
               <th data-sort="status">Status ${arrow('status')}</th>
-              <th data-sort="age">Age ${arrow('age')}</th>
+              ${showAge ? `<th data-sort="age">Age ${arrow('age')}</th>` : ''}
               <th data-sort="total">Total ${arrow('total')}</th>
               <th data-sort="fixed">Fixed ${arrow('fixed')}</th>
               <th data-sort="pending" title="NEW + APPROVED + IN_PROGRESS + PENDING_VALIDATION">Pending ${arrow('pending')}</th>

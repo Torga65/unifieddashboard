@@ -3,7 +3,26 @@
  *
  * Groups opportunities / suggestions into time-series buckets
  * for use with Chart.js line/bar charts.
+ *
+ * Date semantics:
+ * - Opportunity-level (filter-state.js filterByDateRange): opportunity.createdAt only.
+ * - Suggestion-level (here): "created" uses suggestion createdAt; fixed/rejected/skipped/
+ *   outdated/error use suggestion updatedAt, with fallback to opportunity updatedAt/createdAt
+ *   and API snake_case (updated_at/created_at) when missing.
  */
+
+/**
+ * Normalize and attach suggestion dates with opportunity fallbacks for consistent
+ * filtering/bucketing. Supports camelCase (createdAt/updatedAt) and snake_case.
+ */
+export function suggestionWithDates(sug, opp) {
+  const createdAt = sug.createdAt ?? sug.created_at ?? opp.createdAt;
+  const updatedAt = sug.updatedAt ?? sug.updated_at ?? opp.updatedAt
+    ?? sug.createdAt ?? sug.created_at ?? opp.createdAt;
+  return {
+    ...sug, opportunityType: opp.type, createdAt, updatedAt,
+  };
+}
 
 /**
  * Group items by time bucket.
@@ -48,11 +67,11 @@ export function groupByTimeBucket(items, dateField = 'createdAt', bucketSize = '
  * @returns {Array<{date: string, value: number}>} sorted by date
  */
 export function buildTrendSeries(opportunities, metric, dateRange = {}, bucket = 'day') {
-  // Flatten suggestions from all opportunities
+  // Flatten suggestions with normalized dates (suggestion + opportunity fallback, camel/snake_case)
   const allSuggestions = [];
   opportunities.forEach((opp) => {
     (opp.suggestions || []).forEach((sug) => {
-      allSuggestions.push({ ...sug, opportunityType: opp.type });
+      allSuggestions.push(suggestionWithDates(sug, opp));
     });
   });
 
@@ -92,7 +111,10 @@ export function buildTrendSeries(opportunities, metric, dateRange = {}, bucket =
   // Apply date range filter
   if (dateRange.start || dateRange.end) {
     items = items.filter((item) => {
-      const d = new Date(item[dateField] || item.createdAt);
+      const raw = item[dateField] || item.createdAt;
+      if (raw == null) return false;
+      const d = new Date(raw);
+      if (Number.isNaN(d.getTime())) return false;
       if (dateRange.start && d < dateRange.start) return false;
       if (dateRange.end && d > dateRange.end) return false;
       return true;
@@ -126,6 +148,91 @@ export function buildTrendSeries(opportunities, metric, dateRange = {}, bucket =
   }
 
   return series;
+}
+
+/**
+ * Get total counts per trend metric for a date range.
+ * Uses the same filtering as buildTrendSeries so card totals match the chart.
+ *
+ * @param {Array} opportunities — enriched opportunities with suggestions
+ * @param {{ start: Date|null, end: Date|null }} dateRange
+ * @returns {{ created, fixed, rejected, skipped, outdated, error }}
+ */
+export function getTrendTotals(opportunities, dateRange = {}) {
+  const metrics = ['created', 'fixed', 'rejected', 'skipped', 'outdated', 'error'];
+  const totals = {
+    created: 0, fixed: 0, rejected: 0, skipped: 0, outdated: 0, error: 0,
+  };
+  metrics.forEach((metric) => {
+    const series = buildTrendSeries(opportunities, metric, dateRange, 'day');
+    totals[metric] = series.reduce((sum, p) => sum + p.value, 0);
+  });
+  return totals;
+}
+
+/**
+ * Compute per-opportunity suggestion counts filtered by date range.
+ * Uses the same date semantics as the trend chart:
+ * - "total" / "created": suggestion createdAt in range
+ * - Status counts (FIXED, REJECTED, etc.): suggestion updatedAt in range
+ *
+ * When no range is set (start & end null), returns the original suggestionsCounts unchanged.
+ *
+ * @param {Object} opp - Enriched opportunity with .suggestions array
+ * @param {{ start: Date|null, end: Date|null }} dateRange
+ * @returns {Object} Same shape as suggestionsCounts
+ */
+export function getDateFilteredCounts(opp, dateRange = {}) {
+  if (!dateRange.start && !dateRange.end) return opp.suggestionsCounts || {};
+
+  const counts = {
+    totalCount: 0,
+    fixedCount: 0,
+    skippedCount: 0,
+    rejectedRawCount: 0,
+    errorCount: 0,
+    outdatedCount: 0,
+    newCount: 0,
+    approvedCount: 0,
+    inProgressCount: 0,
+    pendingValidationCount: 0,
+    pendingCount: 0,
+  };
+
+  function inRange(d, start, end) {
+    if (!d || Number.isNaN(d.getTime())) return false;
+    if (start && d < start) return false;
+    if (end && d > end) return false;
+    return true;
+  }
+
+  (opp.suggestions || []).forEach((raw) => {
+    const sug = suggestionWithDates(raw, opp);
+    const createdD = new Date(sug.createdAt);
+    const updatedD = new Date(sug.updatedAt);
+
+    if (inRange(createdD, dateRange.start, dateRange.end)) {
+      counts.totalCount++;
+    }
+
+    if (!inRange(updatedD, dateRange.start, dateRange.end)) return;
+
+    switch (sug.status) {
+      case 'FIXED': counts.fixedCount++; break;
+      case 'SKIPPED': counts.skippedCount++; break;
+      case 'REJECTED': counts.rejectedRawCount++; break;
+      case 'ERROR': counts.errorCount++; break;
+      case 'OUTDATED': counts.outdatedCount++; break;
+      case 'APPROVED': counts.approvedCount++; break;
+      case 'IN_PROGRESS': counts.inProgressCount++; break;
+      case 'PENDING_VALIDATION': counts.pendingValidationCount++; break;
+      default: counts.newCount++; break;
+    }
+  });
+
+  counts.pendingCount = counts.newCount + counts.approvedCount
+    + counts.inProgressCount + counts.pendingValidationCount;
+  return counts;
 }
 
 /**
