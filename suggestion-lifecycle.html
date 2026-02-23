@@ -1023,12 +1023,11 @@
           <h3>Opportunities</h3>
           <div class="opportunities-date-filter-wrap">
             <label for="opp-date-range">Date range:</label>
-            <select id="opp-date-range" class="opp-date-range-select" title="Counts below are filtered by this range (synced with Trends).">
+            <select id="opp-date-range" class="opp-date-range-select" title="Counts below are filtered by this range (synced with Trends). Custom dates use the filter above the chart.">
               <option value="7d">Last 7 days</option>
               <option value="30d">Last 30 days</option>
               <option value="90d">Last 90 days</option>
               <option value="all">All time</option>
-              <option value="custom">Custom</option>
             </select>
           </div>
         </div>
@@ -1760,7 +1759,8 @@
       // Sync opportunities table date dropdown with global filter (and wire change once)
       const oppDateSelect = document.getElementById('opp-date-range');
       if (oppDateSelect) {
-        oppDateSelect.value = getFilters().dateRange.preset;
+        const preset = getFilters().dateRange.preset;
+        oppDateSelect.value = (preset === 'custom' ? 'all' : preset);
         if (!oppDateSelect.dataset.initialized) {
           oppDateSelect.dataset.initialized = '1';
           oppDateSelect.addEventListener('change', () => {
