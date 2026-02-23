@@ -172,9 +172,8 @@ export function getTrendTotals(opportunities, dateRange = {}) {
 
 /**
  * Compute per-opportunity suggestion counts filtered by date range.
- * Uses the same date semantics as the trend chart:
- * - "total" / "created": suggestion createdAt in range
- * - Status counts (FIXED, REJECTED, etc.): suggestion updatedAt in range
+ * All counts use the same rule: suggestion updatedAt in range.
+ * So totalCount = sum of status columns (Fixed + Pending + Rejected + etc.).
  *
  * When no range is set (start & end null), returns the original suggestionsCounts unchanged.
  *
@@ -208,14 +207,11 @@ export function getDateFilteredCounts(opp, dateRange = {}) {
 
   (opp.suggestions || []).forEach((raw) => {
     const sug = suggestionWithDates(raw, opp);
-    const createdD = new Date(sug.createdAt);
     const updatedD = new Date(sug.updatedAt);
 
-    if (inRange(createdD, dateRange.start, dateRange.end)) {
-      counts.totalCount++;
-    }
-
     if (!inRange(updatedD, dateRange.start, dateRange.end)) return;
+
+    counts.totalCount++;
 
     switch (sug.status) {
       case 'FIXED': counts.fixedCount++; break;
