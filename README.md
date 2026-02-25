@@ -3,8 +3,8 @@
 A comprehensive client engagement dashboard built with Adobe Edge Delivery Services (EDS). Features custom blocks for weekly engagement metrics, client details with AI-powered summaries, and standalone AI insights.
 
 ## Environments
-- Preview: https://main--{repo}--{owner}.aem.page/
-- Live: https://main--{repo}--{owner}.aem.live/
+- Preview: https://main--{repo}--tgardner.aem.page/
+- Live: https://main--{repo}--tgardner.aem.live/
 
 ## Quick Start
 
