@@ -197,9 +197,11 @@
     body[data-view="site"] #selector-row.visible { display: flex; }
     body[data-view="site"] #dev-manual-site.visible { display: block; }
 
-    /* Portfolio view: show portfolio panel, hide site-only controls */
+    /* Portfolio view: show portfolio panel; keep Load Data / Refresh / Export visible on both views */
     body[data-view="portfolio"] #portfolio-view  { display: block; }
-    body[data-view="portfolio"] .controls-actions { display: none; }
+    /* Token + customer/site selectors work on both views — show when .visible */
+    body[data-view="portfolio"] #selector-row.visible { display: flex; }
+    body[data-view="portfolio"] #dev-manual-site.visible { display: block; }
 
     /* Portfolio view */
     .portfolio-header {
@@ -332,6 +334,25 @@
       font-size: 13px;
       margin-left: 8px;
     }
+    .aso-entitlement-banner {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      color: #92400e;
+      font-size: 14px;
+    }
+    .aso-selector-message {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-top: 6px;
+      margin-bottom: 0;
+      color: #92400e;
+      font-size: 13px;
+    }
 
     /* Section label */
     .section-label {
@@ -431,6 +452,70 @@
     /* Stats Grid */
     .stats-grid {
       margin-bottom: 16px;
+    }
+    /* Portfolio: grouped stat sections */
+    .portfolio-stats-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .portfolio-stat-group {
+      background: #fafbfc;
+      border: 1px solid #e8eaed;
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .portfolio-stat-group--suggestion {
+      background: linear-gradient(180deg, #f0f4ff 0%, #fafbfc 100%);
+      border-color: #c7d2fe;
+    }
+    .portfolio-stat-group-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #475569;
+      margin: 0 0 14px 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .portfolio-stat-group-subtitle {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      color: #94a3b8;
+    }
+    .portfolio-stat-group--suggestion .portfolio-stat-group-title {
+      color: #4338ca;
+      border-bottom-color: #c7d2fe;
+    }
+    .portfolio-stat-group .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 0;
+    }
+    .portfolio-stat-group .stat-card {
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .portfolio-data-source-wrap {
+      margin-top: 8px;
+      padding-top: 16px;
+      border-top: 1px dashed #d0d5dd;
+    }
+    /* Single scope line: "Metrics for: Last 7 days" — visible when data is loaded */
+    .portfolio-metrics-scope {
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .portfolio-metrics-scope .portfolio-scope-range {
+      font-weight: 700;
+      color: #334155;
     }
     .stats-grid-inner {
       display: grid;
@@ -694,6 +779,16 @@
       margin: 0;
       white-space: nowrap;
     }
+    .opp-llmo-checkbox-wrap,
+    .portfolio-llmo-checkbox-wrap {
+      margin-left: 12px;
+      white-space: nowrap;
+      font-weight: normal;
+    }
+    .opp-llmo-checkbox-wrap input,
+    .portfolio-llmo-checkbox-wrap input {
+      margin-right: 6px;
+    }
     .opp-date-range-select {
       padding: 4px 8px;
       border-radius: 6px;
@@ -883,6 +978,9 @@
           <span class="spinner-text">Loading...</span>
         </div>
       </div>
+      <div id="aso-selector-message" class="aso-selector-message" style="display: none;" role="status">
+        This customer does not have Sites Optimizer (ASO). Select an ASO customer to choose a site.
+      </div>
 
       <!-- Fallback: manual site ID (collapsed by default) -->
       <div id="dev-manual-site" class="controls-row dev-manual-toggle">
@@ -930,6 +1028,14 @@
             <option value="180">Last 180 days</option>
             <option value="365">Last year</option>
           </select>
+          <label class="portfolio-llmo-checkbox-wrap">
+            <input type="checkbox" id="portfolio-include-llmo" />
+            Include LLMO Data
+          </label>
+          <label class="portfolio-llmo-checkbox-wrap">
+            <input type="checkbox" id="portfolio-include-generic" />
+            Include Generic Opportunities
+          </label>
           <button id="portfolio-refresh-btn" class="btn-connect" type="button">Load</button>
         </div>
       </div>
@@ -937,21 +1043,28 @@
         Loading portfolio data...
       </div>
       <div id="portfolio-error" class="error-message" style="display: none;"></div>
+      <div id="portfolio-metrics-scope" class="portfolio-metrics-scope" style="display: none;" aria-live="polite" role="status"></div>
       <div id="portfolio-stats" class="stats-grid" style="display: none;"></div>
       <div id="portfolio-chart-section" class="section-card" style="display: none;">
         <div class="table-header">
           <h3>Opportunity Trends</h3>
         </div>
-        <div id="portfolio-chart" style="position:relative; height:300px;"></div>
+        <div id="portfolio-chart-wrap" style="position:relative; height:300px;">
+          <canvas id="portfolio-chart"></canvas>
+        </div>
       </div>
     </div>
 
     <div id="dashboard">
       <!-- Site/Customer Name -->
       <div id="site-name" class="site-name-banner" style="display: none;"></div>
+      <!-- Shown when selected customer does not have Sites Optimizer (ASO) -->
+      <div id="aso-entitlement-banner" class="aso-entitlement-banner" style="display: none;" role="alert">
+        This customer does not have Sites Optimizer (ASO). Dashboard data may be limited or unavailable.
+      </div>
 
       <!-- Score Cards Row -->
-      <div class="section-label">Overall Health <span class="label-muted">(all time)</span></div>
+      <div class="section-label">Overall Health <span class="label-muted">(All time)</span></div>
       <div class="score-cards-row">
         <div id="health-score" class="health-score-card"></div>
         <div id="quality-score" class="health-score-card"></div>
@@ -971,8 +1084,8 @@
             <select id="trend-metric">
               <option value="created">Suggestions Created</option>
               <option value="fixed">Fixed</option>
-              <option value="rejected">Rejected</option>
-              <option value="skipped">Skipped</option>
+              <option value="rejected">Rejected (by ESE)</option>
+              <option value="skipped">Skipped (by customer)</option>
               <option value="error">Errors</option>
               <option value="outdated">Outdated</option>
             </select>
@@ -1022,13 +1135,21 @@
         <div class="table-header table-header-with-date">
           <h3>Opportunities</h3>
           <div class="opportunities-date-filter-wrap">
-            <label for="opp-date-range">Date range:</label>
+            <label for="opp-date-range">Date range: <span class="info-bubble" title="How counts work">?<span class="info-text">All opportunities are listed. The numbers in each row show how many suggestions were updated (had activity) in this range.</span></span></label>
             <select id="opp-date-range" class="opp-date-range-select" title="Counts below are filtered by this range (synced with Trends). Custom dates use the filter above the chart.">
               <option value="7d">Last 7 days</option>
               <option value="30d">Last 30 days</option>
               <option value="90d">Last 90 days</option>
               <option value="all">All time</option>
             </select>
+            <label class="opp-llmo-checkbox-wrap">
+              <input type="checkbox" id="opp-include-llmo" />
+              Include LLMO Data
+            </label>
+            <label class="opp-llmo-checkbox-wrap">
+              <input type="checkbox" id="opp-include-generic" />
+              Include Generic Opportunities
+            </label>
           </div>
         </div>
         <div id="opportunities-table"></div>
@@ -1062,18 +1183,32 @@
       getProfile,
     } from '/scripts/auth/ims-auth.js';
     import { setGlobalToken, apiGet, isApiError } from '/scripts/services/spacecat-api.js';
-    import { buildCustomerSiteTree, fetchSiteById, fetchOrgSites } from '/scripts/services/org-site-service.js';
+    import {
+      buildCustomerSiteTree,
+      fetchSiteById,
+      fetchOrgSites,
+      fetchOrganizationEntitlements,
+      hasASOEntitlement,
+      hasPaidASOEntitlement,
+    } from '/scripts/services/org-site-service.js';
     import { ASO_ENDPOINTS, PORTFOLIO_ENDPOINTS } from '/scripts/constants/api.js';
     import { renderGlobalFilters } from '/scripts/components/global-filters.js';
     import { calculateQualityScore, getQualityLabel } from '/scripts/utils/quality-score.js';
     import { renderTrendChart } from '/scripts/components/trend-chart.js';
-    import { getTrendTotals, getDateFilteredCounts } from '/scripts/utils/trend-data.js';
+    import {
+      getTrendTotals,
+      getDateFilteredCounts,
+      getOpportunityCountsInRange,
+    } from '/scripts/utils/trend-data.js';
     import {
       getFilters,
       setDateRange,
+      setIncludeLlmoData,
+      setIncludeGenericOpportunities,
       filterByDateRange,
       subscribe as subscribeFilters,
     } from '/scripts/state/filter-state.js';
+    import { isLlmoOnly, isExcludedOpportunity } from '/scripts/utils/llmo-classification.js';
 
     // ---- DOM elements ----
     // Auth bar
@@ -1110,10 +1245,14 @@
     const portfolioView = document.getElementById('portfolio-view');
     const portfolioStats = document.getElementById('portfolio-stats');
     const portfolioChartSection = document.getElementById('portfolio-chart-section');
+    const portfolioChartWrap = document.getElementById('portfolio-chart-wrap');
     const portfolioChart = document.getElementById('portfolio-chart');
     const portfolioLoading = document.getElementById('portfolio-loading');
     const portfolioError = document.getElementById('portfolio-error');
+    const portfolioMetricsScope = document.getElementById('portfolio-metrics-scope');
     const portfolioRange = document.getElementById('portfolio-range');
+    const portfolioIncludeLlmo = document.getElementById('portfolio-include-llmo');
+    const portfolioIncludeGeneric = document.getElementById('portfolio-include-generic');
     const portfolioRefreshBtn = document.getElementById('portfolio-refresh-btn');
     const portfolioTitle = document.getElementById('portfolio-title');
     const portfolioScope = document.getElementById('portfolio-scope');
@@ -1126,6 +1265,8 @@
     let currentSiteId = null;
     let customerTree = []; // populated after IMS login
     let isDevMode = false;
+    /** @type {null | { orgId: string, hasASO: boolean, hasPaidASO: boolean }} */
+    let currentOrgEntitlements = null;
     
     // Token show/hide toggle
     tokenToggle.addEventListener('click', () => {
@@ -1260,6 +1401,14 @@
 
       tokenConnectBtn.disabled = false;
       tokenConnectBtn.textContent = 'Connect';
+
+      // API key is loaded — hide mock data banner even if no customer/site selected yet
+      demoBanner.style.display = 'none';
+
+      // If user is on Portfolio view, auto-load portfolio data so aggregate loads without switching tabs
+      if (currentView === 'portfolio') {
+        loadPortfolioData();
+      }
     }
 
     tokenConnectBtn.addEventListener('click', connectWithToken);
@@ -1269,12 +1418,33 @@
 
     customerSelect.addEventListener('change', async () => {
       const orgId = customerSelect.value;
+      currentOrgEntitlements = null; // refetch when loading for this org
       portfolioCache = null; // invalidate portfolio cache on customer change
-      if (orgId) {
-        await populateSites(orgId);
-      } else {
+      const asoMessage = document.getElementById('aso-selector-message');
+
+      if (!orgId) {
         siteSelect.innerHTML = '<option value="">Select a customer first</option>';
+        siteSelect.disabled = false;
+        if (asoMessage) asoMessage.style.display = 'none';
+        return;
       }
+
+      const token = tokenInput.value.trim() || getAccessToken();
+      if (token) {
+        selectorSpinner.style.display = 'flex';
+        const ent = await ensureOrgEntitlements(orgId, token);
+        selectorSpinner.style.display = 'none';
+        if (ent && !ent.hasASO) {
+          siteSelect.innerHTML = '<option value="">— No ASO —</option>';
+          siteSelect.disabled = true;
+          if (asoMessage) asoMessage.style.display = 'block';
+          return;
+        }
+      }
+
+      siteSelect.disabled = false;
+      if (asoMessage) asoMessage.style.display = 'none';
+      await populateSites(orgId);
     });
 
     manualSiteToggle.addEventListener('click', () => {
@@ -1330,12 +1500,13 @@
         const errorCount = suggestions.filter(s => s.status === 'ERROR').length;
         const outdatedCount = suggestions.filter(s => s.status === 'OUTDATED').length;
         const pendingCount = newCount + approvedCount + inProgressCount + pendingValidationCount;
+        const awaitingCustomerReviewCount = newCount + approvedCount + inProgressCount;
         const terminalCount = fixedCount + skippedCount + rejectedRawCount + errorCount + outdatedCount;
         const counts = {
           totalCount: suggestions.length,
           newCount, approvedCount, inProgressCount, pendingValidationCount,
           fixedCount, skippedCount, rejectedRawCount, errorCount, outdatedCount,
-          pendingCount, terminalCount,
+          pendingCount, awaitingCustomerReviewCount, terminalCount,
         };
         return { ...opp, suggestionsCounts: counts };
       });
@@ -1367,10 +1538,14 @@
 
       // Portfolio auto-load when switching to portfolio tab
       if (view === 'portfolio') {
+        if (portfolioIncludeLlmo) portfolioIncludeLlmo.checked = getFilters().includeLlmoData;
+        if (portfolioIncludeGeneric) portfolioIncludeGeneric.checked = getFilters().includeGenericOpportunities;
         const hasToken = !!(tokenInput.value.trim() || getAccessToken());
         const cacheValid = portfolioCache
           && portfolioCache.scope === portfolioScope.value
           && portfolioCache.range === portfolioRange.value
+          && portfolioCache.llmo === (portfolioIncludeLlmo && portfolioIncludeLlmo.checked)
+          && portfolioCache.generic === (portfolioIncludeGeneric && portfolioIncludeGeneric.checked)
           && (Date.now() - portfolioCache.fetchedAt) < PORTFOLIO_CACHE_TTL_MS;
         if (hasToken && !cacheValid) {
           loadPortfolioData();
@@ -1422,7 +1597,9 @@
         : 'Loading portfolio data...';
       portfolioLoading.style.display = 'block';
       portfolioError.style.display = 'none';
+      errorEl.style.display = 'none'; // clear global error banner when loading portfolio
       portfolioStats.style.display = 'none';
+      portfolioMetricsScope.style.display = 'none';
       portfolioChartSection.style.display = 'none';
 
       // Update title
@@ -1440,6 +1617,8 @@
         } else {
           params.set('orgId', scopeValue);
         }
+        if (portfolioIncludeLlmo && portfolioIncludeLlmo.checked) params.set('includeLlmo', '1');
+        if (portfolioIncludeGeneric && portfolioIncludeGeneric.checked) params.set('includeGeneric', '1');
 
         const url = `${PORTFOLIO_ENDPOINTS.OPPORTUNITY_METRICS()}?${params.toString()}`;
         const startTime = Date.now();
@@ -1473,7 +1652,16 @@
           throw new Error(err.error || `HTTP ${res.status}`);
         }
         const data = await res.json();
-        portfolioCache = { data, scope: scopeValue, range: String(rangeDays), fetchedAt: Date.now() };
+        portfolioCache = {
+          data,
+          scope: scopeValue,
+          range: String(rangeDays),
+          llmo: !!(portfolioIncludeLlmo && portfolioIncludeLlmo.checked),
+          generic: !!(portfolioIncludeGeneric && portfolioIncludeGeneric.checked),
+          fetchedAt: Date.now(),
+        };
+        if (portfolioIncludeLlmo) setIncludeLlmoData(portfolioIncludeLlmo.checked);
+        if (portfolioIncludeGeneric) setIncludeGenericOpportunities(portfolioIncludeGeneric.checked);
         // Only render if still on portfolio view (user may have switched away)
         if (currentView === 'portfolio') {
           renderPortfolioDashboard(data);
@@ -1498,68 +1686,138 @@
       const totalAvailable = sm.totalAvailable || 0;
       const createdInPeriod = sm.createdInPeriod || 0;
       const fixedInPeriod = sm.fixedInPeriod || 0;
-      const outdatedInPeriod = sm.outdatedInPeriod || 0;
-      const createdTotal = Object.values(totalCounts || {}).reduce((a, b) => a + b, 0);
+      const skippedByCustomer = sm.skippedByCustomer ?? 0;
+      const totalSuggestions = sm.totalSuggestions ?? 0;
+      const suggestionsFixed = sm.suggestionsFixed ?? 0;
 
-      // Stat cards — primary summary metrics
-      portfolioStats.innerHTML = `
-        <div class="stat-card" style="border-left: 4px solid #8b5cf6;">
-          <div class="stat-value">${totalAvailable.toLocaleString()}</div>
-          <div class="stat-label">Total Available</div>
-          <div class="stat-detail">Open or created in period</div>
-        </div>
-        <div class="stat-card" style="border-left: 4px solid #3b82f6;">
-          <div class="stat-value">${createdInPeriod.toLocaleString()}</div>
-          <div class="stat-label">Created in Period</div>
-          <div class="stat-detail">${siteCount || '?'} sites</div>
-        </div>
-        <div class="stat-card" style="border-left: 4px solid #10b981;">
-          <div class="stat-value">${fixedInPeriod.toLocaleString()}</div>
-          <div class="stat-label">Fixed in Period</div>
-          <div class="stat-detail">Resolved during range</div>
-        </div>
-        <div class="stat-card" style="border-left: 4px solid #6b7280;">
-          <div class="stat-value">${outdatedInPeriod.toLocaleString()}</div>
-          <div class="stat-label">Ignored in Period</div>
-          <div class="stat-detail">Closed without fix</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${(totalCounts?.NEW || 0).toLocaleString()}</div>
-          <div class="stat-label">New (current)</div>
-          <div class="stat-detail">${createdTotal > 0 ? ((totalCounts.NEW || 0) / createdTotal * 100).toFixed(1) : 0}%</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${(totalCounts?.IN_PROGRESS || 0).toLocaleString()}</div>
-          <div class="stat-label">In Progress (current)</div>
-          <div class="stat-detail">${createdTotal > 0 ? ((totalCounts.IN_PROGRESS || 0) / createdTotal * 100).toFixed(1) : 0}%</div>
-        </div>
-      `;
-      // Data source indicator
+      const awaitingCustomerReview = sm.awaitingCustomerReview ?? 0;
+      const pct = (num, denom) => (denom > 0 ? ((num / denom) * 100).toFixed(1) : '0');
+      const pctSkipped = totalSuggestions > 0 ? pct(skippedByCustomer, totalSuggestions) : '0';
+      const pctRejected = totalSuggestions > 0 ? pct(sm.rejectedByEse ?? 0, totalSuggestions) : '0';
+      const pctFixedOpp = totalAvailable > 0 ? pct(fixedInPeriod, totalAvailable) : '0';
+      const pctFixedSug = totalSuggestions > 0 ? pct(suggestionsFixed, totalSuggestions) : '0';
+      const pctAwaitingCustomer = totalSuggestions > 0 ? pct(awaitingCustomerReview, totalSuggestions) : '0';
+      const pctAwaitingEse = totalSuggestions > 0 ? pct(sm.pendingValidation ?? 0, totalSuggestions) : '0';
+
+      // Data source label + staleness (built once for footer)
+      let dataSourceBlock = '';
       if (snapshotDate || source) {
         const sourceLabel = source === 'snapshot' ? `Data from snapshot (${snapshotDate})`
           : source === 'snapshot+live' ? `Snapshot ${snapshotDate} + live delta`
           : 'Live data';
-        portfolioStats.innerHTML += `
-          <div class="stat-card" style="background: #f9fafb; border: 1px dashed #d0d5dd;">
-            <div class="stat-value" style="font-size: 14px; color: #667085;">${sourceLabel}</div>
-            <div class="stat-label">Data Source</div>
-          </div>
-        `;
+        let staleWarning = '';
+        if (snapshotDate) {
+          const ageDays = Math.round((Date.now() - new Date(snapshotDate).getTime()) / 86400000);
+          if (ageDays > 7) {
+            staleWarning = `<div style="margin-top:6px;padding:6px 8px;background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;color:#92400e;font-size:12px;">`
+              + `Snapshot is ${ageDays} days old. Run <code>npm run snapshot:refresh</code> to update.</div>`;
+          }
+        } else if (source === 'live') {
+          staleWarning = `<div style="margin-top:6px;padding:6px 8px;background:#eff6ff;border:1px solid #93c5fd;border-radius:4px;color:#1e40af;font-size:12px;">`
+            + `Loaded live from SpaceCat. Generate a snapshot for faster loads: <code>npm run snapshot</code></div>`;
+        }
+        dataSourceBlock = `
+          <div class="portfolio-data-source-wrap">
+            <div class="stat-card" style="background: #f9fafb; border: 1px dashed #d0d5dd;">
+              <div class="stat-value" style="font-size: 14px; color: #667085;">${sourceLabel}</div>
+              <div class="stat-label">Data Source</div>
+              ${staleWarning}
+            </div>
+          </div>`;
       }
-      portfolioStats.style.display = 'grid';
 
-      // Trend chart — show both creation trend and status-change trend
+      // Scope line: "Metrics for: Last 7 days" with tooltip — one clear place so users know numbers are range-based
+      const rangeLabel = portfolioRange.options[portfolioRange.selectedIndex]?.text || `Last ${portfolioRange.value || 7} days`;
+      const scopeTooltip = 'In scope = opportunities created in this period, or created before and still open or updated in this period. All counts (suggestions and opportunities) use only in-scope opportunities.';
+      portfolioMetricsScope.innerHTML = `Metrics for: <span class="portfolio-scope-range">${rangeLabel}</span> <span class="info-bubble">?<span class="info-text">${scopeTooltip}</span></span>`;
+      portfolioMetricsScope.style.display = 'flex';
+
+      // Stat cards — grouped: Suggestions (primary) then Opportunities
+      portfolioStats.innerHTML = `
+        <div class="portfolio-stats-inner">
+          <section class="portfolio-stat-group portfolio-stat-group--suggestion" aria-label="Suggestion-level metrics">
+            <h3 class="portfolio-stat-group-title">Suggestions <span class="portfolio-stat-group-subtitle">(in scope for selected range)</span></h3>
+            <div class="stats-grid">
+              <div class="stat-card" style="border-left: 4px solid #10b981;">
+                <div class="stat-value">${suggestionsFixed.toLocaleString()}</div>
+                <div class="stat-label">Fixed</div>
+                <div class="stat-detail">${pctFixedSug}% of total</div>
+              </div>
+              <div class="stat-card" style="border-left: 4px solid #f59e0b;">
+                <div class="stat-value">${awaitingCustomerReview.toLocaleString()}</div>
+                <div class="stat-label">Awaiting Customer Review</div>
+                <div class="stat-detail">${pctAwaitingCustomer}% of total</div>
+              </div>
+              <div class="stat-card" style="border-left: 4px solid #6366f1;">
+                <div class="stat-value">${(sm.pendingValidation ?? 0).toLocaleString()}</div>
+                <div class="stat-label">Awaiting ESE Review</div>
+                <div class="stat-detail">${pctAwaitingEse}% of total</div>
+              </div>
+              <div class="stat-card" style="border-left: 4px solid #9ca3af;">
+                <div class="stat-value">${skippedByCustomer.toLocaleString()}</div>
+                <div class="stat-label">Skipped (by customer)</div>
+                <div class="stat-detail">${pctSkipped}% of total</div>
+              </div>
+              <div class="stat-card" style="border-left: 4px solid #e83e8c;">
+                <div class="stat-value">${(sm.rejectedByEse ?? 0).toLocaleString()}</div>
+                <div class="stat-label">Rejected (by ESE)</div>
+                <div class="stat-detail">${pctRejected}% of total</div>
+              </div>
+            </div>
+          </section>
+          <section class="portfolio-stat-group portfolio-stat-group--opportunity" aria-label="Opportunity-level metrics">
+            <h3 class="portfolio-stat-group-title">Opportunities <span class="portfolio-stat-group-subtitle">(in scope for selected range)</span></h3>
+            <div class="stats-grid">
+              <div class="stat-card" style="border-left: 4px solid #8b5cf6;">
+                <div class="stat-value">${totalAvailable.toLocaleString()}</div>
+                <div class="stat-label">Total Available</div>
+                <div class="stat-detail">In scope for this period</div>
+              </div>
+              <div class="stat-card" style="border-left: 4px solid #3b82f6;">
+                <div class="stat-value">${createdInPeriod.toLocaleString()}</div>
+                <div class="stat-label">Created in Period</div>
+                <div class="stat-detail">Across ${siteCount ?? '?'} sites</div>
+              </div>
+              <div class="stat-card" style="border-left: 4px solid #10b981;">
+                <div class="stat-value">${fixedInPeriod.toLocaleString()}</div>
+                <div class="stat-label">Fixed in Period</div>
+                <div class="stat-detail">${pctFixedOpp}% of total resolved</div>
+              </div>
+            </div>
+          </section>
+          ${dataSourceBlock}
+        </div>
+      `;
+      portfolioStats.style.display = 'block';
+
+      // Portfolio data is now displayed — hide global loading and error banners so they don't overlay the UI
+      hideLoading();
+      errorEl.style.display = 'none';
+
+      // Trend chart — show section first so Chart.js can measure container, then render
+      portfolioChartSection.style.display = 'block';
       const statuses = [
         { key: 'NEW', label: 'New', color: '#3b82f6' },
         { key: 'IN_PROGRESS', label: 'In Progress', color: '#f59e0b' },
         { key: 'RESOLVED', label: 'Resolved', color: '#10b981' },
-        { key: 'IGNORED', label: 'Ignored', color: '#6b7280' },
+        { key: 'IGNORED', label: 'Skipped / Ignored (by customer)', color: '#6b7280' },
       ];
       renderPortfolioChart(buckets, statuses);
-      portfolioChartSection.style.display = 'block';
     }
 
     async function renderPortfolioChart(buckets, statuses) {
+      const safeBuckets = Array.isArray(buckets) ? buckets : [];
+
+      // Ensure canvas exists (e.g. after a prior Chart.js load error that replaced wrap content)
+      let canvasEl = document.getElementById('portfolio-chart');
+      if (!canvasEl && portfolioChartWrap) {
+        canvasEl = document.createElement('canvas');
+        canvasEl.id = 'portfolio-chart';
+        portfolioChartWrap.innerHTML = '';
+        portfolioChartWrap.appendChild(canvasEl);
+      }
+      if (!canvasEl) return;
+
       // Dynamically load Chart.js if not already loaded
       if (typeof Chart === 'undefined') {
         try {
@@ -1571,19 +1829,19 @@
             document.head.appendChild(s);
           });
         } catch {
-          portfolioChart.innerHTML = '<p style="color:#999;">Could not load Chart.js</p>';
+          if (portfolioChartWrap) portfolioChartWrap.innerHTML = '<p style="color:#999;">Could not load Chart.js</p>';
           return;
         }
       }
 
       // Destroy previous chart instance if any
-      const existing = Chart.getChart(portfolioChart);
+      const existing = Chart.getChart(canvasEl);
       if (existing) existing.destroy();
 
-      const labels = buckets.map((b) => b.date);
-      const datasets = statuses.map((s) => ({
+      const labels = safeBuckets.map((b) => b.date);
+      const datasets = (statuses || []).map((s) => ({
         label: s.label,
-        data: buckets.map((b) => b.counts[s.key] || 0),
+        data: safeBuckets.map((b) => (b.counts && b.counts[s.key]) || 0),
         backgroundColor: s.color + '33',
         borderColor: s.color,
         borderWidth: 2,
@@ -1592,7 +1850,7 @@
         pointRadius: 2,
       }));
 
-      new Chart(portfolioChart, {
+      new Chart(canvasEl, {
         type: 'line',
         data: { labels, datasets },
         options: {
@@ -1616,6 +1874,29 @@
           },
         },
       });
+    }
+
+    /**
+     * Fetch and cache entitlements for the given org (one request per org).
+     * @param {string} orgId
+     * @param {string} token
+     * @returns {Promise<{ orgId: string, hasASO: boolean, hasPaidASO: boolean }>}
+     */
+    async function ensureOrgEntitlements(orgId, token) {
+      if (currentOrgEntitlements && currentOrgEntitlements.orgId === orgId) {
+        return currentOrgEntitlements;
+      }
+      const { ok, list } = await fetchOrganizationEntitlements(orgId, token);
+      if (!ok) {
+        currentOrgEntitlements = null;
+        return null;
+      }
+      currentOrgEntitlements = {
+        orgId,
+        hasASO: hasASOEntitlement(list),
+        hasPaidASO: hasPaidASOEntitlement(list),
+      };
+      return currentOrgEntitlements;
     }
 
     async function syncDropdownsToSiteId(siteId, token) {
@@ -1691,14 +1972,13 @@
       }
       
       currentSiteId = siteId;
-      // Sync dropdowns in background (don't block data loading)
-      syncDropdownsToSiteId(siteId).catch((err) => console.warn('[Sync] dropdown sync failed:', err));
       showLoading();
-      
+
       try {
         let data;
-        
+
         if (siteId === 'demo') {
+          currentOrgEntitlements = null;
           demoBanner.style.display = 'block';
           data = await loadMockData();
         } else {
@@ -1714,6 +1994,20 @@
           // Ensure global token is set for downstream calls
           if (!manualToken && imsToken) {
             setGlobalToken(imsToken);
+          }
+          // Sync dropdowns so we have org for entitlement check (one request per org)
+          await syncDropdownsToSiteId(siteId, token);
+          let orgId = customerSelect?.value || null;
+          if (!orgId && customerTree && siteId) {
+            const org = customerTree.find((c) =>
+              c.sites?.some((s) => s.siteId === siteId),
+            );
+            if (org) orgId = org.orgId;
+          }
+          if (orgId) {
+            await ensureOrgEntitlements(orgId, token);
+          } else {
+            currentOrgEntitlements = null;
           }
           data = await getSuggestionsForSite(siteId, token, forceRefresh);
         }
@@ -1735,6 +2029,13 @@
     function renderDashboard(data) {
       hideLoading();
       dashboardEl.classList.add('has-data');
+
+      // ASO entitlement banner: show when selected org does not have Sites Optimizer
+      const asoBanner = document.getElementById('aso-entitlement-banner');
+      if (asoBanner) {
+        const showNonAso = currentOrgEntitlements && !currentOrgEntitlements.hasASO;
+        asoBanner.style.display = showNonAso ? 'block' : 'none';
+      }
 
       // Show site/customer name
       const siteNameEl = document.getElementById('site-name');
@@ -1770,15 +2071,55 @@
         }
       }
 
-      // All-time metrics from ALL opportunities — used for snapshot cards
+      // Sync Include LLMO Data checkbox and wire change once
+      const oppIncludeLlmoCheckbox = document.getElementById('opp-include-llmo');
+      if (oppIncludeLlmoCheckbox) {
+        oppIncludeLlmoCheckbox.checked = getFilters().includeLlmoData;
+        if (!oppIncludeLlmoCheckbox.dataset.initialized) {
+          oppIncludeLlmoCheckbox.dataset.initialized = '1';
+          oppIncludeLlmoCheckbox.addEventListener('change', () => {
+            setIncludeLlmoData(oppIncludeLlmoCheckbox.checked);
+            if (currentData) renderDashboard(currentData);
+          });
+        }
+      }
+
+      const oppIncludeGenericCheckbox = document.getElementById('opp-include-generic');
+      if (oppIncludeGenericCheckbox) {
+        oppIncludeGenericCheckbox.checked = getFilters().includeGenericOpportunities;
+        if (!oppIncludeGenericCheckbox.dataset.initialized) {
+          oppIncludeGenericCheckbox.dataset.initialized = '1';
+          oppIncludeGenericCheckbox.addEventListener('change', () => {
+            setIncludeGenericOpportunities(oppIncludeGenericCheckbox.checked);
+            if (currentData) renderDashboard(currentData);
+          });
+        }
+      }
+
+      // Filter out LLMO-only opportunities when Include LLMO Data is unchecked
+      const includeLlmo = getFilters().includeLlmoData;
+      let opportunitiesForView = includeLlmo
+        ? data.opportunities
+        : data.opportunities.filter(opp => !isLlmoOnly(opp));
+      // Filter out generic-opportunity when Include Generic Opportunities is unchecked
+      if (!getFilters().includeGenericOpportunities) {
+        opportunitiesForView = opportunitiesForView.filter(
+          opp => (opp.type || '').toLowerCase() !== 'generic-opportunity',
+        );
+      }
+      // Exclude product-metatags and Commerce-tagged opportunities from all views
+      opportunitiesForView = opportunitiesForView.filter(opp => !isExcludedOpportunity(opp));
+
+      // All-time metrics from filtered opportunities — used for snapshot cards
       // (totals, pending, health, quality, breakdown, age, automation, staleness)
-      const allMetrics = calculateLifecycleMetrics(data.opportunities);
+      const allMetrics = calculateLifecycleMetrics(opportunitiesForView);
       const allHealthLabel = getHealthLabel(allMetrics.health.score);
 
       // Trend totals: suggestion-level date filtering (same as chart)
       // used for activity cards (Fixed, Rejected, Skipped, Outdated, Errors)
       const dateRange = getFilters().dateRange;
-      const trendTotals = getTrendTotals(data.opportunities, dateRange);
+      const trendTotals = getTrendTotals(opportunitiesForView, dateRange);
+      const opportunityCountsInRange = getOpportunityCountsInRange(opportunitiesForView, dateRange);
       if (window.__DEBUG_LIFECYCLE_FILTERS) {
         console.log('[Suggestion Lifecycle] Date filter applied (client-side only, no API call)', {
           dateRange: {
@@ -1793,14 +2134,14 @@
 
       renderHealthScore(allMetrics.health, allHealthLabel);
       renderQualityScore(allMetrics);
-      renderStatsGrid(allMetrics, trendTotals);
-      renderTrends(data.opportunities);
+      renderStatsGrid(allMetrics, trendTotals, opportunityCountsInRange);
+      renderTrends(opportunitiesForView);
       renderLifecycleBreakdown(allMetrics.suggestions);
-      renderAgeDistribution(data.opportunities);
+      renderAgeDistribution(opportunitiesForView);
       renderAutomation(allMetrics.automation);
       renderStaleness(allMetrics.staleness);
-      // Table receives ALL opportunities with date-filtered counts so pills/columns match the cards
-      const oppsWithDateCounts = data.opportunities.map(opp => ({
+      // Table receives filtered opportunities with date-filtered counts so pills/columns match the cards
+      const oppsWithDateCounts = opportunitiesForView.map(opp => ({
         ...opp,
         dateFilteredCounts: getDateFilteredCounts(opp, dateRange),
       }));
@@ -1843,7 +2184,7 @@
             </div>
             <div class="health-metric">
               <span class="health-metric-label">Skip Rate:
-                <span class="info-bubble">?<span class="info-text">Customer-skipped (SKIPPED) / terminal suggestions. ${m.skippedCount} of ${m.terminalCount} terminal. Target: below 5%.</span></span>
+                <span class="info-bubble">?<span class="info-text">Skipped by customer (SKIPPED) / terminal suggestions. ${m.skippedCount} of ${m.terminalCount} terminal. Target: below 5%.</span></span>
               </span>
               <span class="health-metric-value">${m.skipRate}%</span>
             </div>
@@ -1878,7 +2219,7 @@
           </h3>
           <div class="health-breakdown">
             <div class="health-metric">
-              <span class="health-metric-label">Rejection Rate:
+              <span class="health-metric-label">Rejection Rate (by ESE):
                 <span class="info-bubble">?<span class="info-text">REJECTED / total suggestions. ${m.rejectedCount} of ${m.totalSuggestions} rejected by ESE. Target: ≤3%.</span></span>
               </span>
               <span class="health-metric-value">${m.rejectionRate}%</span>
@@ -1901,55 +2242,62 @@
     }
 
     // Render stats grid
-    // metrics: all-time snapshot (from ALL opportunities) for totals, pending, etc.
-    // trendTotals: suggestion-level date filtering (matches chart) for activity cards
-    function renderStatsGrid(metrics, trendTotals) {
+    // metrics: all-time (used when no range); trendTotals + opportunityCountsInRange: in-range (when date set)
+    function renderStatsGrid(metrics, trendTotals, opportunityCountsInRange) {
       const container = document.getElementById('stats-grid');
       const { suggestions, fixes, opportunities, lifecycle } = metrics;
       const t = trendTotals || {};
+      const oppInRange = opportunityCountsInRange || {};
 
-      // Activity cards: from trendTotals (suggestion updatedAt in range) so they match the chart
+      const filters = getFilters();
+      const rangeLabels = { '7d': 'Last 7 days', '30d': 'Last 30 days', '90d': 'Last 90 days', 'all': 'All time' };
+      const rangeLabel = rangeLabels[filters.dateRange.preset] || 'Custom range';
+      const hasRange = !!(filters.dateRange.start || filters.dateRange.end);
+
+      // Activity cards: from trendTotals (suggestion updatedAt in range)
       const fixedCount = t.fixed ?? suggestions.fixedCount;
       const skippedCount = t.skipped ?? suggestions.skippedCount;
       const rejectedRawCount = t.rejected ?? suggestions.rejectedRawCount;
       const outdatedCount = t.outdated ?? suggestions.outdatedCount;
       const errorCount = t.error ?? (suggestions.errorCount || 0);
+      const awaitingCustomerReviewInRange = t.awaitingCustomerReview ?? suggestions.awaitingCustomerReviewCount;
       const terminalInRange = fixedCount + skippedCount + rejectedRawCount + outdatedCount + errorCount;
       const resolutionRateInRange = terminalInRange > 0 ? Math.round((fixedCount / terminalInRange) * 100) : suggestions.resolutionRate;
+      const pendingInRange = t.pending ?? suggestions.pendingCount;
+      const totalSuggestionsInRange = terminalInRange + pendingInRange;
 
-      // Date range label for the activity section
-      const filters = getFilters();
-      const rangeLabels = { '7d': 'Last 7 days', '30d': 'Last 30 days', '90d': 'Last 90 days', 'all': 'All time' };
-      const rangeLabel = rangeLabels[filters.dateRange.preset] || 'Custom range';
+      // Current State: date-filtered when hasRange (same semantics as Activity)
+      const totalOpps = hasRange ? (oppInRange.total ?? opportunities.total) : opportunities.total;
+      const openOpps = hasRange ? (oppInRange.open ?? lifecycle.activeOpportunities) : lifecycle.activeOpportunities;
+      const totalSug = hasRange ? totalSuggestionsInRange : suggestions.total;
+      const awaitingCustomerReviewCount = hasRange ? awaitingCustomerReviewInRange : (suggestions.awaitingCustomerReviewCount ?? 0);
+      const pendingValidationCount = hasRange ? (t.pendingValidation ?? suggestions.pendingValidationCount) : suggestions.pendingValidationCount;
+      const inProgressCount = hasRange ? (t.inProgress ?? suggestions.inProgressCount) : suggestions.inProgressCount;
 
-      // Snapshot cards: always all-time
       const snapshotStats = [
-        { label: 'Total Opportunities', value: opportunities.total, class: '', tip: 'All opportunities regardless of status.', drill: 'all' },
-        { label: 'Open Opportunities', value: lifecycle.activeOpportunities, class: '', tip: 'Opportunities with status NEW or IN_PROGRESS.', drill: 'open' },
-        { label: 'Total Suggestions', value: suggestions.total, class: '', tip: 'All suggestions across all opportunities.', drill: 'all' },
-        { label: 'Pending', value: suggestions.pendingCount, class: 'pending', tip: 'NEW + APPROVED + IN_PROGRESS + PENDING_VALIDATION.', drill: 'pending' },
+        { label: 'Total Opportunities', value: totalOpps, class: '', tip: hasRange ? 'Opportunities with activity in this period.' : 'All opportunities regardless of status.', drill: 'all' },
+        { label: 'Open Opportunities', value: openOpps, class: '', tip: hasRange ? 'Open (NEW/IN_PROGRESS) with activity in this period.' : 'Opportunities with status NEW or IN_PROGRESS.', drill: 'open' },
+        { label: 'Total Suggestions', value: totalSug, class: '', tip: hasRange ? 'Suggestions with activity in this period.' : 'All suggestions across all opportunities.', drill: 'all' },
+        { label: 'Awaiting Customer Review', value: awaitingCustomerReviewCount, class: 'pending', tip: 'NEW + APPROVED + IN_PROGRESS — ready for or in progress with customer.', drill: 'pending' },
       ];
-      if (suggestions.pendingCount > 0) {
-        if (suggestions.pendingValidationCount > 0) {
-          snapshotStats.push({ label: 'Pending Validation', value: suggestions.pendingValidationCount, class: 'pending', tip: 'PENDING_VALIDATION — awaiting ESE review.', drill: 'PENDING_VALIDATION' });
+      if (awaitingCustomerReviewCount > 0 || pendingValidationCount > 0) {
+        if (pendingValidationCount > 0) {
+          snapshotStats.push({ label: 'Awaiting ESE Review', value: pendingValidationCount, class: 'pending', tip: 'PENDING_VALIDATION — fix applied, awaiting ESE confirmation.', drill: 'PENDING_VALIDATION' });
         }
-        if (suggestions.awaitingActionCount > 0) {
-          snapshotStats.push({ label: 'Awaiting Action', value: suggestions.awaitingActionCount, class: 'pending', tip: 'NEW + APPROVED — ready for customer to act on.', drill: 'NEW' });
-        }
-        if (suggestions.inProgressCount > 0) {
-          snapshotStats.push({ label: 'In Progress', value: suggestions.inProgressCount, class: 'pending', tip: 'IN_PROGRESS — work underway.', drill: 'IN_PROGRESS' });
+        if (inProgressCount > 0) {
+          snapshotStats.push({ label: 'In Progress', value: inProgressCount, class: 'pending', tip: 'IN_PROGRESS — work underway.', drill: 'IN_PROGRESS' });
         }
       }
 
       // Activity cards: date-filtered to match chart
       const activityStats = [
         { label: 'Fixed', value: fixedCount, class: 'fixed', tip: 'Suggestions fixed in this period.', drill: 'FIXED' },
-        { label: 'Skipped / Ignored', value: skippedCount, class: 'ignored', tip: 'SKIPPED — customer chose to skip/ignore.', drill: 'SKIPPED' },
-        { label: 'Rejected', value: rejectedRawCount, class: 'rejected', tip: 'REJECTED — ESE flagged as false positive.', drill: 'REJECTED' },
+        { label: 'Skipped / Ignored (by customer)', value: skippedCount, class: 'ignored', tip: 'SKIPPED — customer chose to skip/ignore.', drill: 'SKIPPED' },
+        { label: 'Rejected (by ESE)', value: rejectedRawCount, class: 'rejected', tip: 'REJECTED — ESE flagged as false positive.', drill: 'REJECTED' },
         { label: 'Outdated', value: outdatedCount, class: 'noise', tip: 'OUTDATED — suggestion became irrelevant.', drill: 'OUTDATED' },
         { label: 'Resolution Rate', value: `${resolutionRateInRange}%`, class: 'fixed', tip: 'FIXED / terminal suggestions in this period.' },
       ];
-      if (errorCount > 0) {
+      if ((errorCount || 0) >= 1) {
         activityStats.splice(activityStats.length - 1, 0, { label: 'Errors', value: errorCount, class: 'rejected', tip: 'ERROR — autofix attempt failed.', drill: 'ERROR' });
       }
       if ((fixes.totalFixes || 0) > 0) {
@@ -1967,7 +2315,7 @@
       `).join('');
 
       container.innerHTML = `
-        <div class="section-label">Current State</div>
+        <div class="section-label">Current State${hasRange ? ` <span class="label-muted">(${rangeLabel})</span>` : ''}</div>
         <div class="stats-grid-inner">${renderCards(snapshotStats)}</div>
         <div class="section-label" style="margin-top:20px;">Activity <span class="label-muted">(${rangeLabel})</span></div>
         <div class="stats-grid-inner">${renderCards(activityStats)}</div>
@@ -2012,11 +2360,14 @@
       
       function pct(v) { return parseFloat(((v / total) * 100).toFixed(1)); }
       
+      const awaitingCustomerReview = suggestions.awaitingCustomerReviewCount
+        ?? (suggestions.pendingCount - (suggestions.pendingValidationCount || 0)) ?? 0;
       const bars = [
         { label: 'Fixed', value: suggestions.fixedCount, percent: pct(suggestions.fixedCount), class: 'deployed' },
-        { label: 'Pending', value: suggestions.pendingCount, percent: pct(suggestions.pendingCount), class: 'pending' },
-        { label: 'Skipped / Ignored', value: suggestions.skippedCount, percent: pct(suggestions.skippedCount), class: 'ignored' },
-        { label: 'Rejected', value: suggestions.rejectedRawCount, percent: pct(suggestions.rejectedRawCount), class: 'rejected-bar' },
+        { label: 'Awaiting Customer Review', value: awaitingCustomerReview, percent: pct(awaitingCustomerReview), class: 'pending' },
+        { label: 'Awaiting ESE Review', value: suggestions.pendingValidationCount || 0, percent: pct(suggestions.pendingValidationCount || 0), class: 'pending' },
+        { label: 'Skipped / Ignored (by customer)', value: suggestions.skippedCount, percent: pct(suggestions.skippedCount), class: 'ignored' },
+        { label: 'Rejected (by ESE)', value: suggestions.rejectedRawCount, percent: pct(suggestions.rejectedRawCount), class: 'rejected-bar' },
         { label: 'Outdated', value: suggestions.outdatedCount, percent: pct(suggestions.outdatedCount), class: 'outdated' },
       ];
       if ((suggestions.errorCount || 0) > 0) {
@@ -2169,7 +2520,11 @@
         case 'all':
           return opps;
         case 'pending':
-          return opps.filter(opp => (counts(opp).pendingCount || 0) > 0);
+          return opps.filter(opp => {
+            const c = counts(opp);
+            const aw = c.awaitingCustomerReviewCount ?? ((c.pendingCount || 0) - (c.pendingValidationCount || 0));
+            return (aw || 0) > 0;
+          });
         default: {
           const statusKey = {
             FIXED: 'fixedCount', SKIPPED: 'skippedCount', REJECTED: 'rejectedRawCount',
@@ -2211,8 +2566,16 @@
             valB = cb.fixedCount || 0;
             break;
           case 'pending':
-            valA = ca.pendingCount || 0;
-            valB = cb.pendingCount || 0;
+            valA = ca.awaitingCustomerReviewCount ?? Math.max(0, (ca.pendingCount || 0) - (ca.pendingValidationCount || 0));
+            valB = cb.awaitingCustomerReviewCount ?? Math.max(0, (cb.pendingCount || 0) - (cb.pendingValidationCount || 0));
+            break;
+          case 'pv':
+            valA = ca.pendingValidationCount || 0;
+            valB = cb.pendingValidationCount || 0;
+            break;
+          case 'skipped':
+            valA = ca.skippedCount || 0;
+            valB = cb.skippedCount || 0;
             break;
           case 'rejected':
             valA = ca.rejectedRawCount || 0;
@@ -2247,9 +2610,14 @@
       }
       const container = document.getElementById('opportunities-table');
 
-      // Render status filter pills
-      const statuses = ['open', 'all', 'resolved', 'FIXED', 'pending', 'SKIPPED', 'REJECTED', 'OUTDATED', 'ERROR'];
-      const statusLabels = { open: 'Open', all: 'All', resolved: 'Resolved / Ignored', FIXED: 'Fixed', pending: 'Pending', SKIPPED: 'Skipped', REJECTED: 'Rejected', OUTDATED: 'Outdated', ERROR: 'Errors' };
+      // Render status filter pills (show Errors only when at least one opportunity has errors)
+      const hasAnyErrors = (allOpportunities || []).some(opp => {
+        const c = opp.dateFilteredCounts || opp.suggestionsCounts || {};
+        return (c.errorCount || 0) >= 1;
+      });
+      const statuses = ['open', 'all', 'resolved', 'FIXED', 'pending', 'PENDING_VALIDATION', 'SKIPPED', 'REJECTED', 'OUTDATED']
+        .concat(hasAnyErrors ? ['ERROR'] : []);
+      const statusLabels = { open: 'Open', all: 'All', resolved: 'Resolved / Ignored', FIXED: 'Fixed', pending: 'Awaiting Customer Review', PENDING_VALIDATION: 'Awaiting ESE Review', SKIPPED: 'Skipped (by customer)', REJECTED: 'Rejected (by ESE)', OUTDATED: 'Outdated', ERROR: 'Errors' };
       const pillsHtml = statuses.map(s =>
         `<button class="filter-pill${tableStatusFilter === s ? ' active' : ''}" data-status="${s}">${statusLabels[s] || s}</button>`
       ).join('');
@@ -2284,23 +2652,29 @@
         const counts = opp.dateFilteredCounts || opp.suggestionsCounts || {};
         const total = counts.totalCount || 0;
         const totalDisplay = total === 0 ? '<span style="color:#999">0</span>' : total;
-        const deepLink = deepLinkOrgId
-          ? `https://experience.adobe.com/?organizationId=${deepLinkOrgId}#/@sitesinternal/sites-optimizer/sites/${opp.siteId || siteId}/opportunities/${opp.id || ''}`
-          : `https://experience.adobe.com/#/@sitesinternal/sites-optimizer/sites/${opp.siteId || siteId}/opportunities/${opp.id || ''}`;
+        const llmoOnly = isLlmoOnly(opp);
+        const deepLink = llmoOnly
+          ? ''
+          : (deepLinkOrgId
+            ? `https://experience.adobe.com/?organizationId=${deepLinkOrgId}#/@sitesinternal/sites-optimizer/sites/${opp.siteId || siteId}/opportunities/${opp.id || ''}`
+            : `https://experience.adobe.com/#/@sitesinternal/sites-optimizer/sites/${opp.siteId || siteId}/opportunities/${opp.id || ''}`);
         const ageTd = showAge
           ? `<td><span class="age-badge age-${calculateAgeBucket(opp.createdAt, opp.updatedAt, opp.status, 'opportunity')}">${calculateAgeBucket(opp.createdAt, opp.updatedAt, opp.status, 'opportunity')}</span></td>`
           : '';
         
+        const errorsTd = hasAnyErrors ? `<td>${counts.errorCount || 0}</td>` : '';
         return `
-          <tr class="opp-row" data-link="${deepLink}">
+          <tr class="opp-row${llmoOnly ? ' opp-row-no-link' : ''}" data-link="${deepLink}">
             <td><strong>${opp.type || 'Unknown'}</strong></td>
             <td><span class="status-badge status-${opp.status}">${opp.status}</span></td>
             ${ageTd}
             <td>${totalDisplay}</td>
             <td>${counts.fixedCount || 0}</td>
-            <td>${counts.pendingCount || 0}</td>
+            <td>${(counts.awaitingCustomerReviewCount ?? Math.max(0, (counts.pendingCount || 0) - (counts.pendingValidationCount || 0))) || 0}</td>
+            <td>${counts.pendingValidationCount || 0}</td>
+            <td>${counts.skippedCount || 0}</td>
             <td>${counts.rejectedRawCount || 0}</td>
-            <td>${counts.errorCount || 0}</td>
+            ${errorsTd}
             <td>${counts.outdatedCount || 0}</td>
             <td>${new Date(opp.createdAt).toLocaleDateString()}</td>
           </tr>
@@ -2317,9 +2691,11 @@
               ${showAge ? `<th data-sort="age">Age ${arrow('age')}</th>` : ''}
               <th data-sort="total">Total ${arrow('total')}</th>
               <th data-sort="fixed">Fixed ${arrow('fixed')}</th>
-              <th data-sort="pending" title="NEW + APPROVED + IN_PROGRESS + PENDING_VALIDATION">Pending ${arrow('pending')}</th>
-              <th data-sort="rejected">Rejected ${arrow('rejected')}</th>
-              <th data-sort="errors">Errors ${arrow('errors')}</th>
+              <th data-sort="pending" title="NEW + APPROVED + IN_PROGRESS">Awaiting Customer Review ${arrow('pending')}</th>
+              <th data-sort="pv" title="PENDING_VALIDATION">Awaiting ESE Review ${arrow('pv')}</th>
+              <th data-sort="skipped" title="SKIPPED — by customer">Skipped (by customer) ${arrow('skipped')}</th>
+              <th data-sort="rejected" title="REJECTED — by ESE">Rejected (by ESE) ${arrow('rejected')}</th>
+              ${hasAnyErrors ? `<th data-sort="errors">Errors ${arrow('errors')}</th>` : ''}
               <th data-sort="outdated">Outdated ${arrow('outdated')}</th>
               <th data-sort="created">Created ${arrow('created')}</th>
             </tr>
@@ -2344,11 +2720,11 @@
         });
       });
 
-      // Row click → deep link
+      // Row click → deep link (LLMO-only rows have no link)
       container.querySelectorAll('.opp-row').forEach(row => {
-        row.style.cursor = 'pointer';
+        const link = row.dataset.link;
+        row.style.cursor = link ? 'pointer' : 'default';
         row.addEventListener('click', () => {
-          const link = row.dataset.link;
           if (link) window.open(link, '_blank');
         });
       });
@@ -2411,14 +2787,15 @@
       portfolioCache = null; // force refresh
       loadPortfolioData();
     });
-    portfolioRange.addEventListener('change', () => {
-      portfolioCache = null;
-      loadPortfolioData();
-    });
-    portfolioScope.addEventListener('change', () => {
-      portfolioCache = null;
-      loadPortfolioData();
-    });
+    // Portfolio data updates only when Load is clicked; filter changes do not trigger a fetch
+    if (portfolioIncludeLlmo) {
+      portfolioIncludeLlmo.checked = getFilters().includeLlmoData;
+      portfolioIncludeLlmo.addEventListener('change', () => setIncludeLlmoData(portfolioIncludeLlmo.checked));
+    }
+    if (portfolioIncludeGeneric) {
+      portfolioIncludeGeneric.checked = getFilters().includeGenericOpportunities;
+      portfolioIncludeGeneric.addEventListener('change', () => setIncludeGenericOpportunities(portfolioIncludeGeneric.checked));
+    }
 
     // Event listeners
     loadBtn.addEventListener('click', () => loadData(false));

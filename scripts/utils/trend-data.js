@@ -103,6 +103,26 @@ export function buildTrendSeries(opportunities, metric, dateRange = {}, bucket =
       items = allSuggestions.filter((s) => s.status === 'OUTDATED');
       dateField = 'updatedAt';
       break;
+    case 'pending':
+      items = allSuggestions.filter((s) => ['NEW', 'APPROVED', 'IN_PROGRESS', 'PENDING_VALIDATION'].includes(s.status));
+      dateField = 'updatedAt';
+      break;
+    case 'awaiting_customer_review':
+      items = allSuggestions.filter((s) => ['NEW', 'APPROVED', 'IN_PROGRESS'].includes(s.status));
+      dateField = 'updatedAt';
+      break;
+    case 'pending_validation':
+      items = allSuggestions.filter((s) => s.status === 'PENDING_VALIDATION');
+      dateField = 'updatedAt';
+      break;
+    case 'awaiting_action':
+      items = allSuggestions.filter((s) => s.status === 'NEW' || s.status === 'APPROVED');
+      dateField = 'updatedAt';
+      break;
+    case 'in_progress':
+      items = allSuggestions.filter((s) => s.status === 'IN_PROGRESS');
+      dateField = 'updatedAt';
+      break;
     default:
       items = allSuggestions;
       dateField = 'createdAt';
@@ -156,18 +176,65 @@ export function buildTrendSeries(opportunities, metric, dateRange = {}, bucket =
  *
  * @param {Array} opportunities — enriched opportunities with suggestions
  * @param {{ start: Date|null, end: Date|null }} dateRange
- * @returns {{ created, fixed, rejected, skipped, outdated, error }}
+ * @returns {{ created, fixed, rejected, skipped, outdated, error, pending, ... }}
  */
 export function getTrendTotals(opportunities, dateRange = {}) {
-  const metrics = ['created', 'fixed', 'rejected', 'skipped', 'outdated', 'error'];
+  const metrics = [
+    'created', 'fixed', 'rejected', 'skipped', 'outdated', 'error',
+    'pending', 'awaiting_customer_review', 'pending_validation',
+    'awaiting_action', 'in_progress',
+  ];
   const totals = {
-    created: 0, fixed: 0, rejected: 0, skipped: 0, outdated: 0, error: 0,
+    created: 0,
+    fixed: 0,
+    rejected: 0,
+    skipped: 0,
+    outdated: 0,
+    error: 0,
+    pending: 0,
+    awaitingCustomerReview: 0,
+    pendingValidation: 0,
+    awaitingAction: 0,
+    inProgress: 0,
+  };
+  const metricToKey = {
+    pending_validation: 'pendingValidation',
+    awaiting_customer_review: 'awaitingCustomerReview',
+    awaiting_action: 'awaitingAction',
+    in_progress: 'inProgress',
   };
   metrics.forEach((metric) => {
     const series = buildTrendSeries(opportunities, metric, dateRange, 'day');
-    totals[metric] = series.reduce((sum, p) => sum + p.value, 0);
+    const sum = series.reduce((s, p) => s + p.value, 0);
+    const key = metricToKey[metric] ?? metric;
+    totals[key] = sum;
   });
   return totals;
+}
+
+/**
+ * Count opportunities that had suggestion activity (updatedAt) in the date range.
+ *
+ * @param {Array} opportunities — enriched opportunities with suggestions
+ * @param {{ start: Date|null, end: Date|null }} dateRange
+ * @returns {{ total: number, open: number }}
+ */
+export function getOpportunityCountsInRange(opportunities, dateRange = {}) {
+  if (!dateRange.start && !dateRange.end) {
+    const total = opportunities.length;
+    const open = opportunities.filter((o) => o.status === 'NEW' || o.status === 'IN_PROGRESS').length;
+    return { total, open };
+  }
+  let total = 0;
+  let open = 0;
+  opportunities.forEach((opp) => {
+    const counts = getDateFilteredCounts(opp, dateRange);
+    if ((counts.totalCount || 0) > 0) {
+      total++;
+      if (opp.status === 'NEW' || opp.status === 'IN_PROGRESS') open++;
+    }
+  });
+  return { total, open };
 }
 
 /**
@@ -196,6 +263,7 @@ export function getDateFilteredCounts(opp, dateRange = {}) {
     inProgressCount: 0,
     pendingValidationCount: 0,
     pendingCount: 0,
+    awaitingCustomerReviewCount: 0,
   };
 
   function inRange(d, start, end) {
@@ -228,6 +296,8 @@ export function getDateFilteredCounts(opp, dateRange = {}) {
 
   counts.pendingCount = counts.newCount + counts.approvedCount
     + counts.inProgressCount + counts.pendingValidationCount;
+  counts.awaitingCustomerReviewCount = counts.newCount + counts.approvedCount
+    + counts.inProgressCount;
   return counts;
 }
 

@@ -242,6 +242,7 @@ export function aggregateSuggestionsAcrossOpportunities(opportunities) {
     totalCount: 0,
     // Derived totals (recomputed after summing)
     pendingCount: 0,
+    awaitingCustomerReviewCount: 0,
     terminalCount: 0,
     opportunitiesWithSuggestions: 0,
     // Fix counts (from /fixes API)
@@ -279,6 +280,9 @@ export function aggregateSuggestionsAcrossOpportunities(opportunities) {
     + totals.approvedCount
     + totals.inProgressCount
     + totals.pendingValidationCount;
+  totals.awaitingCustomerReviewCount = totals.newCount
+    + totals.approvedCount
+    + totals.inProgressCount;
 
   totals.terminalCount = totals.fixedCount
     + totals.skippedCount
@@ -457,6 +461,7 @@ export function calculateLifecycleMetrics(opportunities) {
       total: totalSuggestions,
       fixedCount,
       pendingCount,
+      awaitingCustomerReviewCount: (newCount || 0) + (approvedCount || 0) + (inProgressCount || 0),
       // Pending sub-breakdown
       pendingValidationCount: pendingValidationCount || 0,
       awaitingActionCount: (newCount || 0) + (approvedCount || 0),

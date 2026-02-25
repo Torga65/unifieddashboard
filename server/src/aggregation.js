@@ -95,6 +95,26 @@ export function aggregateOpportunities(opportunities, from, to) {
     }
   }
 
+  // Sum suggestion-level counts when present (from snapshot)
+  let skippedByCustomer = 0;
+  let rejectedByEse = 0;
+  let pendingValidation = 0;
+  let awaitingCustomerReview = 0;
+  let suggestionsFixed = 0;
+  let totalSuggestions = 0;
+  for (const opp of opportunities) {
+    const sc = opp.suggestionCounts;
+    if (sc) {
+      skippedByCustomer += sc.skippedCount ?? 0;
+      rejectedByEse += sc.rejectedRawCount ?? 0;
+      pendingValidation += sc.pendingValidationCount ?? 0;
+      awaitingCustomerReview += (sc.newCount ?? 0) + (sc.approvedCount ?? 0)
+       + (sc.inProgressCount ?? 0);
+      suggestionsFixed += sc.fixedCount ?? 0;
+      totalSuggestions += sc.totalCount ?? 0;
+    }
+  }
+
   // Sort buckets by date ascending
   const buckets = Array.from(createdDayMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
@@ -112,6 +132,12 @@ export function aggregateOpportunities(opportunities, from, to) {
       createdInPeriod,
       fixedInPeriod,
       outdatedInPeriod,
+      skippedByCustomer,
+      rejectedByEse,
+      pendingValidation,
+      awaitingCustomerReview,
+      suggestionsFixed,
+      totalSuggestions,
     },
     statusChangeBuckets,
   };

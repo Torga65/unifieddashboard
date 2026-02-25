@@ -234,6 +234,7 @@ export function filterByASOTypes(opportunities, coreOnly = true) {
  *
  * Exposes per-status counts plus derived totals:
  *   pendingCount  = NEW + APPROVED + IN_PROGRESS + PENDING_VALIDATION
+ *   awaitingCustomerReviewCount = NEW + APPROVED + IN_PROGRESS (excludes PENDING_VALIDATION)
  *   rejectedTotal = SKIPPED + REJECTED
  *   terminalCount = FIXED + rejectedTotal + ERROR + OUTDATED
  *
@@ -293,6 +294,9 @@ export function aggregateSuggestionCounts(suggestions) {
     + counts.approvedCount
     + counts.inProgressCount
     + counts.pendingValidationCount;
+  counts.awaitingCustomerReviewCount = counts.newCount
+    + counts.approvedCount
+    + counts.inProgressCount;
 
   // Skipped/Ignored = customer chose to skip (SKIPPED status)
   // Rejected = ESE flagged as false positive (REJECTED status)
