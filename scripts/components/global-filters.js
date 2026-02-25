@@ -9,6 +9,8 @@ import {
   getFilters,
   setDateRange,
   setCustomer,
+  setIncludeLlmoData,
+  setIncludeGenericOpportunities,
 } from '../state/filter-state.js';
 
 /**
@@ -25,7 +27,7 @@ export function renderGlobalFilters(container, { customers = [], onFilterChange 
   container.innerHTML = `
     <div class="global-filters">
       <div class="filter-group">
-        <label for="gf-date-range">Date Range:</label>
+        <label for="gf-date-range">Date Range: <span class="info-bubble" title="How dates are used">?<span class="info-text">Created = when the suggestion was created; Fixed, Rejected, Skipped, etc. = when it was updated to that status.</span></span></label>
         <select id="gf-date-range">
           <option value="7d"  ${filters.dateRange.preset === '7d' ? 'selected' : ''}>Last 7 days</option>
           <option value="30d" ${filters.dateRange.preset === '30d' ? 'selected' : ''}>Last 30 days</option>
@@ -35,6 +37,14 @@ export function renderGlobalFilters(container, { customers = [], onFilterChange 
         </select>
         <input type="date" id="gf-date-from" class="gf-custom-date" value="${filters.dateRange.start ? filters.dateRange.start.toISOString().slice(0, 10) : ''}" style="display:${filters.dateRange.preset === 'custom' ? 'inline-block' : 'none'}"/>
         <input type="date" id="gf-date-to"   class="gf-custom-date" value="${filters.dateRange.end ? filters.dateRange.end.toISOString().slice(0, 10) : ''}" style="display:${filters.dateRange.preset === 'custom' ? 'inline-block' : 'none'}"/>
+        <label class="filter-group filter-group-inline" style="margin-left:12px;">
+          <input type="checkbox" id="gf-include-llmo" ${filters.includeLlmoData ? 'checked' : ''} />
+          Include LLMO Data
+        </label>
+        <label class="filter-group filter-group-inline" style="margin-left:12px;">
+          <input type="checkbox" id="gf-include-generic" ${filters.includeGenericOpportunities ? 'checked' : ''} />
+          Include Generic Opportunities
+        </label>
       </div>
       ${customers.length > 1 ? `
       <div class="filter-group">
@@ -76,6 +86,22 @@ export function renderGlobalFilters(container, { customers = [], onFilterChange 
   if (customerSel) {
     customerSel.addEventListener('change', () => {
       setCustomer(customerSel.value);
+      if (onFilterChange) onFilterChange(getFilters());
+    });
+  }
+
+  const includeLlmoCheckbox = container.querySelector('#gf-include-llmo');
+  if (includeLlmoCheckbox) {
+    includeLlmoCheckbox.addEventListener('change', () => {
+      setIncludeLlmoData(includeLlmoCheckbox.checked);
+      if (onFilterChange) onFilterChange(getFilters());
+    });
+  }
+
+  const includeGenericCheckbox = container.querySelector('#gf-include-generic');
+  if (includeGenericCheckbox) {
+    includeGenericCheckbox.addEventListener('change', () => {
+      setIncludeGenericOpportunities(includeGenericCheckbox.checked);
       if (onFilterChange) onFilterChange(getFilters());
     });
   }

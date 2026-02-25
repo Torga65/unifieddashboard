@@ -2,10 +2,68 @@
  * Organization & Site Discovery Service
  *
  * Discovers organizations and sites from SpaceCat.
+ * ASO entitlement helpers exist for on-demand checks; bulk filtering
+ * is not done at load to avoid N API calls.
  */
 
 import { ASO_ENDPOINTS } from '../constants/api.js';
 import { apiGet, isApiError } from './spacecat-api.js';
+
+const ASO_PRODUCT_CODE = 'ASO';
+const TIER_PAID = 'PAID';
+
+/**
+ * Fetch entitlements for an organization (Spacecat tier model).
+ *
+ * @param {string} orgId - SpaceCat organization ID
+ * @param {string} token
+ * @returns {Promise<{ ok: boolean, list: Array<{productCode, tier}> }>}
+ *   ok: false on API error (do not treat as "no ASO"); ok: true when response was successful.
+ */
+export async function fetchOrganizationEntitlements(orgId, token) {
+  const url = ASO_ENDPOINTS.ORGANIZATION_ENTITLEMENTS(orgId);
+  const response = await apiGet(url, token);
+
+  if (isApiError(response)) {
+    return { ok: false, list: [] };
+  }
+
+  const raw = Array.isArray(response)
+    ? response
+    : (response.entitlements || response.data || response.items || []);
+  const list = Array.isArray(raw) ? raw : [];
+  const normalized = list.map((e) => {
+    const code = (e.productCode || e.product_code || '').toString().trim();
+    const tier = (e.tier || e.tierCode || '').toString().toUpperCase().trim();
+    return { productCode: code, tier };
+  });
+  return { ok: true, list: normalized };
+}
+
+/**
+ * True if org has any ASO entitlement (Sites Optimizer).
+ *
+ * @param {Array<{productCode, tier}>} entitlements
+ * @returns {boolean}
+ */
+export function hasASOEntitlement(entitlements) {
+  return (entitlements || []).some(
+    (e) => (e.productCode || '').toUpperCase() === ASO_PRODUCT_CODE,
+  );
+}
+
+/**
+ * True if org has ASO with PAID tier.
+ *
+ * @param {Array<{productCode, tier}>} entitlements
+ * @returns {boolean}
+ */
+export function hasPaidASOEntitlement(entitlements) {
+  return (entitlements || []).some(
+    (e) => (e.productCode || '').toUpperCase() === ASO_PRODUCT_CODE
+      && (e.tier || '') === TIER_PAID,
+  );
+}
 
 /**
  * Fetch all SpaceCat organizations.
@@ -126,8 +184,11 @@ async function fetchAllSitesGrouped(token) {
 
 /**
  * Build a customer list with pre-populated sites.
- * Fetches /organizations and /sites in parallel, then joins them.
- * Only returns orgs that have at least one site.
+ * Fetches /organizations and /sites in parallel; returns only orgs that have at least one site.
+ *
+ * ASO filtering is not applied here to avoid N entitlement requests (one per org).
+ * Use fetchOrganizationEntitlements + hasASOEntitlement/hasPaidASOEntitlement for
+ * on-demand checks (e.g. when user selects an org) or when a bulk/filtered API exists.
  *
  * @param {string} token - SpaceCat API key or IMS access token
  * @returns {Promise<Array<{orgId, orgName, imsOrgId, sites: Array}>>}
@@ -139,7 +200,6 @@ export async function buildCustomerSiteTree(token) {
   ]);
 
   if (sitesMap) {
-    // Join: only include orgs that have sites, and pre-populate their sites
     return spacecatOrgs
       .filter((sc) => {
         const sites = sitesMap.get(sc.orgId);
@@ -148,6 +208,5 @@ export async function buildCustomerSiteTree(token) {
       .map((sc) => ({ ...sc, sites: sitesMap.get(sc.orgId) }));
   }
 
-  // Fallback if /sites failed — return all orgs, lazy-load sites later
   return spacecatOrgs.map((sc) => ({ ...sc, sites: [] }));
 }

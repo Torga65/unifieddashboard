@@ -57,6 +57,57 @@ async function fetchOrgSites(orgId, token) {
   return sites.map((s) => s.id || s.siteId);
 }
 
+/** LLMO-only opportunity types when no isElmo/isASO tags. */
+const LLMO_ONLY_TYPES = new Set(['prerender', 'readability', 'summarization', 'llm-blocked']);
+
+/**
+ * @param {Object} opp - Opportunity with tags (string[]) and type (string)
+ * @returns {boolean} True if LLMO-only (exclude when includeLlmo is false)
+ */
+function isLlmoOnly(opp) {
+  const tags = Array.isArray(opp.tags) ? opp.tags : [];
+  const hasElmo = tags.includes('isElmo');
+  const hasAso = tags.includes('isASO');
+  const type = (opp.type || '').toLowerCase();
+  if (hasElmo && hasAso) return false;
+  if (hasAso && !hasElmo) return false;
+  if (hasElmo && !hasAso) return true;
+  return LLMO_ONLY_TYPES.has(type);
+}
+
+/**
+ * @param {Array} opportunities
+ * @param {boolean} includeLlmo - When false, filter out LLMO-only
+ * @returns {Array}
+ */
+function filterByLlmo(opportunities, includeLlmo) {
+  if (includeLlmo) return opportunities;
+  return opportunities.filter((o) => !isLlmoOnly(o));
+}
+
+/** Exclude product-metatags type and Commerce-tagged opportunities from all views. */
+function isExcludedOpportunity(opp) {
+  const type = (opp.type || '').toLowerCase();
+  if (type === 'product-metatags') return true;
+  const tags = Array.isArray(opp.tags) ? opp.tags : [];
+  if (tags.includes('Commerce')) return true;
+  return false;
+}
+
+function filterOutExcluded(opportunities) {
+  return opportunities.filter((o) => !isExcludedOpportunity(o));
+}
+
+/**
+ * @param {Array} opportunities
+ * @param {boolean} includeGeneric - When false, filter out generic-opportunity type
+ * @returns {Array}
+ */
+function filterByGeneric(opportunities, includeGeneric) {
+  if (includeGeneric) return opportunities;
+  return opportunities.filter((o) => (o.type || '').toLowerCase() !== 'generic-opportunity');
+}
+
 /**
  * Fetch all opportunities for a single site.
  */
@@ -127,8 +178,10 @@ router.get('/opportunity-metrics', async (req, res) => {
   }
 
   const {
-    orgId, siteIds: siteIdsParam, siteScope, from, to,
+    orgId, siteIds: siteIdsParam, siteScope, from, to, includeLlmo, includeGeneric,
   } = req.query;
+  const includeLlmoData = includeLlmo === '1' || includeLlmo === 'true';
+  const includeGenericData = includeGeneric === '1' || includeGeneric === 'true';
 
   if (!from || !to) {
     return res.status(400).json({ error: '`from` and `to` query params are required (YYYY-MM-DD)' });
@@ -178,45 +231,54 @@ router.get('/opportunity-metrics', async (req, res) => {
     return res.json({ buckets: [], totalCounts: {}, siteCount: 0 });
   }
 
-  // Check aggregation cache
-  const cacheKey = `metrics:${scope}:${from}:${to}`;
+  // Check aggregation cache (include llmo and generic flags in key)
+  const cacheKey = `metrics:${scope}:${from}:${to}:llmo=${includeLlmoData}:generic=${includeGenericData}`;
   const cached = cacheGet(cacheKey);
   if (cached) {
     console.log(`[Portfolio] Cache hit for ${cacheKey}`);
     return res.json(cached);
   }
 
-  // ---- Snapshot fast-path for global scope ----
-  const snapshot = scope === 'global' ? getSnapshot() : null;
+  // ---- Snapshot fast-path (works for global, orgId, and custom scopes) ----
+  const snapshot = getSnapshot();
 
   if (snapshot) {
-    // Use snapshot data — no live SpaceCat calls needed for the historical portion.
-    // If the requested range extends beyond the snapshot date, fetch a live delta.
-    const { snapshotDate } = snapshot; // 'YYYY-MM-DD'
+    const { snapshotDate } = snapshot;
     const startTime = Date.now();
 
-    let allOpps = snapshot.opportunities;
+    let allOpps;
+    if (scope === 'global') {
+      allOpps = snapshot.opportunities;
+    } else {
+      const siteIdSet = new Set(siteIds);
+      allOpps = snapshot.opportunities.filter((o) => siteIdSet.has(o.siteId));
+    }
+
+    allOpps = filterOutExcluded(allOpps);
+
     let source = 'snapshot';
 
-    if (to > snapshotDate) {
-      // Need live data for the delta period (snapshotDate+1 .. to)
+    // Optional: set PORTFOLIO_FETCH_LIVE_DELTA=1 to merge live data
+    // when range extends past snapshot
+    if (process.env.PORTFOLIO_FETCH_LIVE_DELTA === '1' && to > snapshotDate) {
       console.log(`[Portfolio] Snapshot covers up to ${snapshotDate}, fetching live delta for ${snapshotDate} → ${to}`);
       const liveOpps = await fetchOpportunitiesForSites(siteIds, token);
-      // Merge: use snapshot opps + any live opps not already in snapshot (by id)
       const snapshotIds = new Set(allOpps.map((o) => o.id));
       const deltaOpps = liveOpps.filter((o) => !snapshotIds.has(o.id));
-      // Also update existing opps whose status may have changed since snapshot
       const liveById = new Map(liveOpps.map((o) => [o.id, o]));
       allOpps = allOpps.map((o) => liveById.get(o.id) || o);
       allOpps.push(...deltaOpps);
       source = 'snapshot+live';
     }
 
+    allOpps = filterByLlmo(allOpps, includeLlmoData);
+    allOpps = filterByGeneric(allOpps, includeGenericData);
+
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(`[Portfolio] Aggregating ${allOpps.length} opportunities (source: ${source}) in ${elapsed}s`);
+    console.log(`[Portfolio] Aggregating ${allOpps.length} opportunities (source: ${source}, scope: ${scope}, includeLlmo: ${includeLlmoData}, includeGeneric: ${includeGenericData}) in ${elapsed}s`);
 
     const result = aggregateOpportunities(allOpps, from, to);
-    result.siteCount = snapshot.siteCount;
+    result.siteCount = scope === 'global' ? snapshot.siteCount : siteIds.length;
     result.snapshotDate = snapshotDate;
     result.source = source;
 
@@ -224,12 +286,16 @@ router.get('/opportunity-metrics', async (req, res) => {
     return res.json(result);
   }
 
-  // ---- Live fetch (no snapshot available, or single-org scope) ----
+  // ---- Live fetch (no snapshot available) ----
   const startTime = Date.now();
   console.log(`[Portfolio] Fetching opportunities for ${siteIds.length} sites (live)...`);
-  const allOpps = await fetchOpportunitiesForSites(siteIds, token);
+  let allOpps = await fetchOpportunitiesForSites(siteIds, token);
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   console.log(`[Portfolio] Fetched ${allOpps.length} total opportunities in ${elapsed}s`);
+
+  allOpps = filterOutExcluded(allOpps);
+  allOpps = filterByLlmo(allOpps, includeLlmoData);
+  allOpps = filterByGeneric(allOpps, includeGenericData);
 
   const result = aggregateOpportunities(allOpps, from, to);
   result.siteCount = siteIds.length;

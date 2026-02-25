@@ -16,6 +16,7 @@ export const ASO_ENDPOINTS = {
   ORGANIZATIONS: () => `${SPACECAT_API_BASE}/organizations`,
   ORGANIZATION: (orgId) => `${SPACECAT_API_BASE}/organizations/${orgId}`,
   ORGANIZATION_SITES: (orgId) => `${SPACECAT_API_BASE}/organizations/${orgId}/sites`,
+  ORGANIZATION_ENTITLEMENTS: (orgId) => `${SPACECAT_API_BASE}/organizations/${orgId}/entitlements`,
 
   // Sites
   SITES: () => `${SPACECAT_API_BASE}/sites`,
@@ -46,8 +47,8 @@ export const SUGGESTION_STATUS = {
   IN_PROGRESS: 'IN_PROGRESS', // Fix is underway
   PENDING_VALIDATION: 'PENDING_VALIDATION', // Fix applied, awaiting confirmation
   FIXED: 'FIXED', // Fix deployed and confirmed
-  SKIPPED: 'SKIPPED', // Customer chose not to act (UI: "Rejected")
-  REJECTED: 'REJECTED', // Explicitly rejected (UI: "Rejected")
+  SKIPPED: 'SKIPPED', // Customer chose not to act (by customer). UI: "Skipped"
+  REJECTED: 'REJECTED', // ESE false positive (by ESE). UI: "Rejected"
   ERROR: 'ERROR', // Autofix attempt failed
   OUTDATED: 'OUTDATED', // No longer relevant
 };

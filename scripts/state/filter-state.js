@@ -19,6 +19,8 @@ const _state = {
   },
   customerId: 'all', // orgId string or 'all'
   siteId: 'all', // siteId string or 'all'
+  includeLlmoData: false, // when false, exclude LLMO-only opportunities
+  includeGenericOpportunities: false, // when false, exclude type === 'generic-opportunity'
 };
 
 /* ------------------------------------------------------------------ */
@@ -54,6 +56,8 @@ function writeToURL() {
   params.set('range', _state.dateRange.preset);
   if (_state.customerId !== 'all') params.set('customer', _state.customerId); else params.delete('customer');
   if (_state.siteId !== 'all') params.set('site', _state.siteId); else params.delete('site');
+  if (_state.includeLlmoData) params.set('llmo', '1'); else params.delete('llmo');
+  if (_state.includeGenericOpportunities) params.set('generic', '1'); else params.delete('generic');
   if (_state.dateRange.preset === 'custom' && _state.dateRange.start) {
     params.set('from', _state.dateRange.start.toISOString().slice(0, 10));
   } else {
@@ -83,6 +87,8 @@ function readFromURL() {
   }
   _state.customerId = params.get('customer') || 'all';
   _state.siteId = params.get('site') || 'all';
+  _state.includeLlmoData = params.get('llmo') === '1';
+  _state.includeGenericOpportunities = params.get('generic') === '1';
 }
 
 // Hydrate from URL on module load
@@ -96,7 +102,10 @@ function notify() {
   writeToURL();
   const snapshot = getFilters();
   _listeners.forEach((fn) => {
-    try { fn(snapshot); } catch (e) { console.error('[FilterState] listener error', e); }
+    try { fn(snapshot); } catch (e) {
+      // eslint-disable-next-line no-console -- intentional: isolate listener errors
+      console.error('[FilterState] listener error', e);
+    }
   });
 }
 
@@ -104,13 +113,28 @@ function notify() {
 /*  Public API                                                         */
 /* ------------------------------------------------------------------ */
 
-/** @returns {{ dateRange, customerId, siteId }} Immutable snapshot */
+/**
+ * @returns {{ dateRange, customerId, siteId, includeLlmoData, includeGenericOpportunities }}
+ *   Immutable snapshot of current filters.
+ */
 export function getFilters() {
   return {
     dateRange: { ..._state.dateRange },
     customerId: _state.customerId,
     siteId: _state.siteId,
+    includeLlmoData: _state.includeLlmoData,
+    includeGenericOpportunities: _state.includeGenericOpportunities,
   };
+}
+
+export function setIncludeLlmoData(value) {
+  _state.includeLlmoData = Boolean(value);
+  notify();
+}
+
+export function setIncludeGenericOpportunities(value) {
+  _state.includeGenericOpportunities = Boolean(value);
+  notify();
 }
 
 export function setDateRange(preset, customStart = null, customEnd = null) {
