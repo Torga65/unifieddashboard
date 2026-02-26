@@ -258,7 +258,8 @@ main .section.highlight {
 
 /* ===== portfolio: single authoritative override =====
    This is a flex-first layout that stacks on small screens.
-*/
+   BEM-style class names (pf-row--scope) intentionally used. */
+/* stylelint-disable selector-class-pattern */
 #portfolio-view .portfolio-controls-bar {
   box-sizing: border-box;
 }
@@ -291,6 +292,7 @@ main .section.highlight {
   white-space: nowrap;
   margin: 0;
 }
+
 #portfolio-view .pf-field .pf-select {
   width: 100%;
   min-width: 0;
@@ -302,20 +304,23 @@ main .section.highlight {
 }
 
 /* On wide screens, render fields side-by-side but keep label+select visually grouped */
-@media (min-width: 900px) {
+@media (width >= 900px) {
   #portfolio-view .pf-row--scope {
     align-items: center;
   }
+
   /* Make label and select appear side-by-side: fixed label width, select grows */
   #portfolio-view .pf-row--scope .pf-field {
     flex-direction: row;
     align-items: center;
     gap: 12px;
   }
+
   #portfolio-view .pf-field .pf-label {
     flex: 0 0 92px;
     margin: 0;
   }
+
   #portfolio-view .pf-field .pf-select {
     flex: 1 1 auto;
     width: auto;
@@ -331,23 +336,40 @@ main .section.highlight {
   padding-top: 16px;
   box-sizing: border-box;
 }
-#portfolio-view .pf-row--options .pf-field--range { flex: 0 0 auto; min-width: 140px; }
+
+#portfolio-view .pf-row--options .pf-field--range {
+  flex: 0 0 auto;
+  min-width: 140px;
+}
 
 /* Toggles cluster and load button */
-#portfolio-view .pf-toggles { display: flex; gap: 16px; align-items: center; }
-#portfolio-view .pf-load-btn { margin-left: auto; min-width: 88px; }
+#portfolio-view .pf-toggles {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+#portfolio-view .pf-load-btn {
+  margin-left: auto;
+  min-width: 88px;
+}
 
 /* Small screens: stack scope fields and compress spacing */
-@media (max-width: 680px) {
+@media (width <= 680px) {
   #portfolio-view .pf-row--scope {
     flex-direction: column;
     gap: 12px;
     align-items: stretch;
   }
+
   #portfolio-view .pf-row--scope .pf-field {
     flex-direction: column;
   }
-  #portfolio-view .pf-field .pf-label { white-space: normal; }
+
+  #portfolio-view .pf-field .pf-label {
+    white-space: normal;
+  }
+
   #portfolio-view .pf-row--options {
     flex-wrap: wrap;
     gap: 20px;
@@ -364,6 +386,8 @@ main .section.highlight {
   flex: 1 1 100%;
   width: 100%;
 }
+
+/* stylelint-enable selector-class-pattern */
 
 /* Ensure selects have a comfortable, consistent height */
 #portfolio-view .portfolio-controls-bar .pf-select,
