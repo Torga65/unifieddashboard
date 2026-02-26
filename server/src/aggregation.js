@@ -24,6 +24,18 @@ const OPEN_STATUSES = new Set(['NEW', 'IN_PROGRESS']);
  * @param {string} to   - Inclusive end date   'YYYY-MM-DD'.
  * @returns {Object} Aggregated metrics.
  */
+/** Suggestion statuses for "moved to" counts. */
+const SUG_FIXED = 'FIXED';
+const SUG_SKIPPED = 'SKIPPED';
+const SUG_REJECTED = 'REJECTED';
+const SUG_PENDING_VALIDATION = 'PENDING_VALIDATION';
+const SUG_NEW = 'NEW';
+const SUG_APPROVED = 'APPROVED';
+const SUG_IN_PROGRESS = 'IN_PROGRESS';
+const SUG_OUTDATED = 'OUTDATED';
+const SUG_ERROR = 'ERROR';
+const AWAITING_CUSTOMER_REVIEW = new Set([SUG_NEW, SUG_APPROVED, SUG_IN_PROGRESS]);
+
 export function aggregateOpportunities(opportunities, from, to) {
   // ---- Buckets by createdAt (existing behavior) ----
   /** @type {Map<string, Object>} date → { [status]: count } */
@@ -41,7 +53,11 @@ export function aggregateOpportunities(opportunities, from, to) {
   /** @type {Map<string, Object>} date → { RESOLVED: n, IGNORED: n } */
   const statusChangeDayMap = new Map();
 
-  for (const opp of opportunities) {
+  /** Indices of opportunities that are "in scope" for the date range (for suggestion sums). */
+  const inScopeIndices = new Set();
+
+  for (let i = 0; i < opportunities.length; i++) {
+    const opp = opportunities[i];
     if (!opp.createdAt || !opp.status) continue;
 
     const createdDate = opp.createdAt.slice(0, 10);
@@ -64,12 +80,14 @@ export function aggregateOpportunities(opportunities, from, to) {
     // Rule 1: Created during the period (any status)
     if (isCreatedInPeriod) {
       totalAvailable++;
+      inScopeIndices.add(i);
     } else if (createdDate < from) {
       // Rule 2: Created before period, but was open at period start
       const isCurrentlyOpen = OPEN_STATUSES.has(status);
       const statusChangedAfterStart = updatedDate && updatedDate >= from;
       if (isCurrentlyOpen || statusChangedAfterStart) {
         totalAvailable++;
+        inScopeIndices.add(i);
       }
     }
 
@@ -95,25 +113,64 @@ export function aggregateOpportunities(opportunities, from, to) {
     }
   }
 
-  // Sum suggestion-level counts when present (from snapshot)
+  // Sum suggestion-level counts only for in-scope opportunities (from snapshot)
   let skippedByCustomer = 0;
   let rejectedByEse = 0;
   let pendingValidation = 0;
   let awaitingCustomerReview = 0;
   let suggestionsFixed = 0;
   let totalSuggestions = 0;
-  for (const opp of opportunities) {
+  let movedToFixed = 0;
+  let movedToAwaitingCustomerReview = 0;
+  let movedToAwaitingEseReview = 0;
+  let movedToSkipped = 0;
+  let movedToRejected = 0;
+  let movedToOutdated = 0;
+  let movedToError = 0;
+
+  for (let i = 0; i < opportunities.length; i++) {
+    if (!inScopeIndices.has(i)) continue;
+    const opp = opportunities[i];
     const sc = opp.suggestionCounts;
     if (sc) {
       skippedByCustomer += sc.skippedCount ?? 0;
       rejectedByEse += sc.rejectedRawCount ?? 0;
       pendingValidation += sc.pendingValidationCount ?? 0;
       awaitingCustomerReview += (sc.newCount ?? 0) + (sc.approvedCount ?? 0)
-       + (sc.inProgressCount ?? 0);
+        + (sc.inProgressCount ?? 0);
       suggestionsFixed += sc.fixedCount ?? 0;
       totalSuggestions += sc.totalCount ?? 0;
     }
+
+    // "Moved to" counts: updatedAt in [from, to], else createdAt when missing
+    const states = opp.suggestionStates;
+    if (Array.isArray(states)) {
+      for (const { s: sugStatus, u: upd, c: created } of states) {
+        const dateInRange = (upd && upd >= from && upd <= to)
+          ? true
+          : (!upd && created && created >= from && created <= to);
+        if (!dateInRange) continue;
+        switch (sugStatus) {
+          case SUG_FIXED: movedToFixed++; break;
+          case SUG_SKIPPED: movedToSkipped++; break;
+          case SUG_REJECTED: movedToRejected++; break;
+          case SUG_PENDING_VALIDATION: movedToAwaitingEseReview++; break;
+          case SUG_OUTDATED: movedToOutdated++; break;
+          case SUG_ERROR: movedToError++; break;
+          default:
+            if (AWAITING_CUSTOMER_REVIEW.has(sugStatus)) movedToAwaitingCustomerReview++;
+            break;
+        }
+      }
+    }
   }
+
+  const movedToCustomerEngagement = movedToSkipped + movedToFixed;
+  const customerEngagement = skippedByCustomer + suggestionsFixed;
+
+  // Suggestions with status change in period — denominator so "moved to" % add up to 100%
+  const totalCreatedOrUpdatedInPeriod = movedToFixed + movedToAwaitingCustomerReview
+    + movedToAwaitingEseReview + movedToSkipped + movedToRejected + movedToOutdated + movedToError;
 
   // Sort buckets by date ascending
   const buckets = Array.from(createdDayMap.entries())
@@ -138,6 +195,16 @@ export function aggregateOpportunities(opportunities, from, to) {
       awaitingCustomerReview,
       suggestionsFixed,
       totalSuggestions,
+      customerEngagement,
+      movedToFixed,
+      movedToAwaitingCustomerReview,
+      movedToAwaitingEseReview,
+      movedToSkipped,
+      movedToRejected,
+      movedToOutdated,
+      movedToError,
+      movedToCustomerEngagement,
+      totalCreatedOrUpdatedInPeriod,
     },
     statusChangeBuckets,
   };

@@ -8,7 +8,8 @@
     "dev": "nodemon src/server.js",
     "test": "node --test test/*.test.js",
     "snapshot": "node scripts/snapshot.js",
-    "snapshot:refresh": "node scripts/snapshot.js && curl -s -X POST http://localhost:3001/api/snapshot/reload && echo ' Snapshot reloaded.'"
+    "snapshot:refresh": "node scripts/snapshot.js && curl -s -X POST http://localhost:3001/api/snapshot/reload && echo ' Snapshot reloaded.'",
+    "snapshot:customers": "node scripts/snapshot-customers.js"
   },
   "dependencies": {
     "axios": "^1.7.0",

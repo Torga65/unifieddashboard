@@ -6,7 +6,7 @@
   <meta name="description" content="Track ASO suggestion deployment, rejection rates, and lifecycle metrics"/>
   <script src="/scripts/aem.js" type="module"></script>
   <script src="/scripts/scripts.js" type="module"></script>
-  <link rel="stylesheet" href="/styles/styles.css"/>
+  <link rel="stylesheet" href="styles/styles.css"/>
   <style>
     * {
       box-sizing: border-box;
@@ -197,37 +197,254 @@
     body[data-view="site"] #selector-row.visible { display: flex; }
     body[data-view="site"] #dev-manual-site.visible { display: block; }
 
-    /* Portfolio view: show portfolio panel; keep Load Data / Refresh / Export visible on both views */
+    /* Portfolio view: show portfolio panel only; hide Site-view selector and actions */
     body[data-view="portfolio"] #portfolio-view  { display: block; }
-    /* Token + customer/site selectors work on both views — show when .visible */
-    body[data-view="portfolio"] #selector-row.visible { display: flex; }
-    body[data-view="portfolio"] #dev-manual-site.visible { display: block; }
+    body[data-view="portfolio"] #selector-row.visible { display: none; }
+    body[data-view="portfolio"] #site-actions-row { display: none; }
+    body[data-view="portfolio"] #dev-manual-site.visible { display: none; }
 
-    /* Portfolio view */
+    /* Portfolio view — control bar */
     .portfolio-header {
+      margin-bottom: 20px;
+    }
+    .portfolio-header h2 {
+      margin: 0 0 12px 0;
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .portfolio-controls-bar {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 18px 22px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .pf-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-      gap: 12px;
+      gap: 16px;
     }
-    .portfolio-header h2 { margin: 0; font-size: 20px; }
-    .portfolio-controls {
+    .pf-field {
       display: flex;
       align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
+      gap: 10px;
+      min-width: 0;
     }
-    .portfolio-controls label { font-weight: 600; font-size: 14px; }
-    .portfolio-controls select {
-      padding: 8px 12px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 14px;
-      background: #fff;
+    .pf-field--range { flex: 0 0 auto; }
+    .pf-label {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.4;
+      color: #64748b;
+      white-space: nowrap;
+      flex-shrink: 0;
+      min-width: 38px;
     }
-    
+    .pf-select {
+      flex: 1 1 0;
+      min-width: 0;
+      margin: 0;
+      padding: 8px 30px 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 1.4;
+      color: #1e293b;
+      background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%2364748b' d='M5 7L0 2h10z'/%3E%3C/svg%3E") no-repeat right 10px center;
+      background-size: 10px;
+      appearance: none;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .pf-field--range .pf-select { flex: 0 0 auto; min-width: 130px; }
+    .pf-select:hover { border-color: #94a3b8; }
+    .pf-select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.18); }
+    .pf-field--range { margin-right: 0; }
+    .pf-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #475569;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .pf-toggle input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      margin: 0;
+      padding: 0;
+      accent-color: #3b82f6;
+      cursor: pointer;
+      font: initial;
+    }
+    .pf-load-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 0 0 auto;
+      padding: 8px 24px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.4;
+      color: #fff;
+      background: #3b82f6;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.05s;
+      white-space: nowrap;
+      text-overflow: unset;
+      overflow: visible;
+      max-width: none;
+    }
+    .pf-load-btn:hover,
+    .pf-load-btn:focus { background: #2563eb; }
+    .pf-load-btn:active { transform: translateY(1px); }
+    .pf-load-btn:focus { outline: none; box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
+
+    /* ===== Portfolio view overrides (scoped to #portfolio-view)
+       Replaced older conflicting rules with a single authoritative block.
+       - Scope + Site: side-by-side on wide screens, stacked on small
+       - Removes calc(50% - 12px) flex-basis that collapsed fields
+       - Increases gap between Range, checkboxes, and Load
+       - Scoped rules to beat global styles.css and keep good mobile fallback
+    */
+    #portfolio-view .portfolio-controls-bar {
+      /* ensure scoping of small tweaks */
+      box-sizing: border-box;
+    }
+
+    /* Layout for the scope row: label + select pairs in two columns */
+    #portfolio-view .pf-row--scope {
+      display: grid !important;
+      grid-template-columns: 92px 1fr 92px 1fr; /* label / select | label / select */
+      column-gap: 24px;
+      row-gap: 12px;
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* Force pf-fields to behave as grid items rather than flex children */
+    #portfolio-view .pf-row--scope .pf-field--scope,
+    #portfolio-view .pf-row--scope .pf-field--site {
+      /* cancel earlier flex-basis / calc rules that come from styles.css */
+      flex: 0 0 auto !important;
+      max-width: none !important;
+      min-width: 240px !important; /* sensible minimum to avoid collapse */
+      display: block !important;
+      box-sizing: border-box !important;
+    }
+
+    /* Make label/select fill their grid cell (label above, select full width) */
+    #portfolio-view .pf-field .pf-label {
+      display: block !important;
+      margin: 0 0 6px 0 !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+    }
+    #portfolio-view .pf-field .pf-select {
+      display: block !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+      margin: 0 !important;
+    }
+
+    /* Explicit placement (keeps layout stable if markup order shifts) */
+    #portfolio-view .pf-field--scope { grid-column: 1 / span 2; }
+    #portfolio-view .pf-field--site  { grid-column: 3 / span 2; }
+    /* If site is hidden, scope takes full width */
+    #portfolio-view .pf-field--scope:only-child { grid-column: 1 / -1 !important; }
+
+    /* Options row spacing and inline toggles */
+    #portfolio-view .pf-row--options {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 16px;
+      padding-bottom: 12px;
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      align-items: center !important;
+      gap: 48px !important;
+      box-sizing: border-box;
+    }
+    #portfolio-view .pf-row--options .pf-field--range {
+      flex: 0 0 auto;
+      min-width: 140px;
+    }
+    #portfolio-view .pf-toggles {
+      display: flex !important;
+      align-items: center !important;
+      gap: 16px !important;
+      padding-left: 0 !important;
+      border-left: none !important;
+    }
+    #portfolio-view .pf-load-btn {
+      margin: 0 0 0 auto !important;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      min-width: 88px !important;
+      box-sizing: border-box !important;
+    }
+
+    /* Scoped select & button appearance override to beat global rules */
+    #portfolio-view .portfolio-controls-bar .pf-select {
+      font-size: 13px;
+      line-height: 1.2;
+      min-height: 36px;
+      box-sizing: border-box;
+    }
+    #portfolio-view .portfolio-controls-bar .pf-load-btn {
+      padding: 0.56em 1.1em;
+      border-radius: 0.35rem;
+      box-sizing: border-box;
+    }
+
+    /* Responsive: revert to stacked layout on small screens */
+    @media (max-width: 680px) {
+      .portfolio-controls-bar { padding: 14px 16px 18px; gap: 14px; }
+      #portfolio-view .pf-row--scope {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+        align-items: stretch !important;
+      }
+      #portfolio-view .pf-row--scope .pf-field--scope,
+      #portfolio-view .pf-row--scope .pf-field--site {
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+      #portfolio-view .pf-field { display: flex !important; flex-direction: column !important; gap: 6px !important; }
+      #portfolio-view .pf-row--options { gap: 20px !important; flex-wrap: wrap !important; }
+    }
+
+    .sr-only {
+      position: absolute !important;
+      height: 1px;
+      width: 1px;
+      overflow: hidden;
+      clip: rect(1px, 1px, 1px, 1px);
+      white-space: nowrap;
+      border: 0;
+      padding: 0;
+      margin: -1px;
+    }
+
     /* Global Filters Bar */
     .global-filters-bar { margin-bottom: 16px; }
     .global-filters {
@@ -779,14 +996,12 @@
       margin: 0;
       white-space: nowrap;
     }
-    .opp-llmo-checkbox-wrap,
-    .portfolio-llmo-checkbox-wrap {
+    .opp-llmo-checkbox-wrap {
       margin-left: 12px;
       white-space: nowrap;
       font-weight: normal;
     }
-    .opp-llmo-checkbox-wrap input,
-    .portfolio-llmo-checkbox-wrap input {
+    .opp-llmo-checkbox-wrap input {
       margin-right: 6px;
     }
     .opp-date-range-select {
@@ -991,8 +1206,8 @@
         </div>
       </div>
 
-      <!-- Row 3: Action buttons -->
-      <div class="controls-row controls-actions">
+      <!-- Row 3: Action buttons (Site view only; hidden on Portfolio) -->
+      <div id="site-actions-row" class="controls-row controls-actions">
         <button id="load-btn">Load Data</button>
         <button id="refresh-btn" disabled>Refresh</button>
         <button id="export-btn" disabled>Export Report</button>
@@ -1015,28 +1230,45 @@
     <div id="portfolio-view">
       <div class="portfolio-header">
         <h2 id="portfolio-title">Portfolio Overview</h2>
-        <div class="portfolio-controls">
-          <label>Scope:</label>
-          <select id="portfolio-scope">
-            <option value="global" selected>All Customers</option>
-          </select>
-          <label>Range:</label>
-          <select id="portfolio-range">
-            <option value="7" selected>Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
-            <option value="180">Last 180 days</option>
-            <option value="365">Last year</option>
-          </select>
-          <label class="portfolio-llmo-checkbox-wrap">
-            <input type="checkbox" id="portfolio-include-llmo" />
-            Include LLMO Data
-          </label>
-          <label class="portfolio-llmo-checkbox-wrap">
-            <input type="checkbox" id="portfolio-include-generic" />
-            Include Generic Opportunities
-          </label>
-          <button id="portfolio-refresh-btn" class="btn-connect" type="button">Load</button>
+        <div class="portfolio-controls-bar">
+          <div class="pf-row pf-row--scope" role="form" aria-label="Portfolio controls">
+            <div class="pf-field pf-field--scope">
+              <label class="pf-label" for="portfolio-scope">Scope</label>
+              <select id="portfolio-scope" class="pf-select" name="portfolioScope" aria-describedby="scopeHelp">
+                <option value="global" selected>All Customers</option>
+              </select>
+              <div id="scopeHelp" class="sr-only">Choose a customer scope</div>
+            </div>
+            <div id="portfolio-site-wrap" class="pf-field pf-field--site" style="display: none;" data-visible="false">
+              <label class="pf-label" for="portfolio-site">Site</label>
+              <select id="portfolio-site" class="pf-select" name="portfolioSite">
+                <option value="">All sites</option>
+              </select>
+            </div>
+          </div>
+          <div class="pf-row pf-row--options">
+            <div class="pf-field pf-field--range">
+              <label class="pf-label" for="portfolio-range">Range</label>
+              <select id="portfolio-range" class="pf-select">
+                <option value="7" selected>Last 7 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="180">Last 180 days</option>
+                <option value="365">Last year</option>
+              </select>
+            </div>
+            <div class="pf-toggles">
+              <label class="pf-toggle">
+                <input type="checkbox" id="portfolio-include-llmo" />
+                <span>Include LLMO</span>
+              </label>
+              <label class="pf-toggle">
+                <input type="checkbox" id="portfolio-include-generic" />
+                <span>Include Generic</span>
+              </label>
+            </div>
+            <button id="portfolio-refresh-btn" class="pf-load-btn" type="button">Load</button>
+          </div>
         </div>
       </div>
       <div id="portfolio-loading" class="loading-message" style="display: none;">
@@ -1256,6 +1488,8 @@
     const portfolioRefreshBtn = document.getElementById('portfolio-refresh-btn');
     const portfolioTitle = document.getElementById('portfolio-title');
     const portfolioScope = document.getElementById('portfolio-scope');
+    const portfolioSiteWrap = document.getElementById('portfolio-site-wrap');
+    const portfolioSiteSelect = document.getElementById('portfolio-site');
     
     let currentData = null;
     let currentView = 'site'; // 'site' | 'portfolio'
@@ -1320,7 +1554,21 @@
       siteSelect.innerHTML = '<option value="">—</option>';
 
       try {
-        customerTree = await buildCustomerSiteTree(effectiveToken);
+        // Prefer customer snapshot from server (ASO-only, fast); fall back to live build
+        let fromSnapshot = false;
+        try {
+          const res = await fetch(PORTFOLIO_ENDPOINTS.CUSTOMERS());
+          if (res.ok) {
+            const data = await res.json();
+            if (data.customers && data.customers.length > 0) {
+              customerTree = data.customers;
+              fromSnapshot = true;
+            }
+          }
+        } catch (_) { /* ignore; fall back to buildCustomerSiteTree */ }
+        if (!fromSnapshot) {
+          customerTree = await buildCustomerSiteTree(effectiveToken);
+        }
         if (customerTree.length === 0) {
           customerSelect.innerHTML = '<option value="">No customers found</option>';
           return;
@@ -1527,6 +1775,7 @@
     // If the site isn't in the tree, look it up via the API, find its org, and inject it.
     // ---- View tab switching ----
     function switchView(view) {
+      const previousView = currentView;
       currentView = view;
 
       // Single source of truth — CSS rules handle all view-level visibility
@@ -1536,13 +1785,24 @@
         tab.classList.toggle('active', tab.dataset.view === view);
       });
 
+      // When switching from Portfolio to Site, sync Scope to Customer dropdown so context is consistent
+      if (view === 'site' && previousView === 'portfolio') {
+        const scopeValue = portfolioScope.value;
+        if (scopeValue && scopeValue !== 'global' && customerTree && customerTree.some((c) => c.orgId === scopeValue)) {
+          customerSelect.value = scopeValue;
+          populateSites(scopeValue);
+        }
+      }
+
       // Portfolio auto-load when switching to portfolio tab
       if (view === 'portfolio') {
+        syncPortfolioSiteVisibility();
         if (portfolioIncludeLlmo) portfolioIncludeLlmo.checked = getFilters().includeLlmoData;
         if (portfolioIncludeGeneric) portfolioIncludeGeneric.checked = getFilters().includeGenericOpportunities;
         const hasToken = !!(tokenInput.value.trim() || getAccessToken());
         const cacheValid = portfolioCache
           && portfolioCache.scope === portfolioScope.value
+          && portfolioCache.site === (portfolioSiteSelect?.value ?? '')
           && portfolioCache.range === portfolioRange.value
           && portfolioCache.llmo === (portfolioIncludeLlmo && portfolioIncludeLlmo.checked)
           && portfolioCache.generic === (portfolioIncludeGeneric && portfolioIncludeGeneric.checked)
@@ -1571,6 +1831,63 @@
       if (currentVal && portfolioScope.querySelector(`option[value="${currentVal}"]`)) {
         portfolioScope.value = currentVal;
       }
+      syncPortfolioSiteVisibility();
+    }
+
+    /**
+     * Show or hide the Site dropdown and populate it when Scope is a specific customer.
+     */
+    async function updatePortfolioSiteOptions(orgId) {
+      if (!orgId || !portfolioSiteSelect || !portfolioSiteWrap) return;
+      const org = customerTree.find((c) => c.orgId === orgId);
+      if (!org) {
+        portfolioSiteWrap.style.display = 'none';
+        portfolioSiteWrap.setAttribute('data-visible', 'false');
+        return;
+      }
+      let sites = org.sites || [];
+      if (sites.length === 0) {
+        const token = tokenInput.value.trim() || getAccessToken();
+        if (token) {
+          portfolioSiteSelect.innerHTML = '<option value="">Loading sites...</option>';
+          portfolioSiteWrap.style.display = 'flex';
+          portfolioSiteWrap.setAttribute('data-visible', 'true');
+          try {
+            sites = await fetchOrgSites(orgId, token);
+            org.sites = sites;
+          } catch (err) {
+            console.error(`[Portfolio] Failed to load sites for org ${orgId}:`, err);
+            portfolioSiteSelect.innerHTML = '<option value="">Error loading sites</option>';
+            return;
+          }
+        }
+      }
+      const sorted = [...sites].sort((a, b) => {
+        const la = (a.baseURL || '').replace(/^https?:\/\//, '').replace(/\/$/, '') || a.siteId || '';
+        const lb = (b.baseURL || '').replace(/^https?:\/\//, '').replace(/\/$/, '') || b.siteId || '';
+        return la.localeCompare(lb);
+      });
+      let html = '<option value="">All sites</option>';
+      html += sorted.map((s) => {
+        const label = (s.baseURL || '').replace(/^https?:\/\//, '').replace(/\/$/, '') || s.siteId || s;
+        return `<option value="${s.siteId}">${label}</option>`;
+      }).join('');
+      portfolioSiteSelect.innerHTML = html;
+      portfolioSiteSelect.value = '';
+      portfolioSiteWrap.style.display = 'flex';
+      portfolioSiteWrap.setAttribute('data-visible', 'true');
+    }
+
+    function syncPortfolioSiteVisibility() {
+      if (!portfolioScope || !portfolioSiteWrap) return;
+      const scopeValue = portfolioScope.value;
+      if (scopeValue === 'global' || !scopeValue) {
+        portfolioSiteWrap.style.display = 'none';
+        portfolioSiteWrap.setAttribute('data-visible', 'false');
+        portfolioSiteSelect.innerHTML = '<option value="">All sites</option>';
+        return;
+      }
+      updatePortfolioSiteOptions(scopeValue);
     }
 
     // ---- Portfolio data loading ----
@@ -1583,6 +1900,7 @@
       }
 
       const scopeValue = portfolioScope.value; // 'global' or an orgId
+      const siteValue = (portfolioSiteSelect?.value ?? '').trim();
 
       // Compute date range from the dropdown
       const rangeDays = parseInt(portfolioRange.value, 10);
@@ -1594,7 +1912,7 @@
 
       portfolioLoading.textContent = scopeValue === 'global'
         ? 'Loading portfolio data across all customers... this may take a minute.'
-        : 'Loading portfolio data...';
+        : siteValue ? 'Loading portfolio data...' : 'Loading portfolio data...';
       portfolioLoading.style.display = 'block';
       portfolioError.style.display = 'none';
       errorEl.style.display = 'none'; // clear global error banner when loading portfolio
@@ -1606,14 +1924,22 @@
       if (scopeValue === 'global') {
         portfolioTitle.textContent = 'Portfolio: All Customers';
       } else {
-        const opt = portfolioScope.options[portfolioScope.selectedIndex];
-        portfolioTitle.textContent = `Portfolio: ${opt?.text || scopeValue}`;
+        const scopeLabel = portfolioScope.options[portfolioScope.selectedIndex]?.text || scopeValue;
+        if (siteValue) {
+          const siteOpt = portfolioSiteSelect.options[portfolioSiteSelect.selectedIndex];
+          const siteLabel = siteOpt?.text || siteValue;
+          portfolioTitle.textContent = `Portfolio: ${scopeLabel} — ${siteLabel}`;
+        } else {
+          portfolioTitle.textContent = `Portfolio: ${scopeLabel} (all sites)`;
+        }
       }
 
       try {
         const params = new URLSearchParams({ from: fromStr, to: toStr });
         if (scopeValue === 'global') {
           params.set('siteScope', 'global');
+        } else if (siteValue) {
+          params.set('siteIds', siteValue);
         } else {
           params.set('orgId', scopeValue);
         }
@@ -1631,8 +1957,8 @@
             : `Loading portfolio data... ${elapsed}s elapsed`;
         }, 1000);
 
-        // 5-minute timeout for global, 2-minute for single org
-        const timeoutMs = scopeValue === 'global' ? 300_000 : 120_000;
+        // 5-minute timeout for global, 2-minute for org (all sites), 1-minute for single site
+        const timeoutMs = scopeValue === 'global' ? 300_000 : (siteValue ? 60_000 : 120_000);
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -1655,6 +1981,7 @@
         portfolioCache = {
           data,
           scope: scopeValue,
+          site: siteValue,
           range: String(rangeDays),
           llmo: !!(portfolioIncludeLlmo && portfolioIncludeLlmo.checked),
           generic: !!(portfolioIncludeGeneric && portfolioIncludeGeneric.checked),
@@ -1691,6 +2018,21 @@
       const suggestionsFixed = sm.suggestionsFixed ?? 0;
 
       const awaitingCustomerReview = sm.awaitingCustomerReview ?? 0;
+      const customerEngagement = sm.customerEngagement ?? (skippedByCustomer + suggestionsFixed);
+      const movedToFixed = sm.movedToFixed ?? 0;
+      const movedToAwaitingCustomerReview = sm.movedToAwaitingCustomerReview ?? 0;
+      const movedToAwaitingEseReview = sm.movedToAwaitingEseReview ?? 0;
+      const movedToSkipped = sm.movedToSkipped ?? 0;
+      const movedToRejected = sm.movedToRejected ?? 0;
+      const movedToOutdated = sm.movedToOutdated ?? 0;
+      const movedToError = sm.movedToError ?? 0;
+      const movedToCustomerEngagement = sm.movedToCustomerEngagement ?? 0;
+      const hasMovedToMetrics = (sm.movedToFixed !== undefined || sm.movedToAwaitingCustomerReview !== undefined);
+      // When using "moved to" metrics, total = suggestions created or updated in period so percentages add up to 100%
+      const totalCreatedOrUpdatedInPeriod = sm.totalCreatedOrUpdatedInPeriod ?? (hasMovedToMetrics
+        ? (movedToFixed + movedToAwaitingCustomerReview + movedToAwaitingEseReview + movedToSkipped + movedToRejected + movedToOutdated + movedToError)
+        : 0);
+      const totalForMovedPct = hasMovedToMetrics && totalCreatedOrUpdatedInPeriod > 0 ? totalCreatedOrUpdatedInPeriod : totalSuggestions;
       const pct = (num, denom) => (denom > 0 ? ((num / denom) * 100).toFixed(1) : '0');
       const pctSkipped = totalSuggestions > 0 ? pct(skippedByCustomer, totalSuggestions) : '0';
       const pctRejected = totalSuggestions > 0 ? pct(sm.rejectedByEse ?? 0, totalSuggestions) : '0';
@@ -1698,6 +2040,24 @@
       const pctFixedSug = totalSuggestions > 0 ? pct(suggestionsFixed, totalSuggestions) : '0';
       const pctAwaitingCustomer = totalSuggestions > 0 ? pct(awaitingCustomerReview, totalSuggestions) : '0';
       const pctAwaitingEse = totalSuggestions > 0 ? pct(sm.pendingValidation ?? 0, totalSuggestions) : '0';
+      const pctCustomerEngagement = totalSuggestions > 0 ? pct(customerEngagement, totalSuggestions) : '0';
+      const pctMovedCustomerEngagement = totalForMovedPct > 0 && (hasMovedToMetrics && movedToCustomerEngagement !== undefined)
+        ? pct(movedToCustomerEngagement, totalForMovedPct) : pctCustomerEngagement;
+      const pctMovedFixed = totalForMovedPct > 0 ? pct(hasMovedToMetrics ? movedToFixed : suggestionsFixed, totalForMovedPct) : '0';
+      const pctMovedAwaitingCustomer = totalForMovedPct > 0
+        ? pct(hasMovedToMetrics ? movedToAwaitingCustomerReview : awaitingCustomerReview, totalForMovedPct) : '0';
+      const pctMovedAwaitingEse = totalForMovedPct > 0 ? pct(movedToAwaitingEseReview, totalForMovedPct) : '0';
+      const pctMovedSkipped = totalForMovedPct > 0 ? pct(movedToSkipped, totalForMovedPct) : '0';
+      const pctMovedRejected = totalForMovedPct > 0 ? pct(movedToRejected, totalForMovedPct) : '0';
+      const pctMovedOutdated = totalForMovedPct > 0 ? pct(movedToOutdated, totalForMovedPct) : '0';
+      const pctMovedError = totalForMovedPct > 0 ? pct(movedToError, totalForMovedPct) : '0';
+      const pctCreated = totalAvailable > 0 ? pct(createdInPeriod, totalAvailable) : '0';
+      const customerEngagementMainValue = (hasMovedToMetrics && movedToCustomerEngagement !== undefined)
+        ? movedToCustomerEngagement : customerEngagement;
+      const customerEngagementTooltip = 'Suggestions that had customer engagement in this period: skipped by customer, or fixed (deployed and confirmed). '
+        + ((hasMovedToMetrics && movedToCustomerEngagement !== undefined)
+          ? 'Number shown is how many moved into these states in the selected date range.'
+          : 'Count reflects current snapshot totals.');
 
       // Data source label + staleness (built once for footer)
       let dataSourceBlock = '';
@@ -1728,7 +2088,9 @@
 
       // Scope line: "Metrics for: Last 7 days" with tooltip — one clear place so users know numbers are range-based
       const rangeLabel = portfolioRange.options[portfolioRange.selectedIndex]?.text || `Last ${portfolioRange.value || 7} days`;
-      const scopeTooltip = 'In scope = opportunities created in this period, or created before and still open or updated in this period. All counts (suggestions and opportunities) use only in-scope opportunities.';
+      const scopeTooltip = hasMovedToMetrics
+        ? 'Total = suggestions created or updated in this date range. Each "Moved to" card shows count and % of that total (percentages add up to 100%).'
+        : 'Total = suggestions on in-scope opportunities. Each card shows count and % of that total.';
       portfolioMetricsScope.innerHTML = `Metrics for: <span class="portfolio-scope-range">${rangeLabel}</span> <span class="info-bubble">?<span class="info-text">${scopeTooltip}</span></span>`;
       portfolioMetricsScope.style.display = 'flex';
 
@@ -1736,52 +2098,68 @@
       portfolioStats.innerHTML = `
         <div class="portfolio-stats-inner">
           <section class="portfolio-stat-group portfolio-stat-group--suggestion" aria-label="Suggestion-level metrics">
-            <h3 class="portfolio-stat-group-title">Suggestions <span class="portfolio-stat-group-subtitle">(in scope for selected range)</span></h3>
+            <h3 class="portfolio-stat-group-title">Suggestions</h3>
             <div class="stats-grid">
+              <div class="stat-card" style="border-left: 4px solid #0d9488;">
+                <div class="stat-value">${customerEngagementMainValue.toLocaleString()}</div>
+                <div class="stat-label">Customer Engagement <span class="info-bubble">?<span class="info-text">${customerEngagementTooltip}</span></span></div>
+                <div class="stat-detail">${pctMovedCustomerEngagement}% of total</div>
+              </div>
               <div class="stat-card" style="border-left: 4px solid #10b981;">
-                <div class="stat-value">${suggestionsFixed.toLocaleString()}</div>
-                <div class="stat-label">Fixed</div>
-                <div class="stat-detail">${pctFixedSug}% of total</div>
+                <div class="stat-value">${(hasMovedToMetrics ? movedToFixed : suggestionsFixed).toLocaleString()}</div>
+                <div class="stat-label">${hasMovedToMetrics ? 'Moved to Fixed' : 'Fixed'}</div>
+                <div class="stat-detail">${pctMovedFixed}% of total</div>
               </div>
               <div class="stat-card" style="border-left: 4px solid #f59e0b;">
-                <div class="stat-value">${awaitingCustomerReview.toLocaleString()}</div>
-                <div class="stat-label">Awaiting Customer Review</div>
-                <div class="stat-detail">${pctAwaitingCustomer}% of total</div>
+                <div class="stat-value">${(hasMovedToMetrics ? movedToAwaitingCustomerReview : awaitingCustomerReview).toLocaleString()}</div>
+                <div class="stat-label">${hasMovedToMetrics ? 'Moved to Awaiting Customer Review' : 'Awaiting Customer Review'}</div>
+                <div class="stat-detail">${pctMovedAwaitingCustomer}% of total</div>
               </div>
               <div class="stat-card" style="border-left: 4px solid #6366f1;">
-                <div class="stat-value">${(sm.pendingValidation ?? 0).toLocaleString()}</div>
-                <div class="stat-label">Awaiting ESE Review</div>
-                <div class="stat-detail">${pctAwaitingEse}% of total</div>
+                <div class="stat-value">${(hasMovedToMetrics ? movedToAwaitingEseReview : (sm.pendingValidation ?? 0)).toLocaleString()}</div>
+                <div class="stat-label">${hasMovedToMetrics ? 'Moved to Awaiting ESE Review' : 'Awaiting ESE Review'}</div>
+                <div class="stat-detail">${hasMovedToMetrics ? pctMovedAwaitingEse : pctAwaitingEse}% of total</div>
               </div>
               <div class="stat-card" style="border-left: 4px solid #9ca3af;">
-                <div class="stat-value">${skippedByCustomer.toLocaleString()}</div>
-                <div class="stat-label">Skipped (by customer)</div>
-                <div class="stat-detail">${pctSkipped}% of total</div>
+                <div class="stat-value">${(hasMovedToMetrics ? movedToSkipped : skippedByCustomer).toLocaleString()}</div>
+                <div class="stat-label">${hasMovedToMetrics ? 'Moved to Skipped (by customer)' : 'Skipped (by customer)'}</div>
+                <div class="stat-detail">${hasMovedToMetrics ? pctMovedSkipped : pctSkipped}% of total</div>
               </div>
               <div class="stat-card" style="border-left: 4px solid #e83e8c;">
-                <div class="stat-value">${(sm.rejectedByEse ?? 0).toLocaleString()}</div>
-                <div class="stat-label">Rejected (by ESE)</div>
-                <div class="stat-detail">${pctRejected}% of total</div>
+                <div class="stat-value">${(hasMovedToMetrics ? movedToRejected : (sm.rejectedByEse ?? 0)).toLocaleString()}</div>
+                <div class="stat-label">${hasMovedToMetrics ? 'Moved to Rejected (by ESE)' : 'Rejected (by ESE)'}</div>
+                <div class="stat-detail">${hasMovedToMetrics ? pctMovedRejected : pctRejected}% of total</div>
               </div>
+              <div class="stat-card" style="border-left: 4px solid #78716c;">
+                <div class="stat-value">${(hasMovedToMetrics ? movedToOutdated : (sm.outdatedSuggestions ?? 0)).toLocaleString()}</div>
+                <div class="stat-label">${hasMovedToMetrics ? 'Moved to Outdated' : 'Outdated'}</div>
+                <div class="stat-detail">${hasMovedToMetrics ? pctMovedOutdated : (totalSuggestions > 0 ? pct(sm.outdatedSuggestions ?? 0, totalSuggestions) : '0')}% of total</div>
+              </div>
+              ${hasMovedToMetrics && movedToError > 0 ? `
+              <div class="stat-card" style="border-left: 4px solid #dc2626;">
+                <div class="stat-value">${movedToError.toLocaleString()}</div>
+                <div class="stat-label">Moved to Error</div>
+                <div class="stat-detail">${pctMovedError}% of total</div>
+              </div>
+              ` : ''}
             </div>
           </section>
           <section class="portfolio-stat-group portfolio-stat-group--opportunity" aria-label="Opportunity-level metrics">
-            <h3 class="portfolio-stat-group-title">Opportunities <span class="portfolio-stat-group-subtitle">(in scope for selected range)</span></h3>
+            <h3 class="portfolio-stat-group-title">Opportunities</h3>
             <div class="stats-grid">
               <div class="stat-card" style="border-left: 4px solid #8b5cf6;">
                 <div class="stat-value">${totalAvailable.toLocaleString()}</div>
                 <div class="stat-label">Total Available</div>
-                <div class="stat-detail">In scope for this period</div>
               </div>
               <div class="stat-card" style="border-left: 4px solid #3b82f6;">
                 <div class="stat-value">${createdInPeriod.toLocaleString()}</div>
                 <div class="stat-label">Created in Period</div>
-                <div class="stat-detail">Across ${siteCount ?? '?'} sites</div>
+                <div class="stat-detail">${pctCreated}% of total</div>
               </div>
               <div class="stat-card" style="border-left: 4px solid #10b981;">
                 <div class="stat-value">${fixedInPeriod.toLocaleString()}</div>
                 <div class="stat-label">Fixed in Period</div>
-                <div class="stat-detail">${pctFixedOpp}% of total resolved</div>
+                <div class="stat-detail">${pctFixedOpp}% of total</div>
               </div>
             </div>
           </section>
@@ -2783,6 +3161,7 @@
     document.querySelectorAll('.view-tab').forEach((tab) => {
       tab.addEventListener('click', () => switchView(tab.dataset.view));
     });
+    portfolioScope.addEventListener('change', () => { syncPortfolioSiteVisibility(); });
     portfolioRefreshBtn.addEventListener('click', () => {
       portfolioCache = null; // force refresh
       loadPortfolioData();

@@ -193,7 +193,7 @@ router.get('/opportunity-metrics', async (req, res) => {
 
   if (siteIdsParam) {
     siteIds = siteIdsParam.split(',').map((s) => s.trim()).filter(Boolean);
-    scope = 'custom';
+    scope = `custom:${siteIds.slice().sort().join(',')}`;
   } else if (siteScope === 'global') {
     // ALL sites via single GET /sites call
     scope = 'global';

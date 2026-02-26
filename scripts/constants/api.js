@@ -112,4 +112,5 @@ export const CACHE_CONFIG = {
 export const PORTFOLIO_API_BASE = 'http://localhost:3001';
 export const PORTFOLIO_ENDPOINTS = {
   OPPORTUNITY_METRICS: () => `${PORTFOLIO_API_BASE}/api/portfolio/opportunity-metrics`,
+  CUSTOMERS: () => `${PORTFOLIO_API_BASE}/api/customers`,
 };

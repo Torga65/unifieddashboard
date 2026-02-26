@@ -133,4 +133,68 @@ describe('aggregateOpportunities', () => {
     const result = aggregateOpportunities(opps, '2025-01-01', '2025-01-31');
     assert.equal(result.summary.totalAvailable, 0);
   });
+
+  it('should restrict suggestion sums to in-scope opportunities only', () => {
+    // Opp 0: in scope (created in period). Opp 1: NOT in scope (before period).
+    const opps = [
+      { status: 'NEW', createdAt: '2025-01-15T00:00:00Z', suggestionCounts: { totalCount: 10, fixedCount: 2, skippedCount: 1 } },
+      {
+        status: 'RESOLVED', createdAt: '2024-12-01T00:00:00Z', updatedAt: '2024-12-10T00:00:00Z', suggestionCounts: { totalCount: 5, fixedCount: 5, skippedCount: 0 },
+      },
+    ];
+    const result = aggregateOpportunities(opps, '2025-01-01', '2025-01-31');
+    // Only opp 0 in scope: totalSuggestions=10, suggestionsFixed=2, skippedByCustomer=1.
+    assert.equal(result.summary.totalSuggestions, 10);
+    assert.equal(result.summary.suggestionsFixed, 2);
+    assert.equal(result.summary.skippedByCustomer, 1);
+    assert.equal(result.summary.customerEngagement, 3); // 1 + 2
+  });
+
+  it('should compute movedTo* from suggestionStates when date in range', () => {
+    const opps = [
+      {
+        status: 'NEW',
+        createdAt: '2025-01-10T00:00:00Z',
+        suggestionCounts: { totalCount: 3, fixedCount: 1, skippedCount: 1 },
+        suggestionStates: [
+          { s: 'FIXED', u: '2025-01-15', c: '2025-01-10' },
+          { s: 'SKIPPED', u: '2025-01-16', c: '2025-01-10' },
+          { s: 'NEW', u: '2025-01-10', c: '2025-01-10' },
+        ],
+      },
+    ];
+    const result = aggregateOpportunities(opps, '2025-01-01', '2025-01-31');
+    assert.equal(result.summary.movedToFixed, 1);
+    assert.equal(result.summary.movedToSkipped, 1);
+    assert.equal(result.summary.movedToAwaitingCustomerReview, 1); // NEW, u in range
+    assert.equal(result.summary.movedToCustomerEngagement, 2); // skipped + fixed
+    // 1+1+1 so "moved to" % add up to 100%
+    assert.equal(result.summary.totalCreatedOrUpdatedInPeriod, 3);
+  });
+
+  it('should not count suggestion state when date outside range', () => {
+    const opps = [
+      {
+        status: 'NEW',
+        createdAt: '2025-01-10T00:00:00Z',
+        suggestionCounts: { totalCount: 1 },
+        suggestionStates: [{ s: 'FIXED', u: '2025-02-15', c: '2025-01-10' }],
+      },
+    ];
+    const result = aggregateOpportunities(opps, '2025-01-01', '2025-01-31');
+    assert.equal(result.summary.movedToFixed, 0);
+    assert.equal(result.summary.totalCreatedOrUpdatedInPeriod, 0);
+  });
+
+  it('should return 0 for movedTo* when no suggestionStates (backward compat)', () => {
+    const opps = [
+      { status: 'NEW', createdAt: '2025-01-15T00:00:00Z', suggestionCounts: { totalCount: 5, fixedCount: 2 } },
+    ];
+    const result = aggregateOpportunities(opps, '2025-01-01', '2025-01-31');
+    assert.equal(result.summary.movedToFixed, 0);
+    assert.equal(result.summary.movedToCustomerEngagement, 0);
+    assert.equal(result.summary.customerEngagement, 2); // fixedCount 2 + skippedCount 0
+    assert.equal(result.summary.suggestionsFixed, 2);
+    assert.equal(result.summary.totalCreatedOrUpdatedInPeriod, 0);
+  });
 });
