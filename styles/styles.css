@@ -255,3 +255,152 @@ main .section.highlight {
   margin: 0;
   padding: 40px 0;
 }
+
+/* ===== portfolio: single authoritative override =====
+   This is a flex-first layout that stacks on small screens.
+   BEM-style class names (pf-row--scope) intentionally used. */
+/* stylelint-disable selector-class-pattern */
+#portfolio-view .portfolio-controls-bar {
+  box-sizing: border-box;
+}
+
+/* Scope row: two columns on wide screens, stacked under 680px */
+#portfolio-view .pf-row--scope {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Each pf-field becomes a column: label above select for small widths,
+   label-left + select-fill for wide widths handled by nested rule below. */
+#portfolio-view .pf-row--scope .pf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 0;
+  box-sizing: border-box;
+}
+
+/* Label + select appearance */
+#portfolio-view .pf-field .pf-label {
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+  margin: 0;
+}
+
+#portfolio-view .pf-field .pf-select {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 30px 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  box-sizing: border-box;
+  appearance: none;
+}
+
+/* On wide screens, render fields side-by-side but keep label+select visually grouped */
+@media (width >= 900px) {
+  #portfolio-view .pf-row--scope {
+    align-items: center;
+  }
+
+  /* Make label and select appear side-by-side: fixed label width, select grows */
+  #portfolio-view .pf-row--scope .pf-field {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  #portfolio-view .pf-field .pf-label {
+    flex: 0 0 92px;
+    margin: 0;
+  }
+
+  #portfolio-view .pf-field .pf-select {
+    flex: 1 1 auto;
+    width: auto;
+  }
+}
+
+/* Options row (range / toggles / load) */
+#portfolio-view .pf-row--options {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 48px;
+  padding-top: 16px;
+  box-sizing: border-box;
+}
+
+#portfolio-view .pf-row--options .pf-field--range {
+  flex: 0 0 auto;
+  min-width: 140px;
+}
+
+/* Toggles cluster and load button */
+#portfolio-view .pf-toggles {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+#portfolio-view .pf-load-btn {
+  margin-left: auto;
+  min-width: 88px;
+}
+
+/* Small screens: stack scope fields and compress spacing */
+@media (width <= 680px) {
+  #portfolio-view .pf-row--scope {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  #portfolio-view .pf-row--scope .pf-field {
+    flex-direction: column;
+  }
+
+  #portfolio-view .pf-field .pf-label {
+    white-space: normal;
+  }
+
+  #portfolio-view .pf-row--options {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+}
+
+/* small defensive tweaks for portfolio controls */
+#portfolio-view .portfolio-controls-bar .pf-row--scope .pf-field {
+  min-width: 0; /* prevents child overflow / collapsing when flexed */
+}
+
+/* If site field is hidden or removed, let scope take full width */
+#portfolio-view .portfolio-controls-bar .pf-row--scope .pf-field--scope:only-child {
+  flex: 1 1 100%;
+  width: 100%;
+}
+
+/* stylelint-enable selector-class-pattern */
+
+/* Ensure selects have a comfortable, consistent height */
+#portfolio-view .portfolio-controls-bar .pf-select,
+#portfolio-view .portfolio-controls-bar select {
+  min-height: 36px;
+  height: auto;
+  line-height: 1.2;
+}
+
+/* When the site wrapper is present, show it inline with the scope fields */
+#portfolio-view .portfolio-controls-bar #portfolio-site-wrap {
+  display: flex; /* stays hidden by JS when not needed */
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}

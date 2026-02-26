@@ -6,6 +6,10 @@
  * Usage (all sites — global snapshot):
  *   node scripts/snapshot.js --token <SPACECAT_API_TOKEN>
  *
+ * Usage (ASO-only sites, smaller/faster — run customer snapshot first):
+ *   node scripts/snapshot.js --token <TOKEN> --customers
+ *   node scripts/snapshot.js --token <TOKEN> --customers path/to/customers.json
+ *
  * Usage (single org):
  *   node scripts/snapshot.js --token <TOKEN> --org <ORG_ID>
  *
@@ -16,7 +20,9 @@
  * keeping file size manageable (~50-80 bytes per opportunity).
  */
 
-import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import {
+  writeFileSync, mkdirSync, existsSync, readFileSync,
+} from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -62,6 +68,34 @@ async function fetchOrgSiteIds(orgId, token) {
   return ids;
 }
 
+/**
+ * Load site IDs from a customer snapshot (ASO-only orgs + sites).
+ * Returns array of site IDs, or null if file missing/invalid.
+ */
+function loadSiteIdsFromCustomerSnapshot(customersPath) {
+  if (!existsSync(customersPath)) {
+    return null;
+  }
+  try {
+    const raw = readFileSync(customersPath, 'utf-8');
+    const data = JSON.parse(raw);
+    const { customers } = data;
+    if (!Array.isArray(customers)) return null;
+    const ids = [];
+    for (const org of customers) {
+      const { sites } = org;
+      if (!Array.isArray(sites)) continue;
+      for (const site of sites) {
+        const id = site.siteId || site.id;
+        if (id) ids.push(id);
+      }
+    }
+    return [...new Set(ids)];
+  } catch {
+    return null;
+  }
+}
+
 async function fetchSiteOpportunities(siteId, token) {
   const url = `${SPACECAT_BASE}/sites/${siteId}/opportunities`;
   try {
@@ -102,6 +136,25 @@ const SUG = {
   OUTDATED: 'OUTDATED',
   NEW: 'NEW',
 };
+
+/**
+ * Build compact per-suggestion state for date-filtered "moved to" metrics.
+ * Each item: { s: status, u: updatedAt (YYYY-MM-DD), c: createdAt (YYYY-MM-DD) }.
+ * Uses same fallbacks as client (created_at, updated_at, opp dates).
+ */
+function buildSuggestionStates(suggestions, opp) {
+  const oppU = (opp.updatedAt || '').slice(0, 10);
+  const oppC = (opp.createdAt || '').slice(0, 10);
+  return suggestions.map((s) => {
+    const rawU = s.updatedAt ?? s.updated_at ?? opp.updatedAt;
+    const rawC = s.createdAt ?? s.created_at ?? opp.createdAt;
+    return {
+      s: s.status || SUG.NEW,
+      u: (rawU && String(rawU).slice(0, 10)) || oppU || '',
+      c: (rawC && String(rawC).slice(0, 10)) || oppC || '',
+    };
+  });
+}
 
 function aggregateSuggestionCounts(suggestions) {
   const counts = {
@@ -151,11 +204,14 @@ async function enrichOpportunitiesWithSuggestionCounts(opportunities, token) {
     const results = await Promise.all(
       batch.map(async (opp) => {
         const list = await fetchOpportunitySuggestions(opp.siteId, opp.id, token);
-        return { opp, counts: aggregateSuggestionCounts(list) };
+        const counts = aggregateSuggestionCounts(list);
+        const suggestionStates = buildSuggestionStates(list, opp);
+        return { opp, counts, suggestionStates };
       }),
     );
-    for (const { opp, counts } of results) {
+    for (const { opp, counts, suggestionStates } of results) {
       opp.suggestionCounts = counts;
+      opp.suggestionStates = suggestionStates;
     }
     done += batch.length;
     if (done % logEvery < SUGGESTION_BATCH_SIZE || done === total) {
@@ -182,11 +238,17 @@ function parseArg(flag) {
   return idx !== -1 ? process.argv[idx + 1] : null;
 }
 
+function hasFlag(flag) {
+  return process.argv.includes(flag);
+}
+
 // ---- Main ----
 
 async function run() {
   const token = parseArg('--token') || process.env.SPACECAT_TOKEN;
   const orgId = parseArg('--org') || null;
+  const customersOpt = parseArg('--customers');
+  const useCustomers = hasFlag('--customers');
 
   if (!token) {
     console.error('Error: provide a token via --token <TOKEN> or SPACECAT_TOKEN env var');
@@ -198,9 +260,23 @@ async function run() {
   console.log(`[Snapshot] Starting ${scope} snapshot...`);
 
   // 1. Get site IDs
-  const siteIds = orgId
-    ? await fetchOrgSiteIds(orgId, token)
-    : await fetchAllSiteIds(token);
+  let siteIds;
+  if (orgId) {
+    siteIds = await fetchOrgSiteIds(orgId, token);
+  } else if (useCustomers) {
+    const customersPath = (customersOpt && customersOpt.length > 0 && !customersOpt.startsWith('-'))
+      ? customersOpt
+      : join(SNAPSHOTS_DIR, 'customers.json');
+    siteIds = loadSiteIdsFromCustomerSnapshot(customersPath);
+    if (siteIds && siteIds.length > 0) {
+      console.log(`[Snapshot] Using ${siteIds.length} ASO sites from customer snapshot (${customersPath})`);
+    } else {
+      console.warn(`[Snapshot] No customer snapshot at ${customersPath} or empty; falling back to all sites`);
+      siteIds = await fetchAllSiteIds(token);
+    }
+  } else {
+    siteIds = await fetchAllSiteIds(token);
+  }
 
   // 2. Fetch opportunities in batches
   const allOpps = [];

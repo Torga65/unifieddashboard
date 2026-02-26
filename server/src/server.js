@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import portfolioRoutes from './routes/portfolio.js';
 import { reload as reloadSnapshot, getSnapshotDate, hasSnapshot } from './snapshot-reader.js';
+import { getCustomersSnapshot, reloadCustomersSnapshot, hasCustomersSnapshot } from './customers-snapshot-reader.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -50,11 +51,38 @@ app.post('/api/snapshot/reload', (_req, res) => {
   }
 });
 
+// Customer snapshot (ASO-only customers for dropdown)
+app.get('/api/customers', (_req, res) => {
+  const snap = getCustomersSnapshot();
+  if (!snap) {
+    return res.status(404).json({ customers: [], snapshotDate: null, generatedAt: null });
+  }
+  return res.json({
+    snapshotDate: snap.snapshotDate,
+    generatedAt: snap.generatedAt,
+    customers: snap.customers,
+  });
+});
+
+app.post('/api/snapshot/reload-customers', (_req, res) => {
+  try {
+    const snap = reloadCustomersSnapshot();
+    if (snap) {
+      return res.json({ status: 'reloaded', date: snap.snapshotDate, customerCount: snap.customerCount });
+    }
+    return res.status(404).json({ status: 'error', error: 'No customer snapshot found on disk' });
+  } catch (err) {
+    console.error('[ASO Server] Customer snapshot reload failed:', err);
+    return res.status(500).json({ status: 'error', error: 'Reload failed' });
+  }
+});
+
 // Portfolio routes
 app.use('/api/portfolio', portfolioRoutes);
 
-// Load snapshot on startup
+// Load snapshots on startup
 reloadSnapshot();
+reloadCustomersSnapshot();
 
 app.listen(PORT, () => {
   console.log(`[ASO Server] Running on http://localhost:${PORT}`);
@@ -63,6 +91,11 @@ app.listen(PORT, () => {
     console.log(`[ASO Server] Snapshot loaded: ${getSnapshotDate()}`);
   } else {
     console.log('[ASO Server] No snapshot found — run: node scripts/snapshot.js --token <TOKEN>');
+  }
+  if (hasCustomersSnapshot()) {
+    console.log('[ASO Server] Customer snapshot loaded — GET /api/customers');
+  } else {
+    console.log('[ASO Server] No customer snapshot — run: npm run snapshot:customers -- --token <TOKEN>');
   }
 });
 

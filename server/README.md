@@ -33,8 +33,19 @@ SPACECAT_TOKEN=your_token_here npm run snapshot
 
 This writes:
 
-- `data/snapshots/global-YYYY-MM-DD.json` — all sites’ opportunities
+- `data/snapshots/global-YYYY-MM-DD.json` — all sites’ opportunities with per-opportunity `suggestionCounts` and `suggestionStates` (status + dates per suggestion for date-filtered “moved to” metrics). File size is larger than before due to `suggestionStates`.
 - `data/snapshots/latest.json` — pointer to the current snapshot file
+
+Portfolio “moved to” metrics (e.g. Moved to Fixed, Moved to Awaiting Customer Review in the selected range) and Customer Engagement use `suggestionStates` when present. Older snapshots without `suggestionStates` still work; those metrics then show current-state counts only.
+
+**ASO-only (smaller, faster):** To limit the opportunity snapshot to ASO customer sites only (fewer API calls, smaller file), run the **customer snapshot first**, then run the opportunity snapshot with `--customers`:
+
+```bash
+npm run snapshot:customers -- --token <TOKEN>
+npm run snapshot -- --token <TOKEN> --customers
+```
+
+With `--customers`, the script reads `data/snapshots/customers.json` and only fetches opportunities for those sites. If the file is missing or empty, it falls back to all sites. You can pass a path explicitly: `--customers path/to/customers.json`.
 
 Optional: snapshot a single org only:
 
@@ -71,6 +82,43 @@ This runs the snapshot script **and** POSTs to `http://localhost:3001/api/snapsh
 
 If the server isn’t running locally, run only the snapshot; the next time you start the server it will load the new file.
 
+## Customer snapshot
+
+The dashboard customer dropdown can use a pre-built list of **ASO-only** customers and their sites so it shows ~100 orgs instead of 5000+ and loads quickly.
+
+### 1. Generate the customer snapshot
+
+From the `server/` directory:
+
+```bash
+npm run snapshot:customers -- --token <YOUR_SPACECAT_TOKEN>
+```
+
+Or set the token in the environment:
+
+```bash
+SPACECAT_TOKEN=your_token_here npm run snapshot:customers
+```
+
+This writes `data/snapshots/customers.json` (ASO-entitled orgs with sites). The script fetches all orgs and sites from SpaceCat, checks entitlements in batches, and keeps only orgs with an ASO entitlement. After this, you can run the **opportunity snapshot** with `--customers` (see Portfolio snapshot workflow above) so portfolio data only includes ASO sites.
+
+### 2. How the dashboard uses it
+
+The server serves this file via **`GET /api/customers`**. On load, the dashboard calls this endpoint first; if it returns a non-empty list, the customer dropdown is filled from it. If the endpoint is missing or returns empty, the dashboard falls back to building the customer list live from SpaceCat (same behavior as before).
+
+### 3. Refresh the customer snapshot
+
+Regenerate periodically (e.g. nightly) or on demand:
+
+1. Run `npm run snapshot:customers -- --token <TOKEN>` again.
+2. Optionally tell the running server to reload without restart:
+
+```bash
+curl -X POST http://localhost:3001/api/snapshot/reload-customers
+```
+
+The server also loads the customer snapshot on startup; if `customers.json` is present, it will be used for `GET /api/customers`.
+
 ## Environment
 
 - `PORT` — Server port (default `3001`).
@@ -81,5 +129,7 @@ If the server isn’t running locally, run only the snapshot; the next time you 
 ## API
 
 - `GET /api/health` — Server status and snapshot date (if loaded).
-- `POST /api/snapshot/reload` — Reload snapshot from disk (no body).
+- `POST /api/snapshot/reload` — Reload opportunity snapshot from disk (no body).
+- `GET /api/customers` — Customer snapshot (ASO-only orgs with sites). Returns `{ snapshotDate, generatedAt, customers }` or 404/empty so the client can fall back to live build.
+- `POST /api/snapshot/reload-customers` — Reload customer snapshot from disk (no body).
 - `GET /api/portfolio/opportunity-metrics?from=YYYY-MM-DD&to=YYYY-MM-DD&siteScope=global` — Portfolio metrics (query params: `siteScope=global`, `orgId`, or `siteIds`).
