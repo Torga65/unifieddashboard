@@ -5,6 +5,10 @@ node_modules/*
 .env
 .env.*
 
+# Secrets / credentials (never commit)
+credentials.json
+**/credentials.json
+
 helix-importer-ui
 .DS_Store
 *.bak
