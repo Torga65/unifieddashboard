@@ -120,6 +120,7 @@ export function aggregateOpportunities(opportunities, from, to) {
   let awaitingCustomerReview = 0;
   let suggestionsFixed = 0;
   let totalSuggestions = 0;
+  let outdatedSuggestions = 0;
   let movedToFixed = 0;
   let movedToAwaitingCustomerReview = 0;
   let movedToAwaitingEseReview = 0;
@@ -128,18 +129,47 @@ export function aggregateOpportunities(opportunities, from, to) {
   let movedToOutdated = 0;
   let movedToError = 0;
 
+  /** @type {Object<string, { totalSuggestions, suggestionsFixed, skippedByCustomer, customerEngagement, movedToFixed, movedToSkipped, movedToCustomerEngagement }>} */
+  const byType = {};
+
+  function ensureByType(typeKey) {
+    if (!byType[typeKey]) {
+      byType[typeKey] = {
+        totalSuggestions: 0,
+        suggestionsFixed: 0,
+        skippedByCustomer: 0,
+        customerEngagement: 0,
+        movedToFixed: 0,
+        movedToSkipped: 0,
+        movedToCustomerEngagement: 0,
+      };
+    }
+    return byType[typeKey];
+  }
+
   for (let i = 0; i < opportunities.length; i++) {
     if (!inScopeIndices.has(i)) continue;
     const opp = opportunities[i];
+    const typeKey = (opp.type || 'Unknown').trim() || 'Unknown';
+    const bt = ensureByType(typeKey);
+
     const sc = opp.suggestionCounts;
     if (sc) {
-      skippedByCustomer += sc.skippedCount ?? 0;
+      const sk = sc.skippedCount ?? 0;
+      const fx = sc.fixedCount ?? 0;
+      const tot = sc.totalCount ?? 0;
+      skippedByCustomer += sk;
       rejectedByEse += sc.rejectedRawCount ?? 0;
       pendingValidation += sc.pendingValidationCount ?? 0;
       awaitingCustomerReview += (sc.newCount ?? 0) + (sc.approvedCount ?? 0)
         + (sc.inProgressCount ?? 0);
-      suggestionsFixed += sc.fixedCount ?? 0;
-      totalSuggestions += sc.totalCount ?? 0;
+      suggestionsFixed += fx;
+      totalSuggestions += tot;
+      outdatedSuggestions += sc.outdatedCount ?? 0;
+      bt.totalSuggestions += tot;
+      bt.suggestionsFixed += fx;
+      bt.skippedByCustomer += sk;
+      bt.customerEngagement += sk + fx;
     }
 
     // "Moved to" counts: updatedAt in [from, to], else createdAt when missing
@@ -151,8 +181,8 @@ export function aggregateOpportunities(opportunities, from, to) {
           : (!upd && created && created >= from && created <= to);
         if (!dateInRange) continue;
         switch (sugStatus) {
-          case SUG_FIXED: movedToFixed++; break;
-          case SUG_SKIPPED: movedToSkipped++; break;
+          case SUG_FIXED: movedToFixed++; bt.movedToFixed++; break;
+          case SUG_SKIPPED: movedToSkipped++; bt.movedToSkipped++; break;
           case SUG_REJECTED: movedToRejected++; break;
           case SUG_PENDING_VALIDATION: movedToAwaitingEseReview++; break;
           case SUG_OUTDATED: movedToOutdated++; break;
@@ -162,6 +192,7 @@ export function aggregateOpportunities(opportunities, from, to) {
             break;
         }
       }
+      bt.movedToCustomerEngagement = bt.movedToFixed + bt.movedToSkipped;
     }
   }
 
@@ -171,6 +202,20 @@ export function aggregateOpportunities(opportunities, from, to) {
   // Suggestions with status change in period — denominator so "moved to" % add up to 100%
   const totalCreatedOrUpdatedInPeriod = movedToFixed + movedToAwaitingCustomerReview
     + movedToAwaitingEseReview + movedToSkipped + movedToRejected + movedToOutdated + movedToError;
+
+  // Top lists by suggestion type (for portfolio "which type has most engagement / deployments / passed")
+  const typeEntries = Object.entries(byType);
+  const topByEngagement = typeEntries
+    .map(([type, m]) => ({ type, value: m.movedToCustomerEngagement > 0 ? m.movedToCustomerEngagement : m.customerEngagement }))
+    .filter((e) => e.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 15);
+  const topByDeployed = typeEntries
+    .map(([type, m]) => ({ type, value: m.movedToFixed > 0 ? m.movedToFixed : m.suggestionsFixed }))
+    .filter((e) => e.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 15);
+  const topByPassed = topByDeployed; // "suggestions passed" = deployed/fixed
 
   // Sort buckets by date ascending
   const buckets = Array.from(createdDayMap.entries())
@@ -195,6 +240,7 @@ export function aggregateOpportunities(opportunities, from, to) {
       awaitingCustomerReview,
       suggestionsFixed,
       totalSuggestions,
+      outdatedSuggestions,
       customerEngagement,
       movedToFixed,
       movedToAwaitingCustomerReview,
@@ -205,6 +251,10 @@ export function aggregateOpportunities(opportunities, from, to) {
       movedToError,
       movedToCustomerEngagement,
       totalCreatedOrUpdatedInPeriod,
+      byType,
+      topByEngagement,
+      topByDeployed,
+      topByPassed,
     },
     statusChangeBuckets,
   };

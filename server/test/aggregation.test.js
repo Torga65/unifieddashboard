@@ -197,4 +197,28 @@ describe('aggregateOpportunities', () => {
     assert.equal(result.summary.suggestionsFixed, 2);
     assert.equal(result.summary.totalCreatedOrUpdatedInPeriod, 0);
   });
+
+  it('should aggregate byType and produce topByEngagement / topByDeployed / topByPassed', () => {
+    const opps = [
+      { type: 'readability', status: 'NEW', createdAt: '2025-01-15T00:00:00Z', suggestionCounts: { totalCount: 20, fixedCount: 8, skippedCount: 2 } },
+      { type: 'readability', status: 'NEW', createdAt: '2025-01-16T00:00:00Z', suggestionCounts: { totalCount: 5, fixedCount: 1, skippedCount: 0 } },
+      { type: 'generic-opportunity', status: 'NEW', createdAt: '2025-01-14T00:00:00Z', suggestionCounts: { totalCount: 10, fixedCount: 3, skippedCount: 4 } },
+    ];
+    const result = aggregateOpportunities(opps, '2025-01-01', '2025-01-31');
+    assert.ok(result.summary.byType);
+    assert.equal(result.summary.byType.readability.totalSuggestions, 25);
+    assert.equal(result.summary.byType.readability.suggestionsFixed, 9);
+    assert.equal(result.summary.byType.readability.skippedByCustomer, 2);
+    assert.equal(result.summary.byType.readability.customerEngagement, 11);
+    assert.equal(result.summary.byType['generic-opportunity'].totalSuggestions, 10);
+    assert.equal(result.summary.byType['generic-opportunity'].customerEngagement, 7);
+    assert.ok(Array.isArray(result.summary.topByEngagement));
+    assert.ok(Array.isArray(result.summary.topByDeployed));
+    assert.ok(Array.isArray(result.summary.topByPassed));
+    // readability 11 > generic-opportunity 7
+    assert.equal(result.summary.topByEngagement[0].type, 'readability');
+    assert.equal(result.summary.topByEngagement[0].value, 11);
+    assert.equal(result.summary.topByDeployed[0].type, 'readability');
+    assert.equal(result.summary.topByDeployed[0].value, 9);
+  });
 });

@@ -720,6 +720,37 @@
       padding-top: 16px;
       border-top: 1px dashed #d0d5dd;
     }
+    /* Engagement by type: ranked lists */
+    .portfolio-engagement-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .portfolio-engagement-summary .stat-card {
+      padding: 10px 12px;
+    }
+    .portfolio-by-type-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .portfolio-by-type-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      font-size: 13px;
+    }
+    .portfolio-by-type-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 4px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .portfolio-by-type-list li:last-child { border-bottom: none; }
+    .portfolio-by-type-list .type-name { font-weight: 500; color: #334155; }
+    .portfolio-by-type-list .type-value { color: #64748b; white-space: nowrap; }
     /* Single scope line: "Metrics for: Last 7 days" — visible when data is loaded */
     .portfolio-metrics-scope {
       font-size: 13px;
@@ -2059,6 +2090,53 @@
           ? 'Number shown is how many moved into these states in the selected date range.'
           : 'Count reflects current snapshot totals.');
 
+      // Engagement summary: the five key metrics (generated, passed, skipped, deployed, engagement total)
+      const suggestionsGenerated = totalSuggestions;
+      const suggestionsPassed = hasMovedToMetrics ? movedToFixed : suggestionsFixed;
+      const suggestionsSkipped = hasMovedToMetrics ? movedToSkipped : skippedByCustomer;
+      const suggestionsDeployed = suggestionsPassed; // deployed = passed/fixed
+      const engagementTotal = customerEngagementMainValue;
+
+      // By-type ranked lists (which type has most engagement, most deployments, most passed)
+      const topByEngagement = sm.topByEngagement || [];
+      const topByDeployed = sm.topByDeployed || [];
+      const topByPassed = sm.topByPassed || topByDeployed;
+
+      const engagementSummaryBlock = `
+        <div class="portfolio-engagement-summary" aria-label="Suggestion engagement metrics">
+          <div class="stat-card" style="border-left: 4px solid #3b82f6;"><div class="stat-value">${suggestionsGenerated.toLocaleString()}</div><div class="stat-label">Suggestions generated</div></div>
+          <div class="stat-card" style="border-left: 4px solid #10b981;"><div class="stat-value">${suggestionsPassed.toLocaleString()}</div><div class="stat-label">Suggestions passed (quality)</div></div>
+          <div class="stat-card" style="border-left: 4px solid #9ca3af;"><div class="stat-value">${suggestionsSkipped.toLocaleString()}</div><div class="stat-label">Suggestions marked skipped</div></div>
+          <div class="stat-card" style="border-left: 4px solid #059669;"><div class="stat-value">${suggestionsDeployed.toLocaleString()}</div><div class="stat-label">Suggestions marked deployed</div></div>
+          <div class="stat-card" style="border-left: 4px solid #0d9488;"><div class="stat-value">${engagementTotal.toLocaleString()}</div><div class="stat-label">Suggestion engagement total</div></div>
+        </div>`;
+
+      const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const listHtml = (items, emptyLabel) => {
+        if (!items || items.length === 0) return `<p class="portfolio-stat-group-subtitle">${emptyLabel}</p>`;
+        return `<ol class="portfolio-by-type-list" start="1">${items.map(({ type, value }) => `<li><span class="type-name">${escapeHtml(type)}</span><span class="type-value">${Number(value).toLocaleString()}</span></li>`).join('')}</ol>`;
+      };
+      const byTypeBlock = (topByEngagement.length || topByDeployed.length || topByPassed.length)
+        ? `
+        <section class="portfolio-stat-group" aria-label="Engagement by suggestion type">
+          <h3 class="portfolio-stat-group-title">Which type has the most engagement / deployments / passed</h3>
+          <div class="portfolio-by-type-section">
+            <div>
+              <h4 class="portfolio-stat-group-subtitle" style="margin-bottom:6px;">Most engagement</h4>
+              ${listHtml(topByEngagement, 'No engagement by type')}
+            </div>
+            <div>
+              <h4 class="portfolio-stat-group-subtitle" style="margin-bottom:6px;">Most deployments</h4>
+              ${listHtml(topByDeployed, 'No deployments by type')}
+            </div>
+            <div>
+              <h4 class="portfolio-stat-group-subtitle" style="margin-bottom:6px;">Most suggestions passed</h4>
+              ${listHtml(topByPassed, 'No suggestions passed by type')}
+            </div>
+          </div>
+        </section>`
+        : '';
+
       // Data source label + staleness (built once for footer)
       let dataSourceBlock = '';
       if (snapshotDate || source) {
@@ -2099,6 +2177,7 @@
         <div class="portfolio-stats-inner">
           <section class="portfolio-stat-group portfolio-stat-group--suggestion" aria-label="Suggestion-level metrics">
             <h3 class="portfolio-stat-group-title">Suggestions</h3>
+            ${engagementSummaryBlock}
             <div class="stats-grid">
               <div class="stat-card" style="border-left: 4px solid #0d9488;">
                 <div class="stat-value">${customerEngagementMainValue.toLocaleString()}</div>
@@ -2144,6 +2223,7 @@
               ` : ''}
             </div>
           </section>
+          ${byTypeBlock}
           <section class="portfolio-stat-group portfolio-stat-group--opportunity" aria-label="Opportunity-level metrics">
             <h3 class="portfolio-stat-group-title">Opportunities</h3>
             <div class="stats-grid">
